@@ -1,5 +1,5 @@
-from A_Variables import *
-from B_Decorators import Singleton,method_efficency,error_catcher
+from A1_Variables import *
+from A2_Decorators import Singleton
 
 class GoogleDrive(Singleton):
     _initialized = False
@@ -139,5 +139,4 @@ if __name__ == '__main__':
     user = GoogleDrive()
     user_email = user.get_UserEmail()
     print(user_email)
-    ID = user.upload_UpdateFile(RHMH_DB['id'],'RHMH_test.db',RHMH_DB['mime'])
-    print(ID)
+    user.download_File(RHMH_DB['id'],'RHMH.db')

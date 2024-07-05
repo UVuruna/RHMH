@@ -1,7 +1,10 @@
-from A_Variables import *
-from G_Viewer import GUI
-
-
+from A1_Variables import *
+from A2_Decorators import error_catcher
+from B1_GoogleDrive import GoogleDrive
+from B2_SQLite import Database,RHMH
+from B3_Media import Media
+from C1_DBMS import Buttons, DBMS
+from D4_Window import GUI, TopFrame, FormFrame, TableFrame
 
 root = Tk()
 style = tb.Style(theme=THEME)
@@ -23,18 +26,22 @@ style.configure('Treeview.Heading',font=font_label('normal'), padding=(0 , 2 , 0
 # Menja samo FONT SIZE za TABLE i DATAENTRY
 default_font = nametofont('TkDefaultFont')
 entry_font = nametofont('TkTextFont')
-default_font.configure(size=def_font[1])
-entry_font.configure(size=def_font[1])
+default_font.configure(size=F_SIZE)
+entry_font.configure(size=F_SIZE)
 
-'''
-GUI = error_catcher()(GUI)
-TitleFrame = error_catcher()(TitleFrame)
-FormFrame = error_catcher()(FormFrame)
-WindowFrame = error_catcher()(WindowFrame)
-DBMS = error_catcher()(DBMS)
-Buttons = error_catcher()(Buttons)
-Database = error_catcher()(Database)
-GoogleDrive = error_catcher()(GoogleDrive)
+#'''
+
+GoogleDrive = error_catcher(RHMH)(GoogleDrive)
+Database = error_catcher(RHMH)(Database)
+Media = error_catcher(RHMH)(Media)
+
+Buttons = error_catcher(RHMH)(Buttons)
+DBMS = error_catcher(RHMH)(DBMS)
+
+TopFrame = error_catcher(RHMH)(TopFrame)
+FormFrame = error_catcher(RHMH)(FormFrame)
+TableFrame = error_catcher(RHMH)(TableFrame)
+GUI = error_catcher(RHMH)(GUI)
 #'''
 
 app = GUI(root)

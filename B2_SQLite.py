@@ -1,26 +1,9 @@
-from A_Variables import *
-from B_Decorators import password,error_catcher,method_efficency
-from C_GoogleDrive import GoogleDrive
-
-class PasswordDialog(simpledialog.Dialog):
-    def __init__(self, parent, title):
-        self.password = None
-        super().__init__(parent, title)
-
-    def body(self, master):
-        self.password_entry = tb.Entry(master, show='*')
-        self.password_entry.grid(row=0, column=1, padx=10, pady=10)
-        return self.password_entry
-
-    def apply(self):
-        self.password = self.password_entry.get()
+from A1_Variables import *
+from B1_GoogleDrive import GoogleDrive
 
 class Database:
     def __init__(self,database) -> None:
         self.GD = GoogleDrive()
-        self.UserSession = {'User':EMAIL,'ProccessingTime':{},'TotalTime':{}}
-        self.Admin = False
-        self.GodMode = False
         self.database = database
 
         self.connection = None
@@ -30,32 +13,16 @@ class Database:
 
         self.lock = threading.Lock()
 
-        # KOLONE TABELA
-        self.pacijent = self.show_columns('pacijent')[1:]
-        self.slike = self.show_columns('slike')[2:-1]
-        self.mkb10 = self.show_columns('mkb10')[1:]
-        self.zaposleni = self.show_columns('zaposleni')[1:]      
+    def start_RHMH_db(self):
+        self.pacijent = self.show_columns('pacijent')
+        self.slike = self.show_columns('slike')[:-1]
+        self.mkb10 = self.show_columns('mkb10')
+        self.zaposleni = self.show_columns('zaposleni')     
         self.logs = self.show_columns('logs')[:-2]
-        self.session = self.show_columns('session')[1:]
+        self.session = self.show_columns('session')
 
         self.dg_kategorija = [i[0] for i in self.execute_selectquery('SELECT Kategorija from kategorija')]
         self.dr_funkcija = [i[0] for i in self.execute_selectquery('SELECT Funkcija from funkcija')]
-
-    def GodMode_Password(self,event,parent,notebook:tb.Notebook):
-        if not self.Admin:
-            dialog = PasswordDialog(parent, 'GodMode Unlocking...')
-            if dialog.password=='666':
-                self.Admin = True
-                notebook.select(3)
-            elif dialog.password==password():
-                self.Admin = True
-                self.GodMode = True
-        else:
-            txt = 'GodMode' if self.GodMode else 'Admin'
-            dialog = PasswordDialog(parent, f'{txt} Removing...')
-            if dialog.password=='33':
-                self.Admin = False
-                self.GodMode = False
 
     def connect(self):
         self.connection = sqlite3.connect(self.database)
@@ -397,6 +364,18 @@ class Database:
                 self.close_connection()
                 #'''
 
+    def get_distinct_mkb(self):
+        with self.lock:
+            try:
+                self.connect()
+                query = 'SELECT DISTINCT SUBSTR(mkb10.`MKB - šifra`,1,1) FROM dijagnoza JOIN mkb10 ON dijagnoza.id_dijagnoza = mkb10.id_dijagnoza'
+                self.LoggingQuery = self.format_sql(query)
+                self.cursor.execute(query)
+                result = self.cursor.fetchall()
+                return [i[0] for i in result]
+            finally:
+                self.close_connection()
+
     def Vaccum_DB(self):
         with self.lock:
             try:
@@ -405,6 +384,7 @@ class Database:
             finally:
                 self.close_connection()
 
+RHMH = Database('RHMH.db')
+
 if __name__=='__main__':
-    rhmh = Database('RHMH.db')
-    print(rhmh.get_patient_data(15))
+    pass

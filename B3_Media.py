@@ -1,4 +1,6 @@
-from A_Variables import *
+from A1_Variables import *
+from PIL import Image, ImageTk
+
 pillow_heif.register_heif_opener()
 
 class Media:
@@ -73,43 +75,34 @@ class Media:
         return mkb
 
     @staticmethod
-    def ProgressBar_DownloadingImages(parent:Frame, title:str, titletxt:list):
+    def ProgressBar_DownloadingImages(parent:Frame, title:str, titletxt:list, width:int):
         top = Toplevel(parent)
         top.title(f'{title}...')
         top.grid_columnconfigure(0, weight=1)
         top.resizable(False,False)
         top.attributes('-toolwindow', True)
-
+        
         tb.Label(top, text=f'{title} selected Images', anchor=CENTER, justify=CENTER, font=font_label()).grid(
-            row=0,column=0, columnspan=2, pady=24, sticky=NSEW)
+            row=0, column=0, columnspan=2, pady=24, sticky=NSEW)
 
-        canvas = tb.Canvas(top, height=330)
-        canvas.grid(row=1,column=0, sticky=NSEW)
-        scrollbar = tb.Scrollbar(top, orient=VERTICAL, command=canvas.yview)
-        scrollbar.grid(row=1,column=1,sticky=NS)
-        canvas.configure(yscrollcommand=scrollbar.set)
+        text_widget = tb.Text(top, wrap=NONE, height=10, width=width, font=font_entry)
+        text_widget.grid(row=1, column=0, sticky=NSEW)
 
-        frame = tb.Frame(canvas)
-        Labels = []
-        widest_label_width = 0
-        for i,txt in enumerate(titletxt):
-            lbl = tb.Label(frame, text=f'{i+1}.  {txt}', anchor=W, justify=LEFT, font=font_label('normal'))
-            lbl.grid(row=i+1, column=0, padx=12, pady=6, sticky=W)
-            Labels.append(lbl)
+        scrollbar = tb.Scrollbar(top, orient=VERTICAL, command=text_widget.yview)
+        scrollbar.grid(row=1, column=1, sticky=NS)
+        text_widget.configure(yscrollcommand=scrollbar.set)
 
-            lbl_width = lbl.winfo_reqwidth()
-            if lbl_width > widest_label_width:
-                widest_label_width = lbl_width
+        text_widget.tag_configure('success', foreground=ThemeColors['success'])
 
-        canvas_width = widest_label_width + 24
-        canvas.configure(width=canvas_width)
-        canvas.create_window((0, 0), window=frame, anchor=NW)
-        frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+        for i, txt in enumerate(titletxt):
+            text_widget.insert(END, f'{i+1}. {txt}\n')
+
+        text_widget.configure(state=DISABLED)
        
-        bar = tb.Floodgauge(top, maximum=100, mode='determinate', value=0, bootstyle='success', mask='Downloading... {}%', font=font_groups)
+        bar = tb.Floodgauge(top, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_groups())
         bar.grid(row=2, column=0, columnspan=2, padx=24, pady=24, sticky=EW)
 
-        return top,bar,Labels
+        return text_widget,bar
 
     @staticmethod
     def ImageReader_SettingUp(parent:Frame):
@@ -447,8 +440,8 @@ if __name__=='__main__':
     print('Device Name:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No CUDA Device')
 
     print('Start')
-    from E_SQLite import Database
-    from C_GoogleDrive import GoogleDrive
+    from B2_SQLite import Database
+    from B1_GoogleDrive import GoogleDrive
     db = Database('RHMH.db')
     gd = GoogleDrive()
     GoogleID = db.execute_selectquery(f'SELECT image_data FROM slike WHERE id_slike = 12')[0][0]

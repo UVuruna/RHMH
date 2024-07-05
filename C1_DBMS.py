@@ -1,20 +1,20 @@
-from A_Variables import *
-from B_Decorators import Singleton
-from C_GoogleDrive import GoogleDrive
-from E_SQLite import Database
-from D_Media import Media
+from A1_Variables import *
+from A2_Decorators import Singleton,PasswordDialog,money
+from B1_GoogleDrive import GoogleDrive
+from B2_SQLite import RHMH
+from B3_Media import Media
 
 class Buttons(Singleton):
     _initialized = False
     def __init__(self) -> None:
         if not self._initialized:
             Buttons._initialized=True
+
             self.ROOT:Tk = None
-            self.DB = Database('RHMH.db')
             self.GD = GoogleDrive()
             self.DBMS = DBMS()
-            self.LoggingQuery = self.DB.LoggingQuery
-            self.Buttons = {'Filter Patient':[]}
+
+            self.buttons = {'Filter Patient':[]}
             self.Slike_HideTable: Frame = None
 
             self.MessageBoxParent: Frame = None
@@ -28,13 +28,14 @@ class Buttons(Singleton):
             self.FormTitle = None
             self.PatientInfo = None
             self.Patient_FormVariables = {'pacijent':{},'dijagnoza':{},'operacija':{},'slike':{}}
-            self.Katalog_FormVariables = dict()
-            self.Logs_FormVariables = dict()
-            self.FilterOptions = dict()
-            self.MKB_validation_LIST = [i[0] for i in self.DB.execute_select('mkb10',*('MKB - šifra',))]
-            self.Zaposleni_validation_LIST = [i[0] for i in self.DB.execute_select('zaposleni',*('Zaposleni',))]
+            self.Katalog_FormVariables =    dict()
+            self.Logs_FormVariables =       dict()
+            self.Graph_FormVariables =      dict()
+            self.FilterOptions =            dict()
+            self.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
+            self.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
     
-    def is_DB_date(self,date_string): # Checks if it is DB Date Format
+    def is_DB_date(self,date_string): # Checks if it is RHMH Date Format
         try:
             datetime.strptime(str(date_string), '%Y-%m-%d')
             return True
@@ -71,7 +72,7 @@ class Buttons(Singleton):
         if not value:
             return
         if self.is_DB_date(value):
-            # From DB Date Format TO Form Date Format
+            # From RHMH Date Format TO Form Date Format
             value = datetime.strptime(str(value),'%Y-%m-%d').strftime('%d-%b-%Y')
         if isinstance(widget, StringVar):
             widget.set(value)
@@ -199,7 +200,7 @@ class Buttons(Singleton):
                 for col,widget in self.Patient_FormVariables[table].items():
                     value = self.get_widget_value(widget)
                     if value:
-                        if 'Datum' in col: # FROM Form Date Format TO DB Date Format
+                        if 'Datum' in col: # FROM Form Date Format TO RHMH Date Format
                             value = datetime.strptime(value, '%d-%b-%Y').strftime('%Y-%m-%d')
                             if col=='Datum Prijema':
                                 trenutna_godina = datetime.strptime(value, '%Y-%m-%d').year
@@ -208,7 +209,7 @@ class Buttons(Singleton):
                         insertDict[col] = value
                         reportDict[col] = value
                 insertDict['Starost'] = trenutna_godina-godiste
-                ID = self.DB.execute_Insert(table,**insertDict)
+                ID = RHMH.execute_Insert(table,**insertDict)
             elif table == 'dijagnoza':
                 for col,widget in self.Patient_FormVariables[table].items():
                     value = self.get_widget_value(widget)
@@ -218,9 +219,9 @@ class Buttons(Singleton):
                         for mkb in value:
                             insertDict.clear()
                             insertDict['id_pacijent'] = ID
-                            insertDict['id_dijagnoza'] = self.DB.execute_selectquery(f'SELECT id_dijagnoza FROM mkb10 WHERE `MKB - šifra` = "{mkb}"')[0][0]
-                            insertDict['id_kategorija'] = self.DB.execute_selectquery(f'SELECT id_kategorija FROM kategorija WHERE Kategorija = "{col}"')[0][0]
-                            self.DB.execute_Insert(table,**insertDict)
+                            insertDict['id_dijagnoza'] = RHMH.execute_selectquery(f'SELECT id_dijagnoza FROM mkb10 WHERE `MKB - šifra` = "{mkb}"')[0][0]
+                            insertDict['id_kategorija'] = RHMH.execute_selectquery(f'SELECT id_kategorija FROM kategorija WHERE Kategorija = "{col}"')[0][0]
+                            RHMH.execute_Insert(table,**insertDict)
                         reportDict[col] = value
             elif table=='operacija':
                 for col,widget in self.Patient_FormVariables[table].items():
@@ -235,9 +236,9 @@ class Buttons(Singleton):
                             names = [value]
                         for name in names:
                             insertDict['id_pacijent'] = ID
-                            insertDict['id_zaposleni'] = self.DB.execute_selectquery(f'SELECT id_zaposleni FROM zaposleni WHERE Zaposleni = "{name}"')[0][0]
-                            insertDict['id_funkcija'] = self.DB.execute_selectquery(f'SELECT id_funkcija FROM funkcija WHERE Funkcija = "{col}"')[0][0]
-                            self.DB.execute_Insert(table,**insertDict)
+                            insertDict['id_zaposleni'] = RHMH.execute_selectquery(f'SELECT id_zaposleni FROM zaposleni WHERE Zaposleni = "{name}"')[0][0]
+                            insertDict['id_funkcija'] = RHMH.execute_selectquery(f'SELECT id_funkcija FROM funkcija WHERE Funkcija = "{col}"')[0][0]
+                            RHMH.execute_Insert(table,**insertDict)
                         reportDict[col] = value
         report = ''
         ime = ''
@@ -279,13 +280,14 @@ class Buttons(Singleton):
         file_path = open_file_dialog()
         print(file_path)
         self.refresh_tables(['Slike']) # plus vratiti panel sa tabelom i slikom
+        print(UserSession)
 
     def Add_MKB(self):
         mkb = self.get_widget_value(self.Katalog_FormVariables['MKB - šifra'])
         opis = self.get_widget_value(self.Katalog_FormVariables['Opis Dijagnoze'])
 
         if mkb and opis:
-            self.DB.execute_Insert('mkb10',**{'MKB - šifra':mkb,'Opis Dijagnoze':opis})
+            RHMH.execute_Insert('mkb10',**{'MKB - šifra':mkb,'Opis Dijagnoze':opis})
             report = ''
             for col,val in {'MKB - šifra':mkb,'Opis Dijagnoze':opis}.items():
                 report += f' - {col}:\n{val}\n\n'
@@ -302,7 +304,7 @@ class Buttons(Singleton):
     def Add_Zaposleni(self):
         name = self.get_widget_value(self.Katalog_FormVariables['Zaposleni'])
         if name:
-            self.DB.execute_Insert('zaposleni',**{'Zaposleni':name})
+            RHMH.execute_Insert('zaposleni',**{'Zaposleni':name})
             report = f' - Ime:\n{name}'
 
             Messagebox.show_info(parent=self.MessageBoxParent,
@@ -321,7 +323,7 @@ class Buttons(Singleton):
                     title='Updating failed!', message=report)
             return
         if self.PatientFocus_ID:    
-            patient = self.DB.get_patient_data(self.PatientFocus_ID)
+            patient = RHMH.get_patient_data(self.PatientFocus_ID)
             update_Dict = {}
             insert_Dict = {}
             delete_Dict = {}
@@ -330,7 +332,7 @@ class Buttons(Singleton):
 
             PATIENT = f'{patient['Ime']} {patient['Prezime']}'
             try:
-                # FROM DB Date Formate TO Patient Report Date Format
+                # FROM RHMH Date Formate TO Patient Report Date Format
                 datumprijema = f' ({datetime.strptime(str(patient['Datum Prijema']),'%Y-%m-%d').strftime('%d-%b-%y')})'
                 PATIENT += datumprijema
             except KeyError:
@@ -346,7 +348,7 @@ class Buttons(Singleton):
                     try:
                         OLD = str(patient[col])
                         if table=='pacijent' and 'Datum' in col:
-                            # FROM DB Date Format TO Form Date Format
+                            # FROM RHMH Date Format TO Form Date Format
                             OLD = datetime.strptime(OLD,'%Y-%m-%d').strftime('%d-%b-%Y')
                     except KeyError:
                         OLD = ''
@@ -369,7 +371,7 @@ class Buttons(Singleton):
                                 insert_Dict[table][col] = INSERT
                         else: # Table pacijent
                             if 'Datum' in col:
-                                # FROM Form Date Format TO DB Date Format
+                                # FROM Form Date Format TO RHMH Date Format
                                 NEW = datetime.strptime(NEW,'%d-%b-%Y').strftime('%Y-%m-%d')
                             update_Dict[col] = NEW
 
@@ -396,39 +398,39 @@ class Buttons(Singleton):
         try:
             if confirmation=='Yes':
                 if update_Dict:
-                    self.DB.execute_Update('pacijent',('id_pacijent',self.PatientFocus_ID),**update_Dict)
+                    RHMH.execute_Update('pacijent',('id_pacijent',self.PatientFocus_ID),**update_Dict)
                 for table,insertdict in insert_Dict.items():
                     if not insertdict:
                         continue
                     for column,setvalues in insertdict.items():
                         if table == 'dijagnoza':
-                            idkategorija = self.DB.execute_selectquery(f'SELECT id_kategorija FROM kategorija WHERE Kategorija = "{column}"')[0][0]
+                            idkategorija = RHMH.execute_selectquery(f'SELECT id_kategorija FROM kategorija WHERE Kategorija = "{column}"')[0][0]
                             for value in setvalues: 
-                                iddijagnoza = self.DB.execute_selectquery(f'SELECT id_dijagnoza from mkb10 WHERE `MKB - šifra` = "{value}"')[0][0]
+                                iddijagnoza = RHMH.execute_selectquery(f'SELECT id_dijagnoza from mkb10 WHERE `MKB - šifra` = "{value}"')[0][0]
                                 inserting = {'id_dijagnoza': iddijagnoza, 'id_pacijent': self.PatientFocus_ID, 'id_kategorija': idkategorija }
-                                self.DB.execute_Insert('dijagnoza',**inserting)
+                                RHMH.execute_Insert('dijagnoza',**inserting)
                         elif table == 'operacija':
-                            idfunkcija = self.DB.execute_selectquery(f'SELECT id_funkcija FROM funkcija WHERE Funkcija = "{column}"')[0][0]
+                            idfunkcija = RHMH.execute_selectquery(f'SELECT id_funkcija FROM funkcija WHERE Funkcija = "{column}"')[0][0]
                             for value in setvalues:
-                                idzaposleni = self.DB.execute_selectquery(f'SELECT id_zaposleni FROM zaposleni WHERE Zaposleni = "{value}"')[0][0]
+                                idzaposleni = RHMH.execute_selectquery(f'SELECT id_zaposleni FROM zaposleni WHERE Zaposleni = "{value}"')[0][0]
                                 inserting = {'id_zaposleni': idzaposleni, 'id_pacijent': self.PatientFocus_ID, 'id_funkcija': idfunkcija }
-                                self.DB.execute_Insert('operacija',**inserting)
+                                RHMH.execute_Insert('operacija',**inserting)
                 for table,deletedict in delete_Dict.items():
                     if not deletedict:
                         continue
                     for column,setvalues in deletedict.items():
                         if table == 'dijagnoza':
-                            idkategorija = self.DB.execute_selectquery(f'SELECT id_kategorija FROM kategorija WHERE Kategorija = "{column}"')[0][0]
+                            idkategorija = RHMH.execute_selectquery(f'SELECT id_kategorija FROM kategorija WHERE Kategorija = "{column}"')[0][0]
                             for value in setvalues:
-                                iddijagnoza = self.DB.execute_selectquery(f'SELECT id_dijagnoza FROM mkb10 WHERE `MKB - šifra` = "{value}"')[0][0]
+                                iddijagnoza = RHMH.execute_selectquery(f'SELECT id_dijagnoza FROM mkb10 WHERE `MKB - šifra` = "{value}"')[0][0]
                                 deleting = [('id_dijagnoza', iddijagnoza), ('id_pacijent', self.PatientFocus_ID), ('id_kategorija', idkategorija)]
-                                self.DB.execute_Delete('dijagnoza',deleting)
+                                RHMH.execute_Delete('dijagnoza',deleting)
                         elif table == 'operacija':
-                            idfunkcija = self.DB.execute_selectquery(f'SELECT id_funkcija FROM funkcija WHERE Funkcija = "{column}"')[0][0]
+                            idfunkcija = RHMH.execute_selectquery(f'SELECT id_funkcija FROM funkcija WHERE Funkcija = "{column}"')[0][0]
                             for value in setvalues:
-                                idzaposleni = self.DB.execute_selectquery(f'SELECT id_zaposleni FROM zaposleni WHERE Zaposleni = "{value}"')[0][0]
+                                idzaposleni = RHMH.execute_selectquery(f'SELECT id_zaposleni FROM zaposleni WHERE Zaposleni = "{value}"')[0][0]
                                 deleting = [('id_zaposleni', idzaposleni), ('id_pacijent', self.PatientFocus_ID), ('id_funkcija', idfunkcija)]
-                                self.DB.execute_Delete('operacija',deleting)
+                                RHMH.execute_Delete('operacija',deleting)
 
                 Messagebox.show_info(parent=self.MessageBoxParent,
                         title=f'Updating successfull', message=PATIENT)
@@ -462,12 +464,12 @@ class Buttons(Singleton):
                         report += f' - Opis (old):\n{selected_opis}\n'
 
                     if report:
-                        ID = self.DB.execute_selectquery(f'SELECT id_dijagnoza from mkb10 WHERE `MKB - šifra` = "{selected_mkb}"')[0][0]
+                        ID = RHMH.execute_selectquery(f'SELECT id_dijagnoza from mkb10 WHERE `MKB - šifra` = "{selected_mkb}"')[0][0]
                         reportquestion = 'Do you want to process update?\n\n'
                         confirmation = Messagebox.yesno(parent=self.MessageBoxParent,
                                 title=f'MKB Updating...', message=reportquestion+report[:-1], alert=True)
                         if confirmation == 'Yes':
-                            self.DB.execute_Update(table='mkb10', id=('id_dijagnoza',ID), **{'MKB - šifra':mkb,'Opis Dijagnoze':opis})
+                            RHMH.execute_Update(table='mkb10', id=('id_dijagnoza',ID), **{'MKB - šifra':mkb,'Opis Dijagnoze':opis})
 
                             Messagebox.show_info(parent=self.MessageBoxParent,
                                     title=f'Updating successfull', message=report[:-1])
@@ -491,14 +493,14 @@ class Buttons(Singleton):
             if selected_name:
                 if name:
                     if name != selected_name:
-                        ID = self.DB.execute_selectquery(f'SELECT id_zaposleni from zaposleni WHERE Zaposleni = "{selected_name}"')[0][0]
+                        ID = RHMH.execute_selectquery(f'SELECT id_zaposleni from zaposleni WHERE Zaposleni = "{selected_name}"')[0][0]
                         reportquestion = 'Do you want to process update?\n\n'
                         report = f' - Ime (new):\n{name}\n'
                         report += f'\n - Ime (old):\n{selected_name}\n'
                         confirmation = Messagebox.yesno(parent=self.MessageBoxParent,
                                 title=f'Employee Updating...', message=reportquestion+report[:-1], alert=True)
                         if confirmation == 'Yes':
-                            self.DB.execute_Update(table='zaposleni', id=('id_zaposleni',ID), **{'Zaposleni':name})
+                            RHMH.execute_Update(table='zaposleni', id=('id_zaposleni',ID), **{'Zaposleni':name})
 
                             Messagebox.show_info(parent=self.MessageBoxParent,
                                     title=f'Updating successfull', message=report[:-1])
@@ -520,8 +522,8 @@ class Buttons(Singleton):
         confirm = Messagebox.yesno(parent=self.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete\n{patient}?', alert=True)
         if confirm=='Yes':
-            patientdict = self.DB.get_patient_data(self.PatientFocus_ID)
-            self.DB.execute_Delete('pacijent',[('id_pacijent',self.PatientFocus_ID)])
+            patientdict = RHMH.get_patient_data(self.PatientFocus_ID)
+            RHMH.execute_Delete('pacijent',[('id_pacijent',self.PatientFocus_ID)])
             self.Clear_Form()
 
             Messagebox.show_info(parent=self.MessageBoxParent,
@@ -537,14 +539,15 @@ class Buttons(Singleton):
             self.refresh_tables(table_names=['Pacijenti','Slike'])
     
     def Delete_Image(self):
-        selected_image:list = self.DBMS.Table_Slike.item(self.DBMS.Table_Slike.focus())['values'][1:5]
-        ID,PatientName = selected_image[0].split('_')
-        selected_image_description = f'{PatientName} - {selected_image[1]} : ({selected_image[2].upper()} - {selected_image[3]})'
+        selected_image:list = self.DBMS.Table_Slike.item(self.DBMS.Table_Slike.focus())['values'][1:6]
+        ID = selected_image[0]
+        PatientName = selected_image[2]
+        selected_image_description = f'{ID}: {PatientName} - {selected_image[3]} : ({selected_image[4]} - {selected_image[5]})'
         confirm = Messagebox.yesno(parent=self.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete\n{selected_image_description}?', alert=True)
         if confirm == 'Yes':
-            GoogleID = self.DB.execute_selectquery(f'SELECT image_date from slike WHERE id_slike = {ID}')[0][0]
-            self.DB.execute_Delete('slike',[('id_slike',ID)])
+            GoogleID = RHMH.execute_selectquery(f'SELECT image_date from slike WHERE id_slike = {ID}')[0][0]
+            RHMH.execute_Delete('slike',[('id_slike',ID)])
             print('DELETING ',GoogleID)
             #self.GD.delete_file(GoogleID)
             Messagebox.show_info(parent=self.MessageBoxParent,
@@ -556,8 +559,8 @@ class Buttons(Singleton):
         confirm = Messagebox.yesno(parent=self.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete {mkb}?', alert=True)
         if confirm=='Yes':
-            ID = self.DB.execute_selectquery(f'SELECT id_dijagnoza from mkb10 WHERE `MKB - šifra` = "{mkb}"')[0][0]
-            self.DB.execute_Delete('mkb10',[('id_dijagnoza',ID)])
+            ID = RHMH.execute_selectquery(f'SELECT id_dijagnoza from mkb10 WHERE `MKB - šifra` = "{mkb}"')[0][0]
+            RHMH.execute_Delete('mkb10',[('id_dijagnoza',ID)])
 
             Messagebox.show_info(parent=self.MessageBoxParent,
                     title=f'Deleting successfull', message=f'Deleted {mkb}')
@@ -572,8 +575,8 @@ class Buttons(Singleton):
         confirm = Messagebox.yesno(parent=self.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete {name}?', alert=True)
         if confirm=='Yes':
-            ID = self.DB.execute_selectquery(f'SELECT id_zaposleni from zaposleni WHERE Zaposleni = "{name}"')[0][0]
-            self.DB.execute_Delete('zaposleni',[('id_zaposleni',ID)])
+            ID = RHMH.execute_selectquery(f'SELECT id_zaposleni from zaposleni WHERE Zaposleni = "{name}"')[0][0]
+            RHMH.execute_Delete('zaposleni',[('id_zaposleni',ID)])
             Messagebox.show_info(parent=self.MessageBoxParent,
                     title=f'Deleting successfull', message=f'Deleted {name}')
             
@@ -589,35 +592,53 @@ class Buttons(Singleton):
         imagesID = []
         imagesName = []
         imageSize = []
-        for image in images:
-            ID = self.DBMS.Table_Slike.item(image)['values'][1].split('_')[0]
-            imageName,size,GoogleID = self.DB.execute_selectquery(f'SELECT Naziv,Veličina,image_data FROM slike WHERE id_slike = {ID}')[0]
-            imagesID.append(GoogleID)
-            imageNameParts = imageName.split('.')
-            imageSize.append(size)
-            imagesName.append(f'{imageNameParts[0]} - {size} MB.{imageNameParts[1]}')
+        width = 0
 
+        def get_db_data():
+            nonlocal width
+            for image in images:
+                ID = self.DBMS.Table_Slike.item(image)['values'][1]
+                imageName,size,GoogleID = RHMH.execute_selectquery(f'SELECT Naziv,Veličina,image_data FROM slike WHERE id_slike = {ID}')[0]
+                imagesID.append(GoogleID)
+                imageNameParts = imageName.split('.')
+                imageSize.append(size)
+                txt = f'{imageNameParts[0]} - {size} MB.{imageNameParts[1]}'
+                if len(txt) > width:
+                    width = len(txt)
+                imagesName.append(txt)
+
+        thread_db = threading.Thread(target=get_db_data)
+        thread_db.start()
         save_directory = filedialog.askdirectory(title='Izaberite direktorijum za čuvanje slika')
-    
+        thread_db.join()
         if save_directory:
-            topwidget,progressbar,txtlabels = Media.ProgressBar_DownloadingImages(self.MessageBoxParent,'Downloading',imagesName)
+            text_widget,floodgauge = Media.ProgressBar_DownloadingImages(self.MessageBoxParent,'Downloading',imagesName,width)
             def download():
+                progress = 0
+                totalMB = sum(imageSize)
+                if not os.path.exists(save_directory):
+                    os.makedirs(save_directory)
                 for i,(GoogleID,imageName) in enumerate(zip(imagesID,imagesName)):
+                    if i>5:
+                        text_widget.yview_scroll(1,'units')
                     destination_path = os.path.join(save_directory, imageName)
                     media_data = self.GD.download_BLOB(GoogleID)
-                    if not os.path.exists(save_directory):
-                        os.makedirs(save_directory)
-                    video_file = destination_path
-                    with open(video_file, 'wb') as f:
+                    media_file = destination_path
+                    with open(media_file, 'wb') as f:
                         f.write(media_data)
                     try:
-                        progressbar['value'] += 100*(imageSize[i]/sum(imageSize))
-                        txtlabels[i].configure(bootstyle='success')
+                        progress += (imageSize[i]/totalMB) * 100
+                        if i!=(len(imageSize)-1):
+                            floodgauge['mask'] = f'Downloading... {progress:.1f}%'
+                        else:
+                            floodgauge['mask'] = 'Download completed'
+                            floodgauge.configure(bootstyle='success')
+                        floodgauge['value'] = progress
+                        
+                        text_widget.tag_add('success', f'{i+1}.0', f'{i+1}.end')
                         self.MessageBoxParent.update_idletasks()
-                    except:
+                    except Exception:
                         return # Ovo je da se prekine download na close 
-                else:
-                    topwidget.after(BUTTON_LOCK,topwidget.destroy)
             thread = threading.Thread(target=download)
             thread.start()
 
@@ -649,10 +670,10 @@ class Buttons(Singleton):
         if BLOB is False:
             if ID is False:
                 try:
-                    ID = self.DBMS.Table_Slike.item(self.DBMS.Table_Slike.focus())['values'][1].split('_')[0]
+                    ID = self.DBMS.Table_Slike.item(self.DBMS.Table_Slike.focus())['values'][1]
                 except IndexError:
                     return
-            media_type,google_ID = self.DB.execute_selectquery(f'SELECT Format,image_data from slike WHERE id_slike={ID}')[0]
+            media_type,google_ID = RHMH.execute_selectquery(f'SELECT Format,image_data from slike WHERE id_slike={ID}')[0]
 
         events = ['<Button-1>','<Double-1>','<MouseWheel>','<Button-4>','<Button-5>','<ButtonPress-1','<B1-Motion>']
         for event in events:
@@ -681,16 +702,16 @@ class Buttons(Singleton):
 
     def Show_Image_execute(self,ID=None,MediaType=None,blob_data=False):
         if blob_data is False:
-            result_queue_getBLOB = queue.Queue()
+            queue_get_blob = queue.Queue()
             def get_image_fromGD(GoogleID,queue):
                 image_blob = self.GD.download_BLOB(GoogleID)
                 queue.put(image_blob)
-            thread = threading.Thread(target=get_image_fromGD,args=(ID,result_queue_getBLOB))
+            thread = threading.Thread(target=get_image_fromGD,args=(ID,queue_get_blob))
             thread.start()
             
             def check_queue():
                 try:
-                    Media.Blob_Data = result_queue_getBLOB.get_nowait()
+                    Media.Blob_Data = queue_get_blob.get_nowait()
                     showing_media()
                 except queue.Empty:
                     self.ROOT.after(50,check_queue)
@@ -763,13 +784,13 @@ class Buttons(Singleton):
                     title=f'Fill From Image', message='No image selected!')
             return
         if 'Operaciona' in slika[1]:
-            GoogleID = self.DB.execute_selectquery(f'SELECT image_data FROM slike WHERE id_slike = {slika[0]}')[0][0]
+            GoogleID = RHMH.execute_selectquery(f'SELECT image_data FROM slike WHERE id_slike = {slika[0]}')[0][0]
 
-            result_queue_getBLOB = queue.Queue()
+            queue_get_blob = queue.Queue()
             def get_image_fromGD(GoogleID,queue):
                 image_blob = self.GD.download_BLOB(GoogleID)
                 queue.put(image_blob)
-            thread = threading.Thread(target=get_image_fromGD,args=(GoogleID,result_queue_getBLOB))
+            thread = threading.Thread(target=get_image_fromGD,args=(GoogleID,queue_get_blob))
             thread.start()
 
             response = Media.ImageReader_SettingUp(self.MessageBoxParent)
@@ -777,9 +798,9 @@ class Buttons(Singleton):
                 return
 
             thread.join()
-            image_blob = result_queue_getBLOB.get()
+            image_blob = queue_get_blob.get()
 
-            result_queue_imageAnalyze = queue.Queue()
+            queue_analyzed_data = queue.Queue()
             def execute_fullscreen():
                 self.Show_Image_FullScreen(BLOB=image_blob)
             def image_reader_with_queue(image, queue):
@@ -789,9 +810,9 @@ class Buttons(Singleton):
             if firsttry is True:
                 thread1 = threading.Thread(target=execute_fullscreen)
                 thread1.start()
-            thread2 = threading.Thread(target=image_reader_with_queue, args=(image_blob,result_queue_imageAnalyze))
+            thread2 = threading.Thread(target=image_reader_with_queue, args=(image_blob,queue_analyzed_data))
             thread2.start()
-            self.Image_Read(result_queue_imageAnalyze)
+            self.Image_Read(queue_analyzed_data)
         else:
             report = 'Image description ("Opis")\nhave to be "Operaciona Lista" or "Otupusna lista"'
             Messagebox.show_error(parent=self.MessageBoxParent,
@@ -870,19 +891,20 @@ class Buttons(Singleton):
         elif value.strip() and not (value.strip() in self.Zaposleni_validation_LIST):
             self.Valid_Alternative = False
 
-            
-
 class DBMS(Singleton):
     _initialized = False
     def __init__(self) -> None:
         if not self._initialized:
             DBMS._initialized = True
-            self.BUTT = Buttons()
-            self.GD = GoogleDrive()
-            self.DB = self.BUTT.DB
-            self.LoggingQuery = self.DB.LoggingQuery
 
-            self.PatientTable_IDs = list()
+            self.Admin = False
+            self.GodMode = False
+            self.FreeQuery_Frame:   Frame = None
+            self.FreeQuery:         StringVar = None
+
+            self.GD = GoogleDrive()
+            self.BUTT = Buttons()
+
             self.NoteBook:          tb.Notebook = None
             self.Table_Pacijenti:   tb.ttk.Treeview = None
             self.Table_Slike:       tb.ttk.Treeview = None
@@ -890,32 +912,105 @@ class DBMS(Singleton):
             self.Table_Zaposleni:   tb.ttk.Treeview = None
             self.Table_Logs:        tb.ttk.Treeview = None
             self.Table_Session:     tb.ttk.Treeview = None
+            
+            self.Graph_Frame:       Frame = None
+            self.About_Tab:         Frame = None
             self.Settings_Tab:      Frame = None
             
-            self.TablePacijenti_Columns = tuple(MainTablePacijenti.keys())
-            self.Pacijenti_ColumnVars = {column: IntVar() for column in self.TablePacijenti_Columns}
+            self.TablePacijenti_Columns =   tuple(MainTablePacijenti.keys())
+            self.Pacijenti_ColumnVars =     {column: IntVar() for column in self.TablePacijenti_Columns}
 
-            self.TableMKB_Columns =     tuple(['ID']+self.DB.mkb10)
-            self.MKB_ColumnVars = {column: IntVar() for column in self.TableMKB_Columns}
-
-            self.TableZaposleni_Columns =     tuple(['ID']+self.DB.zaposleni)
-            self.Zaposleni_ColumnVars = {column: IntVar() for column in self.TableZaposleni_Columns}
-
-            self.TableSlike_Columns =   tuple(['ID']+self.DB.slike)
-            self.Slike_ColumnVars = {column: IntVar() for column in self.TableSlike_Columns}
-
-            self.TableLogs_Columns =    tuple(['ID']+self.DB.logs)
-            self.Logs_ColumnVars = {column: IntVar() for column in self.TableLogs_Columns}
-
-            self.TableSession_Columns = tuple(['ID']+self.DB.session)
-            self.Session_ColumnVars = {column: IntVar() for column in self.TableSession_Columns}
-
+            self.TableSlike_Columns =       tuple(['ID']+RHMH.slike)
+            self.TableMKB_Columns =         tuple(['ID']+RHMH.mkb10)
+            self.TableZaposleni_Columns =   tuple(['ID']+RHMH.zaposleni)
+            self.TableLogs_Columns =        tuple(['ID']+RHMH.logs)
+            self.TableSession_Columns =     tuple(['ID']+RHMH.session)
 
             self.SearchBar: Frame = None
             self.SearchBar_widgets = dict()
             self.SearchBar_number = 1
             self.SearchAdd_Button: tb.Label = None
             self.SearchRemove_Button: tb.Label = None
+
+    def GodMode_Password(self,event):
+        dialog = PasswordDialog(self.BUTT.MessageBoxParent, 'Privileges Unlocking...')
+        if dialog.password=='63636':
+            self.Admin = True
+            info = 'New tabs:\n\t-Logs\n\t-Session'
+            title = 'Admin unlocked'
+        elif dialog.password=='C12-Si28-C13-Si28-C12':
+            self.Admin = True
+            self.GodMode = True
+            self.FreeQuery_Frame.grid()
+            info = 'New tabs:\n\t-Logs\n\t-Session\n\n'
+            info += 'New button:\n\t-Free Query'
+            info += f'\n\n{money()}'
+            title = 'God Mode unlocked'
+        else:
+            return
+        self.BUTT.ROOT.after(WAIT, lambda: self.NoteBook.select(5))
+        self.BUTT.ROOT.after(WAIT*2, lambda: self.NoteBook.select(4))
+        Messagebox.show_info(parent=self.BUTT.MessageBoxParent, message=info, title=title,)
+
+    def FreeQuery_Execute(self):
+        query = self.FreeQuery.get()
+        if not query:
+            return
+        report = RHMH.format_sql(query)
+        response = Messagebox.yesno(parent=self.BUTT.MessageBoxParent, title='Free Query executing...', message=report)
+        if response == 'Yes':
+            RHMH.connect()
+            RHMH.cursor.execute(query)
+            RHMH.connection.commit()
+            RHMH.close_connection()
+
+    def export_selection(self):
+        focus = self.NoteBook.index(self.NoteBook.select())
+        TAB = self.NoteBook.tab(focus,'text')
+
+        if TAB == 'Pacijenti':
+            table = self.Table_Pacijenti.selection_get()
+            print(table)
+
+        elif TAB == 'Slike':
+            table = self.Table_Slike.selection_get()
+            print(table)
+
+        elif TAB == 'Katalog':
+            table = self.Table_MKB.selection_get()
+            print(table)
+   
+        elif TAB == 'Logs':
+            table = self.Table_Logs.selection_get()
+            print(table)
+        
+        elif TAB == 'Session':
+            table = self.Table_Session.selection_get()
+            print(table)
+
+    def export_table(self):
+        focus = self.NoteBook.index(self.NoteBook.select())
+        TAB = self.NoteBook.tab(focus,'text')
+
+        if TAB == 'Pacijenti':
+            table = self.Table_Pacijenti
+            print(table)
+
+        elif TAB == 'Slike':
+            table = self.Table_Slike
+            print(table)
+
+        elif TAB == 'Katalog':
+            table = self.Table_MKB
+            print(table)
+   
+        elif TAB == 'Logs':
+            table = self.Table_Logs
+            print(table)
+        
+        elif TAB == 'Session':
+            table = self.Table_Session
+            print(table)
 
     def search_bar_remove(self,event=None):
         to_remove = [k for k in self.SearchBar_widgets.keys() if int(k[-1]) == self.SearchBar_number]
@@ -938,7 +1033,9 @@ class DBMS(Singleton):
         if self.SearchBar_number==max_searchby:
             self.SearchAdd_Button.grid_remove()
 
-    def selected_columns(self, columns, table:tb.ttk.Treeview):
+    def selected_columns(self, columns, table:tb.ttk.Treeview, columnvar:bool):
+
+        Columns = [column for column, var in columns if var.get()==1] if columnvar else columns
 
         def sort_treeview(column, reverse):
             def convert_date(date_str):
@@ -966,11 +1063,10 @@ class DBMS(Singleton):
                 table.set(child, 'ID', index+1)
             table.heading(column, command=lambda col=column: sort_treeview(col, not reverse))
 
-        Columns = [column for column, var in columns if var.get()==1]
         table.configure(columns=Columns)
         for i,col in enumerate(Columns):
             TXT = f'\n{col}'
-            if col in self.DB.pacijent+self.DB.dg_kategorija+self.DB.dr_funkcija:
+            if col in RHMH.pacijent+RHMH.dg_kategorija+RHMH.dr_funkcija:
                 FIX = col.split()
                 if len(FIX)==2:
                     TXT = '\n'.join(FIX)
@@ -979,15 +1075,20 @@ class DBMS(Singleton):
                         TXT = '\n'.join(FIX[:-1])
                     else:
                         TXT = f'{FIX[0]} {FIX[1]}\n{FIX[2]}'
-            elif col in self.DB.session:
+            elif col in RHMH.session:
                 if 'efficency' in col:
                     TXT = col.replace(' ','\n')
             elif table==self.Table_Zaposleni and col=='Zaposleni':
                 TXT = f'\nIme'
+            elif col=='Naziv':
+                TXT = f'\nPacijent'
 
             table.heading(col, text=TXT, anchor=W, command=lambda c=col: sort_treeview(c, False))
             table.column(col, stretch=False)
-            if i==0: # ID COLUMN
+            if 'id_' in col:
+                print(col)
+                table.column(col, width=0)
+            elif i==0: # counting column
                 table.column(col, width=int(F_SIZE*4), minwidth=F_SIZE*2)
             elif col in ['Pol','Godište','Starost','Veličina', 'width', 'height', 'pixels']:
                 table.column(col, width=int(F_SIZE*7), minwidth=F_SIZE*3, anchor=E)
@@ -1033,15 +1134,135 @@ class DBMS(Singleton):
                 v.grid() if k==f'like_{n}' or ('search' in k and k[-1]==str(n)) \
                     else v.grid_remove() if k[-1]==str(n) else None
 
+    def Graph_afterchoice(self):
+        show = ('bars','pie')
+        hide = ()
+        if self.BUTT.Graph_FormVariables['X2-1'][1].get():
+            show = ('bars','stacked')
+            hide = ('color')
+        for k,v in self.BUTT.Graph_FormVariables['afterchoice'].items():
+            if k=='radio':
+                for txt,widget in v['widgets'].items():
+                    widget:tb.Radiobutton
+                    if txt in show:
+                        widget.grid()
+                    else:
+                        widget.grid_remove()
+                
+            elif not k in hide:
+                v[0].grid()
+            else:
+                v[0].grid_forget()
+
+    def Graph_Options(self,event,option:str):
+        widget:tb.Combobox = event.widget
+        execute_button:ctk.CTkButton = self.BUTT.buttons['SHOW Graph']
+        add_button:tb.Label = self.BUTT.Graph_FormVariables['Add']
+        choice = widget.get()
+        Values = []
+        
+        def removing_widgets(widgets_to_remove):
+            widget:tb.Combobox
+            stringvar:StringVar
+            print(widgets_to_remove)
+            for widgetname in widgets_to_remove:
+                widget,stringvar = self.BUTT.Graph_FormVariables[widgetname]
+                if widget.winfo_ismapped():
+                    widget.grid_remove()
+                stringvar.set('')
+            execute_button.configure(state=DISABLED)  
+
+        if option == 'Y':
+            Values.append(graph_Xoptions[:])
+            if choice != 'Broj Pacijenata':
+                for val in ['Dan u Sedmici' , 'Dan']:
+                    Values[0].remove(val)
+            Next_Names = ['X1-1']
+            
+        elif option in ['X1-1','X2-1']:
+            Next_Names = [option]
+            if choice == 'Starost':
+                Next_Names = [option.replace('-1','-2')]
+                Values.append([str(i) for i in range(5,31,5)])
+            elif choice == 'MKB Pojedinačno':
+                check = True
+                if option == 'X2-1':
+                    first_stringvars:StringVar = self.BUTT.Graph_FormVariables['X1-1'][1]
+                    check = not (first_stringvars.get() in ['Trauma', 'MKB Grupe','MKB Pojedinačno'])
+                if check:
+                    Next_Names = [option.replace('-1','-2')]
+                    Values.append(RHMH.get_distinct_mkb())
+                    Next_Names.append(option.replace('-1','-3'))
+                    Values.append(RHMH.dg_kategorija)
+                else:
+                    Next_Names = [option.replace('-1','-3')]
+                    Values.append(RHMH.get_distinct_mkb())
+            elif choice in ['MKB Grupe', 'Trauma']:
+                check = True
+                if option == 'X2-1':
+                    first_stringvars:StringVar = self.BUTT.Graph_FormVariables['X1-1'][1]
+                    check = not (first_stringvars.get() in ['Trauma', 'MKB Grupe','MKB Pojedinačno'])
+                if check:
+                    Next_Names = [option.replace('-1','-2')]
+                    Values.append(RHMH.dg_kategorija)
+            elif choice == 'Zaposleni':
+                Next_Names = [option.replace('-1','-2')]
+                Values.append(RHMH.dr_funkcija)
+            else:
+                self.Graph_afterchoice()
+                add_button.grid()
+
+        elif option in ['X1-2','X2-2']:
+            combo3:tb.Combobox = self.BUTT.Graph_FormVariables['X1-3'][0]
+            if combo3.winfo_ismapped():
+                if combo3.get():
+                    self.Graph_afterchoice()
+                    if int(option[1])==1:
+                        add_button.grid()
+            else:
+                self.Graph_afterchoice()
+                if int(option[1])==1:
+                        add_button.grid()
+            return
+        elif option in ['X1-3','X2-3']:
+            combo2:tb.Combobox = self.BUTT.Graph_FormVariables['X1-2'][1]
+            if combo2.get():
+                self.Graph_afterchoice()
+                if int(option[1])==1:
+                        add_button.grid()
+            return
+
+        print(Next_Names)
+        widgetnames = ['Y','X1-1','X1-2','X1-3','X2-1','X2-2','X2-3']
+        removing_widgets(widgetnames[widgetnames.index(Next_Names[-1])+1:])
+        if not Values:
+            return
+        for name,value in zip(Next_Names,Values):
+            next_widget:tb.Combobox
+            stringvar:StringVar
+            next_widget,stringvar = self.BUTT.Graph_FormVariables[name]
+
+            width = len(max(value, key=len))
+            width = width-5 if width>20 else 3 if width<3 else width-2
+            next_widget.configure(values=value, width=width)
+            stringvar.set('')
+            if not next_widget.winfo_ismapped():
+                next_widget.grid()
+
+    def Show_Graph(self):
+        print('showing graph')
+        for k,v in self.BUTT.Graph_FormVariables.items():
+            print(f'{k}: {v.get()}')
+        print(self.Graph_Frame)
+
     def fill_TablePacijenti(self,table):
         for i, row in enumerate(table):
-            # FROM DB Date Format TO Table Date Format
+            # FROM RHMH Date Format TO Table Date Format
             formatted_row = [i+1] + [datetime.strptime(cell,'%Y-%m-%d').strftime('%d-%b-%y') if self.BUTT.is_DB_date(cell) \
                                         else ' , '.join(cell.split(',')) if isinstance(cell,str) and ',' in cell \
                                             else '' if str(cell)=='None' \
-                                                else cell for cell in row[1:]]
+                                                else cell for cell in row]
             self.Table_Pacijenti.insert('', END, values=formatted_row)
-            self.PatientTable_IDs.append(row[0])
 
     def fill_Tables_Other(self,view,table):
         for i, row in enumerate(view):
@@ -1050,25 +1271,26 @@ class DBMS(Singleton):
 
     def fill_TableSlike(self,table,condition=False):
         for i, row in enumerate(table):
+            # ovo je filter sta se nalazi u patient tabeli
             if condition is False or row[0] in condition:
                 formatted_row = [i+1] + [f'{cell:.2f} MB' if isinstance(cell,float) \
-                                            else f'{cell/10**6:.2f} MP' if j==6 \
-                                                else '_'.join(cell.split('_')[:2]) if j==0\
-                                                    else cell for j,cell in enumerate(row[1:])]
+                                            else f'{cell/10**6:.2f} MP' if j==8 \
+                                                else cell.split('_')[1] if j==2\
+                                                    else cell for j,cell in enumerate(row)]
                 self.Table_Slike.insert('', END, values=formatted_row)
 
     def LoggingData(self,result=None,query_type=None,loggingdata=None):
         Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')[:3]}'
         if loggingdata:
             def execute():
-                self.DB.execute_Insert('logs',**{'ID Time':Time, 'Email':self.DB.UserSession['User'],
+                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
                                                 'Query':query_type,'Full Query':loggingdata})
             self.BUTT.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
             return
         if result:
             def execute():
-                self.DB.execute_Insert('logs',**{'ID Time':Time, 'Email':self.DB.UserSession['User'],
-                                                'Query':query_type,'Full Query':self.DB.LoggingQuery})
+                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
+                                                'Query':query_type,'Full Query':RHMH.LoggingQuery})
             self.BUTT.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
         return result
 
@@ -1078,9 +1300,8 @@ class DBMS(Singleton):
             TAB = self.NoteBook.tab(focus,'text')
 
         if TAB == 'Pacijenti':
-            self.PatientTable_IDs.clear()
-            columns = self.selected_columns(self.Pacijenti_ColumnVars.items(),self.Table_Pacijenti)
-            view = self.DB.execute_join_select('pacijent',*(['id_pacijent']+columns))
+            columns = self.selected_columns(self.Pacijenti_ColumnVars.items() , self.Table_Pacijenti , columnvar=True)
+            view = RHMH.execute_join_select('pacijent',*(columns))
           
             for item in self.Table_Pacijenti.get_children():
                 self.Table_Pacijenti.delete(item)
@@ -1088,8 +1309,7 @@ class DBMS(Singleton):
                 self.fill_TablePacijenti(view)
 
         elif TAB == 'Slike':
-            columns = self.selected_columns(self.Slike_ColumnVars.items(),self.Table_Slike)
-            view = self.DB.execute_select('slike',*(['id_pacijent']+columns))
+            view = RHMH.execute_select('slike',*(self.TableSlike_Columns[1:]))
 
             for item in self.Table_Slike.get_children():
                 self.Table_Slike.delete(item)
@@ -1097,16 +1317,14 @@ class DBMS(Singleton):
                 self.fill_TableSlike(view)
 
         elif TAB == 'Katalog':
-            columns = self.selected_columns(self.MKB_ColumnVars.items(),self.Table_MKB)
-            view = self.DB.execute_select('mkb10',*(columns))
+            view = RHMH.execute_select('mkb10',*(self.TableMKB_Columns[1:]))
    
             for item in self.Table_MKB.get_children():
                 self.Table_MKB.delete(item)
             if view and len(view)!=0:
                 self.fill_Tables_Other(view,self.Table_MKB)
 
-            columns = self.selected_columns(self.Zaposleni_ColumnVars.items(),self.Table_Zaposleni)
-            view = self.DB.execute_select('zaposleni',*(columns))
+            view = RHMH.execute_select('zaposleni',*(self.TableZaposleni_Columns[1:]))
    
             for item in self.Table_Zaposleni.get_children():
                 self.Table_Zaposleni.delete(item)
@@ -1114,8 +1332,7 @@ class DBMS(Singleton):
                 self.fill_Tables_Other(view,self.Table_Zaposleni)
 
         elif TAB == 'Logs':
-            columns = self.selected_columns(self.Logs_ColumnVars.items(),self.Table_Logs)
-            view = self.DB.execute_select('logs',*(columns))
+            view = RHMH.execute_select('logs',*(self.TableLogs_Columns[1:]))
  
             for item in self.Table_Logs.get_children():
                 self.Table_Logs.delete(item)
@@ -1123,8 +1340,7 @@ class DBMS(Singleton):
                 self.fill_Tables_Other(view,self.Table_Logs)
         
         elif TAB == 'Session':
-            columns = self.selected_columns(self.Session_ColumnVars.items(),self.Table_Session)
-            view = self.DB.execute_select('session',*(columns))
+            view = RHMH.execute_select('session',*(self.TableSession_Columns[1:]))
 
             for item in self.Table_Session.get_children():
                 self.Table_Session.delete(item)
@@ -1150,9 +1366,9 @@ class DBMS(Singleton):
 
                 if search_type == 'od-do':
                     if 'Datum' in option:
-                        # FROM Form Date Formate TO DB Date Format
-                        searching[option].add(datetime.strptime(self.SearchBar_widgets[f'date_from_{n}'].entry.get(),'%d-%b-%Y').strftime('%Y-%m-%d'),
-                                            datetime.strptime(self.SearchBar_widgets[f'date_to_{n}'].entry.get(),'%d-%b-%Y').strftime('%Y-%m-%d'))
+                        # FROM Form Date Formate TO RHMH Date Format
+                        searching[option].add((datetime.strptime(self.SearchBar_widgets[f'date_from_{n}'].entry.get(),'%d-%b-%Y').strftime('%Y-%m-%d'),
+                                            datetime.strptime(self.SearchBar_widgets[f'date_to_{n}'].entry.get(),'%d-%b-%Y').strftime('%Y-%m-%d')))
                     else:
                         searching[option].add((self.SearchBar_widgets[f'from_{n}'].get(),self.SearchBar_widgets[f'to_{n}'].get()))
                 elif search_type == '=':
@@ -1180,10 +1396,9 @@ class DBMS(Singleton):
                             return
 
         if TAB == 'Pacijenti':
-            self.PatientTable_IDs.clear()
-            columns = self.selected_columns(self.Pacijenti_ColumnVars.items(),self.Table_Pacijenti)
+            columns = self.selected_columns(self.Pacijenti_ColumnVars.items() , self.Table_Pacijenti , columnvar=True)
             searching = searching_dict_create()
-            view = self.LoggingData(self.DB.execute_join_select('pacijent',*(['id_pacijent']+columns),**searching),'Pacijenti Search SELECT')
+            view = self.LoggingData(RHMH.execute_join_select('pacijent',*(columns),**searching),'Pacijenti Search SELECT')
 
             for item in self.Table_Pacijenti.get_children():
                 self.Table_Pacijenti.delete(item)
@@ -1191,19 +1406,17 @@ class DBMS(Singleton):
                 self.fill_TablePacijenti(view)
 
         elif TAB == 'Slike':
-            columns = self.selected_columns(self.Slike_ColumnVars.items(),self.Table_Slike)
             searching = searching_dict_create()
-            view = self.LoggingData(self.DB.execute_select('slike',*(['id_pacijent']+columns),**searching),'Slike Search SELECT')
+            view = self.LoggingData(RHMH.execute_select('slike',*(self.TableSlike_Columns[1:]),**searching),'Slike Search SELECT')
   
             for item in self.Table_Slike.get_children():
                 self.Table_Slike.delete(item)
             if view and len(view)!=0:
-                self.fill_TableSlike(view,self.PatientTable_IDs)
+                self.fill_TableSlike(view)
 
         elif TAB == 'Katalog':
-            columns = self.selected_columns(self.MKB_ColumnVars.items(),self.Table_MKB)
             searching = searching_dict_create()
-            view = self.LoggingData(self.DB.execute_select('mkb10',*(columns),**searching),'MKB Search SELECT')
+            view = self.LoggingData(RHMH.execute_select('mkb10',*(self.TableMKB_Columns[1:]),**searching),'MKB Search SELECT')
 
             for item in self.Table_MKB.get_children():
                 self.Table_MKB.delete(item)
@@ -1211,9 +1424,8 @@ class DBMS(Singleton):
                 self.fill_Tables_Other(view,self.Table_MKB)
 
         elif TAB == 'Logs':
-            columns = self.selected_columns(self.Logs_ColumnVars.items(),self.Table_Logs)
             searching = searching_dict_create()
-            view = self.DB.execute_select('logs',*(columns),**searching)
+            view = RHMH.execute_select('logs',*(self.TableLogs_Columns[1:]),**searching)
  
             for item in self.Table_Logs.get_children():
                 self.Table_Logs.delete(item)
@@ -1221,9 +1433,8 @@ class DBMS(Singleton):
                 self.fill_Tables_Other(view,self.Table_Logs)
 
         elif TAB == 'Session':
-            columns = self.selected_columns(self.Session_ColumnVars.items(),self.Table_Session)
             searching = searching_dict_create()
-            view = self.DB.execute_select('session',*(columns),**searching)
+            view = RHMH.execute_select('session',*(self.TableSession_Columns[1:]),**searching)
 
             for item in self.Table_Session.get_children():
                 self.Table_Session.delete(item)
@@ -1232,28 +1443,25 @@ class DBMS(Singleton):
 
     def filter_data(self,columns):
         where = {}
-        self.PatientTable_IDs.clear()
         for k,v in self.BUTT.FilterOptions.items():
             if k in columns:
                 where[k]=v[1].get()
         
-        view = self.LoggingData(self.DB.execute_filter_select(where),'FILTER SELECT')
+        view = self.LoggingData(RHMH.execute_filter_select(where),'FILTER SELECT')
         for item in self.Table_Pacijenti.get_children():
             self.Table_Pacijenti.delete(item)
         if view and len(view)!=0:
             for i, row in enumerate(view):
-                # FROM DB Date Formate TO Table Date Format
+                # FROM RHMH Date Formate TO Table Date Format
                 formatted_row = [i+1] + [datetime.strptime(cell,'%Y-%m-%d').strftime('%d-%b-%y') if isinstance(cell, date) \
                                          else '' if str(cell)=='None' \
-                                            else cell for cell in row[1:]]
-                self.PatientTable_IDs.append(row[0])
+                                            else cell for cell in row]
                 self.Table_Pacijenti.insert('', END, values=formatted_row)
 
     def fill_MKBForm(self,event):
         try:
-            row = self.Table_MKB.item(self.Table_MKB.focus())['values'][1:]
-            headings = [column for column, var in self.MKB_ColumnVars.items() if var.get()==1][1:]
-            for col,val in zip(headings,row):
+            row = self.Table_MKB.item(self.Table_MKB.focus())['values'][2:]
+            for col,val in zip(self.TableMKB_Columns[2:],row):
                 self.BUTT.Katalog_FormVariables[col].set(val)
         except IndexError:
             return
@@ -1262,7 +1470,7 @@ class DBMS(Singleton):
         try:
             column = self.BUTT.get_widget_value(self.BUTT.Katalog_FormVariables['Kategorija'])
             if column:
-                mkb = self.Table_MKB.item(self.Table_MKB.focus())['values'][1]
+                mkb = self.Table_MKB.item(self.Table_MKB.focus())['values'][2]
                 dg_Widget = self.BUTT.Patient_FormVariables['dijagnoza'][column]
                 dg_Value = self.BUTT.get_widget_value(dg_Widget)
                 if not dg_Value:
@@ -1274,10 +1482,8 @@ class DBMS(Singleton):
     
     def fill_ZaposleniForm(self,event):
         try:
-            row = self.Table_Zaposleni.item(self.Table_Zaposleni.focus())['values'][1:]
-            headings = [column for column, var in self.Zaposleni_ColumnVars.items() if var.get()==1][1:]
-            for col,val in zip(headings,row):
-                self.BUTT.Katalog_FormVariables[col].set(val)
+            name = self.Table_Zaposleni.item(self.Table_Zaposleni.focus())['values'][2]
+            self.BUTT.Katalog_FormVariables['Zaposleni'].set(name)
         except IndexError:
             return
         
@@ -1285,7 +1491,7 @@ class DBMS(Singleton):
         try:
             column = self.BUTT.get_widget_value(self.BUTT.Katalog_FormVariables['Funkcija'])
             if column:
-                mkb = self.Table_Zaposleni.item(self.Table_Zaposleni.focus())['values'][1]
+                mkb = self.Table_Zaposleni.item(self.Table_Zaposleni.focus())['values'][2]
                 dg_Widget = self.BUTT.Patient_FormVariables['operacija'][column]
                 dg_Value = self.BUTT.get_widget_value(dg_Widget)
                 if not dg_Value:
@@ -1299,8 +1505,8 @@ class DBMS(Singleton):
         self.BUTT.Clear_Form()
         try:
             # DAJ RED GDE JE FOKUS i daj prvi VALUE i oduzmi 1 i pogleda ko je na toj poziciji u ID listi
-            self.BUTT.PatientFocus_ID = self.PatientTable_IDs[self.Table_Pacijenti.item(self.Table_Pacijenti.focus())['values'][0]-1] 
-            patient = self.DB.get_patient_data(self.BUTT.PatientFocus_ID)
+            self.BUTT.PatientFocus_ID = self.Table_Pacijenti.item(self.Table_Pacijenti.focus())['values'][1] 
+            patient = RHMH.get_patient_data(self.BUTT.PatientFocus_ID)
         except IndexError:
             return
         for col,val in patient.items():
@@ -1322,7 +1528,7 @@ class DBMS(Singleton):
             self.BUTT.set_widget_value(widget,val)
         TEXT = f'{patient['Ime']} {patient['Prezime']}'
         try:
-            # FROM DB Date Formate TO Patient print Date Format
+            # FROM RHMH Date Formate TO Patient print Date Format
             TEXT += f'\n({datetime.strptime(patient['Datum Prijema'],'%Y-%m-%d').strftime('%d-%b-%y')})'
         except KeyError:
             pass
@@ -1334,7 +1540,7 @@ class DBMS(Singleton):
             # DAJ RED GDE JE FOKUS i daj prvi VALUE i oduzmi 1 i pogleda ko je na toj poziciji u ID listi
             time = self.Table_Logs.item(self.Table_Logs.focus())['values'][1]
             query = f'SELECT `Full Query`,`Full Error` from logs WHERE `ID Time` = "{time}"'
-            FullQuery,FullError = self.DB.execute_selectquery(query)[0]
+            FullQuery,FullError = RHMH.execute_selectquery(query)[0]
             self.BUTT.set_widget_value(self.BUTT.Logs_FormVariables['Full Query'],FullQuery)
             self.BUTT.set_widget_value(self.BUTT.Logs_FormVariables['Full Error'],FullError)
         except IndexError:
@@ -1343,7 +1549,7 @@ class DBMS(Singleton):
     def tab_change(self,event):
 
         def filter_buttons_state(state):
-            for widget in self.BUTT.Buttons['Filter Patient']:
+            for widget in self.BUTT.buttons['Filter Patient']:
                 if state is False:
                     widget.grid_remove()
                 else:
@@ -1368,20 +1574,47 @@ class DBMS(Singleton):
         focus = self.NoteBook.index(self.NoteBook.select())
         TAB = self.NoteBook.tab(focus,'text')
         if TAB == 'Pacijenti':
-            tab_swapping(self.TablePacijenti_Columns[1:])
+            for index in [6,7]:
+                if self.NoteBook.tab(index, "state") == "normal":
+                    self.NoteBook.hide(index)
+            tab_swapping(self.TablePacijenti_Columns[2:])
             filter_buttons_state(True)
         elif TAB == 'Slike':
+            for index in [6,7]:
+                if self.NoteBook.tab(index, "state") == "normal":
+                    self.NoteBook.hide(index)
             self.BUTT.Slike_HideTable.grid()
-            tab_swapping(self.TableSlike_Columns[1:])
+            tab_swapping(self.TableSlike_Columns[3:])
             filter_buttons_state(False)
         elif TAB == 'Katalog':
-            tab_swapping(self.TableMKB_Columns[1:])
+            for index in [6,7]:
+                if self.NoteBook.tab(index, "state") == "normal":
+                    self.NoteBook.hide(index)
+            tab_swapping(self.TableMKB_Columns[2:])
             filter_buttons_state(False)
         elif TAB == 'Logs':
+            for index in [6,7]:
+                if self.NoteBook.tab(index, "state") == "normal":
+                    self.NoteBook.hide(index)
             tab_swapping(self.TableLogs_Columns[1:])
             filter_buttons_state(False)
         elif TAB == 'Session':
+            for index in [6,7]:
+                if self.NoteBook.tab(index, "state") == "normal":
+                    self.NoteBook.hide(index)
             tab_swapping(self.TableSession_Columns[1:])
             filter_buttons_state(False)
-        else:
+        elif TAB == 'Grafikon':
+            for index in [6,7]:
+                if self.NoteBook.tab(index, "state") == "normal":
+                    self.NoteBook.hide(index)
+            tab_swapping(['test1','test2','test3','test4'])
+            filter_buttons_state(False)
+        elif TAB == 'Settings':
             self.SearchBar.grid_remove()
+            if self.NoteBook.tab(7, "state") == "normal":
+                self.NoteBook.hide(7)
+        elif TAB == 'About':
+            self.SearchBar.grid_remove()
+            if self.NoteBook.tab(6, "state") == "normal":
+                self.NoteBook.hide(6)

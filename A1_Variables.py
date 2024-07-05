@@ -1,11 +1,15 @@
-# B_Decorators
+
 import time
+from tkinter import *
 TIME_START = time.time_ns()
+
+
+# Decorators
 from datetime import datetime, date
 import functools
 import traceback
 
-# C_GoogleDrive
+# GoogleDrive
 import io
 import os
 import ffmpeg
@@ -17,22 +21,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
 
-# D_SQLite_Connection
-import sqlite3
-import sqlparse
-from tkinter import simpledialog,messagebox
-import ttkbootstrap as tb
-
-# E_SQLite_DBMS
-from tkinter import *
-from tkinter import filedialog
-from ttkbootstrap import widgets
-from ttkbootstrap.dialogs.dialogs import Messagebox
-import customtkinter as ctk
-import queue
-import shutil
-
-# F_Media_Manipulation
+# Media
 from PIL import Image, ImageTk, ImageDraw
 import cv2
 import pillow_heif
@@ -40,27 +29,59 @@ import subprocess
 import easyocr
 import numpy as np
 
-# G_Viewer
+# Graph
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.font_manager import FontProperties, findSystemFonts
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import numpy as np
+
+# SQLite
+import sqlite3
+import sqlparse
+from tkinter import simpledialog,messagebox
+import ttkbootstrap as tb
+
+# DBMS
+from tkinter import filedialog
+from ttkbootstrap import widgets
+from ttkbootstrap.dialogs.dialogs import Messagebox
+import customtkinter as ctk
+import queue
+import shutil
+
+# Viewer
 import json
 import inspect
 from tkinter.font import nametofont
 import threading
 from ttkbootstrap.style import Colors
 
+
 WIDTH = 1720
 HEIGHT = 970
+title_height = 180
 
-FONT = 'Montserrat'
+THEME = 'dark_blue'
+
+#FONT = 'Montserrat'
+FONT = 'Arial'
 F_SIZE = 11
-EMAIL = 'vurunayas@gmail.com'
 
-IMAGES = {  'Title': ('C:/Users/vurun/Desktop/App/GodHand_Transparent_smallest.png' , ('Pacijenti RHMH', 0.007, 0.033 )) ,
+
+UserSession = {'User':'offline_admin@gmail.com'}
+
+IMAGES = {  'icon' : 'C:/Users/vurun/Desktop/App/RHMH.ico' ,
+            'Title': ('C:/Users/vurun/Desktop/App/GodHand_Transparent_smallest.png' , ('Pacijenti RHMH', 0.007, 0.033 )) ,
             'Swap': [ ('C:/Users/vurun/Desktop/App/gray_swap.png',33,33) , ('C:/Users/vurun/Desktop/App/color_swap.png',33,33) ] ,
             'Hide': [ ('C:/Users/vurun/Desktop/App/gray_hide.png',48,33) , ('C:/Users/vurun/Desktop/App/color_hide.png',48,33) ] ,
             'Add': [ ('C:/Users/vurun/Desktop/App/color_add.png',28,28) , ('C:/Users/vurun/Desktop/App/darker_add.png',28,28) ] ,
             'Remove': [ ('C:/Users/vurun/Desktop/App/color_remove.png',28,28) , ('C:/Users/vurun/Desktop/App/darker_remove.png',28,28) ] ,
             'Play Video': 'C:/Users/vurun/Desktop/App/play_button.png' ,
-            'Loading': 'C:/Users/vurun/Desktop/App/loading_circle.png' }
+            'Loading': 'C:/Users/vurun/Desktop/App/loading_circle.png' ,
+            'Password': [('C:/Users/vurun/Desktop/App/eye.png',270,270)] , 
+            'MUVS':     [('C:/Users/vurun/Desktop/App/muvs12.png',280,280)] }
 
 search_signs = {'EQUAL': {'sign':'=','sr':'JESTE','en':'EQUAL'},
                 'LIKE': {'sign':'≈','sr':'PRIBLIŽNO','en':'LIKE'},
@@ -72,16 +93,17 @@ search_signs = {'EQUAL': {'sign':'=','sr':'JESTE','en':'EQUAL'},
 
 app_name = 'Restruktivna Hirurgija Ortopedije'
 form_title = 'Pacijent'
-font_title = (FONT, int(F_SIZE*3.7), 'bold')
-font_groups = (FONT, int(F_SIZE*1.8), 'bold')
-font_label = lambda b='bold': (FONT, int(F_SIZE*1.1), b)
+font_title = lambda weight='bold': (FONT, int(F_SIZE*3.7), weight)
+font_groups = lambda weight='bold': (FONT, int(F_SIZE*1.8), weight)
+font_label = lambda weight='bold': (FONT, int(F_SIZE*1.1), weight)
 font_entry = (FONT, F_SIZE)
 
-title_height = 180
+font_plot_title = {'family':FONT, 'color':'#ABB6C2', 'size':F_SIZE*4, 'weight':'bold'}
+font_plot_labels = {'family':FONT, 'color':'#ABB6C2', 'size':int(F_SIZE*3)}
+font_plot_text = {'family':FONT, 'color':'#ABB6C2', 'size':int(F_SIZE*2)}
 
-THEME = 'dark_blue'
 
-def_font = (FONT, F_SIZE)
+
 
 
 labelColor = 'light' if THEME!='light_blue' else 'active'
@@ -199,98 +221,36 @@ MIME = {'PNG' : 'image/png',
         'MP4': 'video/mp4',
         'MOV': 'video/quicktime'}
 
-MainTablePacijenti = {  
-        'ID':{
-            'checkbutton':None,
-            'table':'ID',
-            'group':None},
-        'Ime':{
-            'checkbutton':None,
-            'table':'Ime',
-            'group':None},
-        'Prezime':{
-            'checkbutton':None,
-            'table':'Prezime',
-            'group':None},
-
-        'Starost':{
-            'checkbutton':'Starost',
-            'table':'Starost',
-            'group':'Pacijent'},
-        'Godište':{
-            'checkbutton':'Godište',
-            'table':'Godište',
-            'group':'Pacijent'},
-        'Pol':{
-            'checkbutton':'Pol',
-            'table':'Pol',
-            'group':'Pacijent'},
-
-        'Uputna dijagnoza':{
-            'checkbutton':'Uputna dijagnoza',
-            'table':' Uputna\ndijagnoza',
-            'group':None},
-        'Prateća dijagnoza':{
-            'checkbutton':'Prateća dijagnoza',
-            'table':' Prateća\ndijagnoza',
-            'group':None},
-        'Glavna Operativna dijagnoza':{
-            'checkbutton':'Glavna Operativna',
-            'table':'  Glavna\nOperativna',
-            'group':None},
-        'Sporedna Operativna dijagnoza':{
-            'checkbutton':'Sporedna Operativna',
-            'table':' Sporedna\nOperativna',
-            'group':None},
-        'Dg Latinski':{
-            'checkbutton':'Dijagnoza Latinski',
-            'table':'   Dg\nLatinski',
-            'group':None},
-        'Osnovni Uzrok Hospitalizacije':{
-            'checkbutton':'Uzrok Hospitalizacije',
-            'table':'     Uzrok\nHospitalizacije',
-            'group':None},
-
-        'Datum Prijema':{
-            'checkbutton':'Prijem',
-            'table':' Datum\nPrijema',
-            'group':'Datum'},
-        'Datum Operacije':{
-            'checkbutton':'Operacija',
-            'table':'  Datum\nOperacije',
-            'group':'Datum'},
-        'Datum Otpusta':{
-            'checkbutton':'Otpust',
-            'table':' Datum\nOtpusta',
-            'group':'Datum'},
-
-        'Operator':{
-            'checkbutton':'Operator',
-            'table':'ID',
-            'group':None},
-        'Asistent':{
-            'checkbutton':'Asistent',
-            'table':'ID',
-            'group':None},
-        'Anesteziolog':{
-            'checkbutton':'Anesteziolog',
-            'table':'ID',
-            'group':None},
-        'Anestetičar':{
-            'checkbutton':'Anestetičar',
-            'table':'ID',
-            'group':None},
-        'Gostujući Specijalizant':{
-            'checkbutton':'Specijalizant',
-            'table':'  Gostujući\nSpecijalizant',
-            'group':None},
-        'Instrumentarka':{
-            'checkbutton':'Instrumentarka',
-            'table':'Instrumentarka',
-            'group':None},
+MainTablePacijenti = {
+    'ID': {'checkbutton':None , 'table':'ID' , 'group':None},
+    'id_pacijent': {'checkbutton':None , 'table':'id_pacijent' , 'group':None},
+    'Ime': {'checkbutton':None , 'table':'Ime' , 'group':None},
+    'Prezime': {'checkbutton':None , 'table':'Prezime' , 'group':None},
+    'Starost': {'checkbutton':'Starost' , 'table':'Starost' , 'group':'Pacijent'},
+    'Godište': {'checkbutton':'Godište' , 'table':'Godište' , 'group':'Pacijent'},
+    'Pol': {'checkbutton':'Pol' , 'table':'Pol' , 'group':'Pacijent'},
+    'Uputna dijagnoza': {'checkbutton':'Uputna dijagnoza' , 'table':' Uputna\ndijagnoza' , 'group':None},
+    'Prateća dijagnoza': {'checkbutton':'Prateća dijagnoza' , 'table':' Prateća\ndijagnoza' , 'group':None},
+    'Glavna Operativna dijagnoza': {'checkbutton':'Glavna Operativna' , 'table':'  Glavna\nOperativna' , 'group':None},
+    'Sporedna Operativna dijagnoza': {'checkbutton':'Sporedna Operativna' , 'table':' Sporedna\nOperativna' , 'group':None},
+    'Dg Latinski': {'checkbutton':'Dijagnoza Latinski' , 'table':'   Dg\nLatinski' , 'group':None},
+    'Osnovni Uzrok Hospitalizacije': {'checkbutton':'Uzrok Hospitalizacije' , 'table':'     Uzrok\nHospitalizacije' , 'group':None},
+    'Datum Prijema': {'checkbutton':'Prijem' , 'table':' Datum\nPrijema' , 'group':'Datum'},
+    'Datum Operacije': {'checkbutton':'Operacija' , 'table':'  Datum\nOperacije' , 'group':'Datum'},
+    'Datum Otpusta': {'checkbutton':'Otpust' , 'table':' Datum\nOtpusta' , 'group':'Datum'},
+    'Operator': {'checkbutton':'Operator' , 'table':'ID' , 'group':None},
+    'Asistent': {'checkbutton':'Asistent' , 'table':'ID' , 'group':None},
+    'Anesteziolog': {'checkbutton':'Anesteziolog' , 'table':'ID' , 'group':None},
+    'Anestetičar': {'checkbutton':'Anestetičar' , 'table':'ID' , 'group':None},
+    'Gostujući Specijalizant': {'checkbutton':'Specijalizant' , 'table':'  Gostujući\nSpecijalizant' , 'group':None},
+    'Instrumentarka': {'checkbutton':'Instrumentarka' , 'table':'Instrumentarka' , 'group':None},
 }
 
+
+graph_Xoptions = [ 'Godina' , 'Mesec' , 'Dan u Sedmici' , 'Dan' , 'Trauma' , 'MKB Grupe' , 'MKB Pojedinačno' , 'Starost' , 'Pol' , 'Zaposleni' ]
+
 WAIT = 10 # ms
-BUTTON_LOCK = 2500 # ms
+BUTTON_LOCK = 500 # ms
 
 ThemeColors = {}
+
