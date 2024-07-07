@@ -1,19 +1,16 @@
 from A1_Variables import *
-from B1_GoogleDrive import GoogleDrive
 
 class Database:
     def __init__(self,database) -> None:
-        self.GD = GoogleDrive()
         self.database = database
-
         self.connection = None
         self.cursor = None
-        self.PatientQuery = str()
-        self.LoggingQuery = None
-
         self.lock = threading.Lock()
 
     def start_RHMH_db(self):
+        self.PatientQuery = str()
+        self.LoggingQuery = None
+
         self.pacijent = self.show_columns('pacijent')
         self.slike = self.show_columns('slike')[:-1]
         self.mkb10 = self.show_columns('mkb10')
@@ -349,7 +346,6 @@ class Database:
             finally:
                 self.close_connection()
 
-    #'''
     def get_imageBlob(self,id):
         with self.lock:
             try:
@@ -384,7 +380,18 @@ class Database:
             finally:
                 self.close_connection()
 
+
 RHMH = Database('RHMH.db')
+SLIKE = Database('SLIKE.db')
 
 if __name__=='__main__':
-    pass
+    RHMH.start_RHMH_db()
+    print(RHMH.pacijent)
+    print(RHMH.slike)
+    print(RHMH.mkb10)
+    print(RHMH.zaposleni)
+    print(RHMH.dg_kategorija)
+    print(RHMH.dr_funkcija)
+    print(RHMH.logs)
+    print(RHMH.session)
+    

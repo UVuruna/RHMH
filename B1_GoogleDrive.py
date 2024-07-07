@@ -1,21 +1,28 @@
 from A1_Variables import *
-from A2_Decorators import Singleton
 
-class GoogleDrive(Singleton):
-    _initialized = False
-    def __init__(self) -> None:
-        if not self._initialized: # moze self ovde
-            GoogleDrive._initialized = True
-            self.SCOPES = [ 'https://www.googleapis.com/auth/drive',
+class GoogleDrive:
+    SCOPES = None
+    creds = None
+    connection:build = None
+    
+    @staticmethod
+    def connect():
+        try:
+            GoogleDrive.SCOPES = [ 'https://www.googleapis.com/auth/drive',
                             'https://www.googleapis.com/auth/drive.file',
                             'https://www.googleapis.com/auth/admin.directory.user',
                             'https://www.googleapis.com/auth/userinfo.email',
                             'openid'
                             ]
-            self.creds = self.authenticate_google_drive()
-            self.connection = build('drive', 'v3', credentials=self.creds)
+            GoogleDrive.creds = GoogleDrive.authenticate_google_drive()
+            GoogleDrive.connection = build('drive', 'v3', credentials=GoogleDrive.creds)
+            return True
+        except Exception as e:
+            print(e)
+            return False
 
-    def authenticate_google_drive(self):
+    @staticmethod
+    def authenticate_google_drive():
         creds = None
         token_path = 'www_token.pickle'
         creds_path = 'www_credentials.json'
@@ -38,20 +45,22 @@ class GoogleDrive(Singleton):
                     creds = None
             if not creds:
                 print('Running authentication flow...')
-                flow = InstalledAppFlow.from_client_secrets_file(creds_path, self.SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(creds_path, GoogleDrive.SCOPES)
                 creds = flow.run_local_server(port=0)
             # Čuva kredencijale za sledeću upotrebu
             with open(token_path, 'wb') as token:
                 pickle.dump(creds, token)
         return creds
     
-    def get_UserEmail(self):
-        oauth2_service = build('oauth2', 'v2', credentials=self.creds)
+    @staticmethod
+    def get_UserEmail():
+        oauth2_service = build('oauth2', 'v2', credentials=GoogleDrive.creds)
         user_info = oauth2_service.userinfo().get().execute()
         return user_info.get('email')
     
-    def get_FileInfo(self, file_id):
-        file = self.connection.files().get(
+    @staticmethod
+    def get_FileInfo(file_id):
+        file = GoogleDrive.connection.files().get(
             fileId=file_id, 
             fields='name, size, mimeType, imageMediaMetadata'
         ).execute()
@@ -73,7 +82,8 @@ class GoogleDrive(Singleton):
             'mimeType': file['mimeType']
         }
     
-    def get_video_dimensions(self,file_path):
+    @staticmethod
+    def get_video_dimensions(file_path):
         ffmpeg_path = 'D:/Work/4-Project/RHMH/SQLite/required_programs/ffprobe.exe'
         os.environ['PATH'] += os.pathsep + os.path.dirname(ffmpeg_path)
         probe = ffmpeg.probe(file_path)
@@ -85,16 +95,18 @@ class GoogleDrive(Singleton):
         else:
             return None, None
 
-    def download_File(self, file_id, destination): # return je destination
-        request = self.connection.files().get_media(fileId=file_id)
+    @staticmethod
+    def download_File(file_id, destination): # return je destination
+        request = GoogleDrive.connection.files().get_media(fileId=file_id)
         with open(destination, 'wb') as f:
             downloader = MediaIoBaseDownload(f, request)
             done = False
             while not done:
                 status, done = downloader.next_chunk()
     
-    def download_BLOB(self, file_id):
-        request = self.connection.files().get_media(fileId=file_id)
+    @staticmethod
+    def download_BLOB(file_id):
+        request = GoogleDrive.connection.files().get_media(fileId=file_id)
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
         done = False
@@ -103,35 +115,38 @@ class GoogleDrive(Singleton):
         fh.seek(0)
         return fh.getvalue()
    
-
-    def upload_NewFile_asFile(self, file_name, GoogleDrive_folder, file_path, mime_type):
+    @staticmethod
+    def upload_NewFile_asFile(file_name, GoogleDrive_folder, file_path, mime_type):
         file_metadata = {'name': file_name, 'parents': GoogleDrive_folder}
         media = MediaFileUpload(file_path, mimetype=mime_type)
-        file = self.connection.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        file = GoogleDrive.connection.files().create(body=file_metadata, media_body=media, fields='id').execute()
         return file.get('id')
 
-    def upload_NewFile_asBLOB(self, file_name, GoogleDrive_folder, blob_data, mime_type):
+    @staticmethod
+    def upload_NewFile_asBLOB(file_name, GoogleDrive_folder, blob_data, mime_type):
         file_metadata = {'name': file_name, 'parents': GoogleDrive_folder}
         media = MediaIoBaseUpload(io.BytesIO(blob_data), mimetype=mime_type)
-        file = self.connection.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        file = GoogleDrive.connection.files().create(body=file_metadata, media_body=media, fields='id').execute()
         return file.get('id')
     
-
-    def upload_UpdateFile(self, file_id, file_path, mime_type):
+    @staticmethod
+    def upload_UpdateFile(file_id, file_path, mime_type):
         media = MediaFileUpload(file_path, mimetype=mime_type)
-        self.connection.files().update(fileId=file_id, media_body=media).execute()
+        GoogleDrive.connection.files().update(fileId=file_id, media_body=media).execute()
         return True
 
-    def upload_UpdateFile_changeName(self, file_id, new_name):
+    @staticmethod
+    def upload_UpdateFile_changeName(file_id, new_name):
         file_metadata = {'name': new_name}
-        self.connection.files().update(
+        GoogleDrive.connection.files().update(
             fileId=file_id, 
             body=file_metadata
         ).execute()
         return True
 
-    def delete_file(self, file_id):
-        self.connection.files().delete(fileId=file_id).execute()
+    @staticmethod
+    def delete_file(file_id):
+        GoogleDrive.connection.files().delete(fileId=file_id).execute()
         return True
 
 if __name__ == '__main__':

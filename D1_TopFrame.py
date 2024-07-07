@@ -1,45 +1,48 @@
 from A1_Variables import *
-from A2_Decorators import method_efficency
-from C1_DBMS import Buttons
+from C2_ManageDB import ManageDB
 
-class TopFrame:
-    def __init__(self, root) -> None: 
-        self.BUTT = Buttons()
-        image, (title_txt, txt_X, txt_Y) = IMAGES['Title']
-        
-        self.title_image = Image.open(image)
-        self.txt_X = txt_X
-        self.txt_Y = txt_Y
-        self.title_txt = title_txt
-    
-        self.Title_Frame = tb.Canvas(root, height=title_height)
-        self.Title_Frame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
+class TopPanel:
+    Top_Frame = None
 
-        self.Title_Frame.bind('<Button-1>' , self.BUTT.lose_focus)
-        self.Title_Frame.bind('<Configure>' , self.adjust_title_window)
-        
-        self.reconect_button = ctk.CTkButton(root, text='Reconect', width=form_butt_width,height=form_butt_height//2, corner_radius=12, font=font_label(),
-                                 fg_color=ThemeColors['warning'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                                 command=self.reconecting)
-        
-    def reconecting(self):
+    title_image = None
+
+    txt_X = None
+    txt_Y = None
+    title_txt = None
+
+    @staticmethod
+    def load_TopFrame(root:Tk):
+        image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = IMAGES['Title']
+
+        TopPanel.title_image = Image.open(image)
+
+        TopPanel.Top_Frame = tb.Canvas(root, height=title_height)
+        TopPanel.Top_Frame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
+
+        TopPanel.Top_Frame.bind('<Button-1>' , ManageDB.lose_focus)
+        TopPanel.Top_Frame.bind('<Configure>' , TopPanel.adjust_title_window)
+
+        TopPanel.reconect_button = ctk.CTkButton(root, text='Reconect', width=form_butt_width,height=form_butt_height//2, corner_radius=12, font=font_label(),
+                                    fg_color=ThemeColors['warning'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                                    command=TopPanel.reconecting)
+
+    @staticmethod    
+    def reconecting():
         print('RECONECTING...')
 
-    def remove_title_frame(self,event):
-        self.Title_Frame.grid_forget()
-
-    def adjust_title_window(self, event):
+    @staticmethod
+    def adjust_title_window( event):
         new_width = event.width
         new_height = event.height
-        resized_image = self.title_image.resize((new_width, new_height), Image.LANCZOS)
+        resized_image = TopPanel.title_image.resize((new_width, new_height), Image.LANCZOS)
         tk_image = ImageTk.PhotoImage(resized_image)
         
-        self.Title_Frame.image = tk_image 
-        self.Title_Frame.delete('all')
-        self.Title_Frame.create_image(0, 0, anchor=NW, image=tk_image)
-        self.Title_Frame.create_text( new_width * self.txt_X,
-                                    new_height * self.txt_Y,
-                                    text = self.title_txt,
+        TopPanel.Top_Frame.image = tk_image 
+        TopPanel.Top_Frame.delete('all')
+        TopPanel.Top_Frame.create_image(0, 0, anchor=NW, image=tk_image)
+        TopPanel.Top_Frame.create_text( new_width * TopPanel.txt_X,
+                                    new_height * TopPanel.txt_Y,
+                                    text = TopPanel.title_txt,
                                     anchor = NW, font = font_title(), fill = ThemeColors[titleTxtColor] )
 
-        self.Title_Frame.create_window(new_width*0.93, 10, anchor=N, window=self.reconect_button) # position of button
+        TopPanel.Top_Frame.create_window(new_width*0.93, 10, anchor=N, window=TopPanel.reconect_button) # position of button

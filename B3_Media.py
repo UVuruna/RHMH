@@ -438,27 +438,3 @@ if __name__=='__main__':
     print('CUDA Version:', torch.version.cuda)
     print('PyTorch Version:', torch.__version__)
     print('Device Name:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No CUDA Device')
-
-    print('Start')
-    from B2_SQLite import Database
-    from B1_GoogleDrive import GoogleDrive
-    db = Database('RHMH.db')
-    gd = GoogleDrive()
-    GoogleID = db.execute_selectquery(f'SELECT image_data FROM slike WHERE id_slike = 12')[0][0]
-    image_blob = gd.download_BLOB(GoogleID)
-
-
-    start1 = time.time()
-    reader = Media.OperacionaLista_ImageReader(image_blob)
-    Reader_new =  f'{time.time()-start1:,.2f} s'
-
-    FALSE = []
-    for i,(k,v) in enumerate(reader.items()):
-        print(i,' -'*66)
-        print(f'new-{k}: {v}')
-    print('---'*33)    
-    print(FALSE)
-
-    print(f'READER New {Reader_new}')
-
-

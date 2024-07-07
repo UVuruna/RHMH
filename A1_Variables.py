@@ -1,8 +1,7 @@
-
 import time
-from tkinter import *
 TIME_START = time.time_ns()
 
+from tkinter import *
 
 # Decorators
 from datetime import datetime, date
@@ -44,6 +43,7 @@ from tkinter import simpledialog,messagebox
 import ttkbootstrap as tb
 
 # DBMS
+import pandas as pd
 from tkinter import filedialog
 from ttkbootstrap import widgets
 from ttkbootstrap.dialogs.dialogs import Messagebox
@@ -57,7 +57,7 @@ import inspect
 from tkinter.font import nametofont
 import threading
 from ttkbootstrap.style import Colors
-
+print(f"IMPORTINT time: {(time.time_ns()-TIME_START)/10**9:,.2f} s")
 
 WIDTH = 1720
 HEIGHT = 970
@@ -72,16 +72,22 @@ F_SIZE = 11
 
 UserSession = {'User':'offline_admin@gmail.com'}
 
+row_height = 28
+SIGNS = ['EQUAL','LIKE','BETWEEN','NOT LIKE']
 IMAGES = {  'icon' : 'C:/Users/vurun/Desktop/App/RHMH.ico' ,
             'Title': ('C:/Users/vurun/Desktop/App/GodHand_Transparent_smallest.png' , ('Pacijenti RHMH', 0.007, 0.033 )) ,
-            'Swap': [ ('C:/Users/vurun/Desktop/App/gray_swap.png',33,33) , ('C:/Users/vurun/Desktop/App/color_swap.png',33,33) ] ,
-            'Hide': [ ('C:/Users/vurun/Desktop/App/gray_hide.png',48,33) , ('C:/Users/vurun/Desktop/App/color_hide.png',48,33) ] ,
-            'Add': [ ('C:/Users/vurun/Desktop/App/color_add.png',28,28) , ('C:/Users/vurun/Desktop/App/darker_add.png',28,28) ] ,
-            'Remove': [ ('C:/Users/vurun/Desktop/App/color_remove.png',28,28) , ('C:/Users/vurun/Desktop/App/darker_remove.png',28,28) ] ,
+            'Swap': [ ('C:/Users/vurun/Desktop/App/dark_swap.png',33,33) , ('C:/Users/vurun/Desktop/App/color_swap.png',33,33) ] ,
+            'Hide': [ ('C:/Users/vurun/Desktop/App/dark_hide.png',48,33) , ('C:/Users/vurun/Desktop/App/color_hide.png',48,33) ] ,
+            'Add': [ ('C:/Users/vurun/Desktop/App/color_add.png',28,28) , ('C:/Users/vurun/Desktop/App/dark_add.png',28,28) ] ,
+            'Remove': [ ('C:/Users/vurun/Desktop/App/color_remove.png',28,28) , ('C:/Users/vurun/Desktop/App/dark_remove.png',28,28) ] ,
             'Play Video': 'C:/Users/vurun/Desktop/App/play_button.png' ,
             'Loading': 'C:/Users/vurun/Desktop/App/loading_circle.png' ,
             'Password': [('C:/Users/vurun/Desktop/App/eye.png',270,270)] , 
-            'MUVS':     [('C:/Users/vurun/Desktop/App/muvs12.png',280,280)] }
+            'MUVS':     [('C:/Users/vurun/Desktop/App/muvs12.png',280,280)],
+            'Signs': [  ('C:/Users/vurun/Desktop/App/sign_equal.png',48,32),
+                        ('C:/Users/vurun/Desktop/App/sign_like.png',48,32),
+                        ('C:/Users/vurun/Desktop/App/sign_between.png',48,32),
+                        ('C:/Users/vurun/Desktop/App/sign_notlike.png',48,32)   ]   }
 
 search_signs = {'EQUAL': {'sign':'=','sr':'JESTE','en':'EQUAL'},
                 'LIKE': {'sign':'≈','sr':'PRIBLIŽNO','en':'LIKE'},

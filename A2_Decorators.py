@@ -1,5 +1,6 @@
 from A1_Variables import *
 from B3_Media import Media
+from B2_SQLite import RHMH
 
 def spam_stopper(button:ctk.CTkButton,root:Tk):
     def decorator(func):
@@ -48,7 +49,7 @@ def method_efficency():
         return wrapper
     return decorator
 
-def error_catcher(class_object):
+def error_catcher():
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -59,8 +60,8 @@ def error_catcher(class_object):
                 print(traceback.format_exc())
                 Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')[:3]}' 
                 fullerror = traceback.format_exc()
-                class_object.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
-                                        'Query':func.__qualname__, 'Full Query':class_object.LoggingQuery,
+                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
+                                        'Query':func.__qualname__, 'Full Query':RHMH.LoggingQuery,
                                         'Error':str(e), 'Full Error': fullerror})
                 return
         return wrapper
@@ -85,10 +86,3 @@ class PasswordDialog(simpledialog.Dialog):
 
 def money():
     return f'MUVS {(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).total_seconds()//13*13:,.0f} $'
-
-class Singleton:
-    _instance = None
-    def __new__(cls, *args, **kwargs):
-        if not isinstance(cls._instance, cls):
-            cls._instance = object.__new__(cls, *args, **kwargs)
-        return cls._instance 

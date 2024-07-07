@@ -1,84 +1,94 @@
 from A1_Variables import *
-from A2_Decorators import method_efficency
 from B3_Media import Media
 from B2_SQLite import RHMH
-from C1_DBMS import DBMS,Buttons
+from C1_Controller import Controller
+from C2_ManageDB import ManageDB
 
-class FormFrame:
-    def __init__(self, root:Tk) -> None:
-        self.BUTT = Buttons()
-        self.DBMS = DBMS()
+class FormPanel:
+    Form_Frame:Frame = None
+    form_visible:BooleanVar = None
 
-        self.form_true = BooleanVar()
-        self.form_true.set(True)
-        self.root = root
+    DefaultForm:Frame = None
+    AlternativeForm:Frame = None
 
-        FormFrame.Form_button_fun =[self.BUTT.Add_Patient,
-                                    self.BUTT.Update_Patient,
-                                    self.BUTT.Delete_Patient,
-                                    self.BUTT.Fill_FromImage,
-                                    self.BUTT.Clear_Form    ]
+    valid_notblank = None
+    valid_dijagnoza = None
+    valid_godiste = None
+    valid_zaposleni = None
 
-        self.valid_notblank = root.register(self.BUTT.validate_notblank)
-        self.valid_dijagnoza = root.register(self.BUTT.validate_dijagnoza)
-        self.valid_godiste = root.register(self.BUTT.validate_godiste)
-        self.valid_zaposleni = root.register(self.BUTT.validate_zaposleni)
+    @staticmethod
+    def load_FormFrame(root:Tk) -> None:
+        FormPanel.form_visible = BooleanVar()
+        FormPanel.form_visible.set(True)
+        
+        FormPanel.Form_button_fun =[ManageDB.Add_Patient,
+                                    ManageDB.Update_Patient,
+                                    ManageDB.Delete_Patient,
+                                    ManageDB.Fill_FromImage,
+                                    ManageDB.Clear_Form    ]
+
+        FormPanel.valid_notblank = root.register(ManageDB.validate_notblank)
+        FormPanel.valid_dijagnoza = root.register(ManageDB.validate_dijagnoza)
+        FormPanel.valid_godiste = root.register(ManageDB.validate_godiste)
+        FormPanel.valid_zaposleni = root.register(ManageDB.validate_zaposleni)
 
             # PARENT FRAME for FORMS
-        self.Form_Frame = Frame(root, bd=bd_main_frame, relief=RIDGE)
-        self.Form_Frame.grid(row=1, column=0, padx=shape_padding[0], pady=shape_padding[1], sticky=NSEW)
-        self.Form_Frame.grid_rowconfigure(1,weight=1)
+        FormPanel.Form_Frame = Frame(root, bd=bd_main_frame, relief=RIDGE)
+        FormPanel.Form_Frame.grid(row=1, column=0, padx=shape_padding[0], pady=shape_padding[1], sticky=NSEW)
+        FormPanel.Form_Frame.grid_rowconfigure(1,weight=1)
 
-        self.BUTT.FormTitle = (self.Form_TopLabel(form_name),labelColor)
+        Controller.FormTitle = (FormPanel.Form_TopLabel(form_name),labelColor)
 
             # DEFAULT FORM CREATE
-        self.DefaultForm = Frame(self.Form_Frame)
-        self.DefaultForm.grid(row=1, column=0, columnspan=4, sticky=NSEW)
-        self.FormPatient_Create(self.DefaultForm, default_form_entry, form_groups['Default'], 'Default')
+        FormPanel.DefaultForm = Frame(FormPanel.Form_Frame)
+        FormPanel.DefaultForm.grid(row=1, column=0, columnspan=4, sticky=NSEW)
+        FormPanel.FormPatient_Create(FormPanel.DefaultForm, default_form_entry, form_groups['Default'], 'Default')
             # ALTERNATIVE FORM CREATE
-        self.AlternativeForm = Frame(self.Form_Frame)
-        self.AlternativeForm.grid(row=1, column=0, columnspan=4, sticky=NSEW)
-        self.AlternativeForm.grid_remove()
-        self.FormPatient_Create(self.AlternativeForm, alternative_form_entry, form_groups['Alternative'], 'Alternative')
-        self.FormPatient_Buttons(self.AlternativeForm,[3],Form_buttons)
+        FormPanel.AlternativeForm = Frame(FormPanel.Form_Frame)
+        FormPanel.AlternativeForm.grid(row=1, column=0, columnspan=4, sticky=NSEW)
+        FormPanel.AlternativeForm.grid_remove()
+        FormPanel.FormPatient_Create(FormPanel.AlternativeForm, alternative_form_entry, form_groups['Alternative'], 'Alternative')
+        FormPanel.FormPatient_Buttons(FormPanel.AlternativeForm,[3],Form_buttons)
 
-    def Form_TopLabel(self,formname):
+    @staticmethod
+    def Form_TopLabel(formname):
         gray_swap, color_swap, gray_hide, color_hide = Media.label_ImageLoad(IMAGES['Swap']+IMAGES['Hide'])
 
-        swap = tb.Label(self.Form_Frame, image=gray_swap)
+        swap = tb.Label(FormPanel.Form_Frame, image=gray_swap)
         swap.grid(row=0, column=0, sticky =NW)
-        swap.bind('<ButtonRelease-1>',self.swap_forms)
+        swap.bind('<ButtonRelease-1>',FormPanel.swap_forms)
         swap.bind('<Enter>', lambda event,img=color_swap: Media.hover_label_button(event,img))
         swap.bind('<Leave>', lambda event,img=gray_swap: Media.hover_label_button(event,img))
 
-        hide = tb.Label(self.Form_Frame, image=gray_hide)
+        hide = tb.Label(FormPanel.Form_Frame, image=gray_hide)
         hide.grid(row=0, column=3, sticky=NE)
-        hide.bind('<ButtonRelease-1>',self.remove_form_frame)
+        hide.bind('<ButtonRelease-1>',FormPanel.remove_form_frame)
         hide.bind('<Enter>', lambda event,img=color_hide: Media.hover_label_button(event,img))
         hide.bind('<Leave>', lambda event,img=gray_hide: Media.hover_label_button(event,img))
 
-        lbl = tb.Label(self.Form_Frame, anchor=CENTER, bootstyle=labelColor, text=formname, font=font_groups())
+        lbl = tb.Label(FormPanel.Form_Frame, anchor=CENTER, bootstyle=labelColor, text=formname, font=font_groups())
         lbl.grid(row=0, column=1, columnspan=2, padx=title_padding[0], pady=title_padding[1], sticky=NSEW)
 
-        swap.bind('<FocusIn>', lambda event,form='Default': self.BUTT.Validation_Method(event,form))
-        lbl.bind('<Enter>', lambda event,form='Default': self.BUTT.Validation_Method(event,form))
+        swap.bind('<FocusIn>', lambda event,form='Default': ManageDB.Validation_Method(event,form))
+        lbl.bind('<Enter>', lambda event,form='Default': ManageDB.Validation_Method(event,form))
         return lbl
 
-    def Images_MiniTable_Create(self,frame:Frame):
+    @staticmethod
+    def Images_MiniTable_Create(frame:Frame):
         scroll_x = tb.Scrollbar(frame, orient=HORIZONTAL, bootstyle=f'{bootstyle_table}-round')
         scroll_y = tb.Scrollbar(frame, orient=VERTICAL, bootstyle=f'{bootstyle_table}-round')
 
         table = tb.ttk.Treeview(frame, columns=['ID', 'Opis', 'Veličina', 'width', 'height'],
                                 xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set, show='tree')
         table.grid(row=0, column=0, sticky=NSEW)
-        table.bind('<Double-1>',self.BUTT.Show_Image_FullScreen)
+        table.bind('<Double-1>',ManageDB.Show_Image_FullScreen)
 
         def fill_Opis(event):
             try:
                 opis:str = event.widget.item(event.widget.focus())['values'][1]
                 opis = opis.split('_')[1]
                 opis = opis.split('.')[0]
-                self.BUTT.Patient_FormVariables['slike']['Opis'].set(opis)
+                Controller.Patient_FormVariables['slike']['Opis'].set(opis)
             except IndexError:
                 return
 
@@ -105,7 +115,8 @@ class FormFrame:
         frame.grid_propagate(False)
         return table
 
-    def FormPatient_Create(self, parent:Frame, form_dict, group, form):
+    @staticmethod
+    def FormPatient_Create( parent:Frame, form_dict, group, form):
         n=1
         group_names = []
         group_childs = []
@@ -138,73 +149,76 @@ class FormFrame:
                      padx=(form_padding_entry[0][0],form_padding_entry[0][1]), pady=form_padding_entry[1], sticky=NSEW)
 
             if data[1] in ['StringVar','Combobox','Validate']:
-                self.BUTT.Patient_FormVariables[table][txt] = StringVar()
+                Controller.Patient_FormVariables[table][txt] = StringVar()
                 if data[1]=='StringVar':
-                    ent = tb.Entry(parent, textvariable=self.BUTT.Patient_FormVariables[table][txt], width=data[2], font=font_entry)
+                    ent = tb.Entry(parent, textvariable=Controller.Patient_FormVariables[table][txt], width=data[2], font=font_entry)
                 elif data[1]=='Combobox':
-                    ent = tb.Combobox(parent, values=data[3], textvariable=self.BUTT.Patient_FormVariables[table][txt], width=data[2],
-                                      font=font_entry, validate='focus', validatecommand=(self.valid_notblank, '%P'), state='readonly')
-                    self.BUTT.Validation_Widgets[form].append(ent)
+                    ent = tb.Combobox(parent, values=data[3], textvariable=Controller.Patient_FormVariables[table][txt], width=data[2],
+                                      font=font_entry, validate='focus', validatecommand=(FormPanel.valid_notblank, '%P'), state='readonly')
+                    Controller.Validation_Widgets[form].append(ent)
                 elif data[1] == 'Validate':
-                    validcmd = self.valid_dijagnoza if ('dijagnoza' in txt or 'Uzrok' in txt) else \
-                                    self.valid_godiste if txt=='Godište' else \
-                                        self.valid_zaposleni if txt in RHMH.dr_funkcija else \
-                                            self.valid_notblank
-                    ent = tb.Entry(parent, width=data[2], textvariable=self.BUTT.Patient_FormVariables[table][txt], font=font_entry,
+                    validcmd = FormPanel.valid_dijagnoza if ('dijagnoza' in txt or 'Uzrok' in txt) else \
+                                    FormPanel.valid_godiste if txt=='Godište' else \
+                                        FormPanel.valid_zaposleni if txt in RHMH.dr_funkcija else \
+                                            FormPanel.valid_notblank
+                    ent = tb.Entry(parent, width=data[2], textvariable=Controller.Patient_FormVariables[table][txt], font=font_entry,
                                    validate='focus', validatecommand=(validcmd, '%P'))
-                    self.BUTT.Validation_Widgets[form].append(ent)
+                    Controller.Validation_Widgets[form].append(ent)
             elif data[1] == 'Text':
                 height = 4 if txt=='Dg Latinski' else 2
                 ent = tb.Text(parent, width=data[2], height=height, font=font_entry)
-                self.BUTT.Patient_FormVariables[table][txt] = ent
+                Controller.Patient_FormVariables[table][txt] = ent
                 if txt in RHMH.dr_funkcija:
-                    ent.bind('<FocusIn>', self.BUTT.validate_zaposleni_Text)
-                    ent.bind('<FocusOut>', self.BUTT.validate_zaposleni_Text)
-                    self.BUTT.Validation_Widgets[form].append(ent)
+                    ent.bind('<FocusIn>', ManageDB.validate_zaposleni_Text)
+                    ent.bind('<FocusOut>', ManageDB.validate_zaposleni_Text)
+                    Controller.Validation_Widgets[form].append(ent)
             elif data[1] == 'DateEntry':
                 ent = widgets.DateEntry(parent, width=data[2], borderwidth=2, dateformat='%d-%b-%Y', firstweekday=0)
                 ent.entry.delete(0, END)
-                self.BUTT.Patient_FormVariables[table][txt] = ent
+                Controller.Patient_FormVariables[table][txt] = ent
             elif data[1] == 'Info':
                 ent = tb.Label(parent, anchor=CENTER, justify=CENTER, bootstyle=labelColor, text='\n', font=font_label())
                 ent.grid(row=i+n, column=0, columnspan=4,  padx=form_padding_entry[0], pady=form_padding_entry[1], sticky=NSEW)
-                self.BUTT.PatientInfo = ent
+                Controller.PatientInfo = ent
                 ent = None
             elif data[1] == 'Slike':
                 ent = Frame(parent)
                 ent.grid(row=i+n, column=0, columnspan=4,  padx=(12,0), pady=form_padding_entry[1], sticky=NSEW)
                 parent.grid_rowconfigure(i+n, weight=1)
-                sliketable = self.Images_MiniTable_Create(ent)
-                self.BUTT.Patient_FormVariables['slike'][txt] = sliketable
+                sliketable = FormPanel.Images_MiniTable_Create(ent)
+                Controller.Patient_FormVariables['slike'][txt] = sliketable
                 ent = None
             if ent:
                 ent.grid(row=i+n, column=2, columnspan=2, padx=form_padding_entry[0], pady=form_padding_entry[1], sticky='nsw')
 
-    def FormPatient_Buttons(self,parent,split,buttons):
+    @staticmethod
+    def FormPatient_Buttons(parent,split,buttons):
         Frame(parent).grid(row=16, columnspan=4, pady=12) ## prazan frame za odvajanje (6*2 == 12)
-        for i,((but,btype),cmd) in enumerate(zip(buttons,FormFrame.Form_button_fun)):
+        for i,((but,btype),cmd) in enumerate(zip(buttons,FormPanel.Form_button_fun)):
             if i in split or i==0:
                 Buttons_Frame = Frame(parent)
                 Buttons_Frame.grid(row=18+i, columnspan=4)
-                Buttons_Frame.bind('<Enter>', lambda event,form='Alternative': self.BUTT.Validation_Method(event,form))
+                Buttons_Frame.bind('<Enter>', lambda event,form='Alternative': ManageDB.Validation_Method(event,form))
 
             butt = ctk.CTkButton(Buttons_Frame, text=but, width=form_butt_width,height=form_butt_height, corner_radius=12, font=font_label(),
                                  fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                                  command=cmd)
             butt.grid(row=0, column=i, padx=form_padding_button[0], pady=form_padding_button[1])
-            self.BUTT.buttons[but] = butt
+            Controller.buttons[but] = butt
             if btype:
                 butt.configure(fg_color=ThemeColors[btype])
         Frame(parent).grid(row=24, columnspan=4, pady=12) ## prazan frame za odvajanje (6*2 == 12)    
 
-    def remove_form_frame(self,event):
-        self.Form_Frame.grid_forget()
-        self.form_true.set(False)
+    @staticmethod
+    def remove_form_frame(event):
+        FormPanel.Form_Frame.grid_forget()
+        FormPanel.form_visible.set(False)
     
-    def swap_forms(self,event):
-        if self.DefaultForm.winfo_ismapped():
-            self.AlternativeForm.grid()
-            self.DefaultForm.grid_remove()
-        elif self.AlternativeForm.winfo_ismapped():
-            self.DefaultForm.grid()
-            self.AlternativeForm.grid_remove()
+    @staticmethod
+    def swap_forms(event):
+        if FormPanel.DefaultForm.winfo_ismapped():
+            FormPanel.AlternativeForm.grid()
+            FormPanel.DefaultForm.grid_remove()
+        elif FormPanel.AlternativeForm.winfo_ismapped():
+            FormPanel.DefaultForm.grid()
+            FormPanel.AlternativeForm.grid_remove()
