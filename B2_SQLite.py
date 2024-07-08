@@ -18,6 +18,11 @@ class Database:
         self.logs = self.show_columns('logs')[:-2]
         self.session = self.show_columns('session')
 
+        self.email = [i[0] for i in RHMH.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')]
+        self.pol = [i[0] for i in RHMH.execute_selectquery("SELECT DISTINCT Pol from pacijent")]
+        self.opis_slike = [i[0] for i in RHMH.execute_selectquery("SELECT DISTINCT Opis from slike")]
+        self.format_slike = [i[0] for i in RHMH.execute_selectquery("SELECT DISTINCT Format from slike")]
+        
         self.dg_kategorija = [i[0] for i in self.execute_selectquery('SELECT Kategorija from kategorija')]
         self.dr_funkcija = [i[0] for i in self.execute_selectquery('SELECT Funkcija from funkcija')]
 
@@ -34,7 +39,6 @@ class Database:
         with self.lock:
             try:
                 self.connect()
-                table = f'`{table}`' if ' ' in table else table
                 query = f'PRAGMA table_info({table})'
 
                 self.cursor.execute(query)
@@ -47,25 +51,56 @@ class Database:
         formatted_query = sqlparse.format(query, reindent=True, keyword_case='upper')
         return formatted_query
 
-    def creating_where_part(self, col:str, value:str, andor:str):
-        if isinstance(value,tuple) and len(value)==2:
-            return f'( {col} BETWEEN "{value[0]}" AND "{value[1]}" ) {andor} '
-        elif isinstance(value,tuple) and len(value)==1:
-            TXT = col.replace('`','')
-            if TXT in self.dg_kategorija:
-                self.lock.release()
-                kategorija = self.execute_selectquery(f'SELECT id_kategorija from kategorija WHERE Kategorija = "{TXT}"')[0][0]
-                self.lock.acquire()
-                return f'( `MKB - šifra` LIKE "%{value[0]}%" AND dijagnoza.id_kategorija = {kategorija} ) {andor} '
-            elif TXT in self.dr_funkcija:
-                self.lock.release()
-                funkcija = self.execute_selectquery(f'SELECT id_funkcija from funkcija WHERE Funkcija = "{TXT}"')[0][0]
-                self.lock.acquire()
-                return f'( Zaposleni LIKE "%{value[0]}%" AND operacija.id_funkcija = {funkcija} ) {andor} '
-            else:
-                return f'{col} LIKE "%{value[0]}%" {andor} '
+    def creating_where_part(self, column:str, values:dict):
+        if column in self.dg_kategorija:
+            self.lock.release()
+            kategorija = self.execute_selectquery(f'SELECT id_kategorija from kategorija WHERE Kategorija = "{column}"')[0][0]
+            self.lock.acquire()
+            returnquery = ''
+            for sign,value in values.items():
+                if sign == 'EQUAL':
+                    if len(value)>1:
+                        value = [f'"{v}"' for v in value]
+                        returnquery += f'( `MKB - šifra` IN ({', '.join(value)}) AND dijagnoza.id_kategorija = {kategorija} ) OR '
+                    else:
+                        returnquery += f'( `MKB - šifra` = "{value[0]}" AND dijagnoza.id_kategorija = {kategorija} ) OR '
+                elif sign in ['LIKE','NOT LIKE']:
+                    for val in value:
+                        returnquery += f'( `MKB - šifra` {sign} "%{val}%" AND dijagnoza.id_kategorija = {kategorija} ) OR '
+
+        elif column in self.dr_funkcija:
+            self.lock.release()
+            funkcija = self.execute_selectquery(f'SELECT id_funkcija from funkcija WHERE Funkcija = "{column}"')[0][0]
+            self.lock.acquire()
+            for sign,value in values.items():
+                if sign == 'EQUAL':
+                    if len(value)>1:
+                        value = [f'"{v}"' for v in value]
+                        returnquery += f'( Zaposleni IN ({', '.join(value)}) AND operacija.id_funkcija = {funkcija} ) OR '
+                    else:
+                        returnquery += f'( Zaposleni = "{value[0]}" AND operacija.id_funkcija = {funkcija} ) OR '
+                elif sign in ['LIKE','NOT LIKE']:
+                    for val in value:
+                        returnquery += f'( Zaposleni {sign} "%{val}%" AND operacija.id_funkcija = {funkcija} ) OR '
+
         else:
-            return f'{col} = "{value}" {andor} '
+            column = column if ' ' not in column else f'`{column}`'
+            for sign,value in values.items():
+                if sign == 'EQUAL':
+                    if len(value)>1:
+                        value = [f'"{v}"' for v in value]
+                        returnquery += f'{column} IN ({', '.join(value)}) OR '
+                    else:
+                        returnquery += f'{column} = "{value[0]}" OR '
+                elif sign in ['LIKE','NOT LIKE']:
+                    for val in value:
+                        returnquery += f'{column} {sign} "%{val}%" OR '
+                elif sign == 'BETWEEN':
+                    for val in value:
+                        returnquery += f'( {column} {sign} "{val[0]}" AND "{val[1]}" ) OR '
+        returnquery = returnquery.rstrip(' OR ')
+        return returnquery
+
          
     def execute_selectquery(self,query):
         with self.lock:
@@ -81,20 +116,12 @@ class Database:
     def execute_select(self, table, *args, **kwargs):
         try:
             self.lock.acquire()
-            table = f'`{table}`' if ' ' in table else table       
             select_values = ','.join(f'`{a}`' if ' ' in a else a for a in args)
             where_pairs = ''
 
-            for k,v in kwargs.items():
-                if v:
-                    col = f'`{k}`' if ' ' in k else k
-                    if isinstance(v,set):
-                        where_pairs += '( '
-                        for val in v:
-                            where_pairs += self.creating_where_part(col,val,'OR')
-                        where_pairs = where_pairs.rstrip(' OR ') + ' ) AND '
-                    else:
-                        where_pairs += self.creating_where_part(col,v,'AND')
+            for k,values in kwargs.items():
+                values:dict
+                where_pairs += f'( {self.creating_where_part(k,values)} ) AND '
             where_pairs = where_pairs.rstrip(' AND ')
             
             query = f'SELECT {select_values} FROM {table}'
@@ -116,43 +143,37 @@ class Database:
     def execute_join_select(self, table, *args, **kwargs):
         try:
             self.lock.acquire()
-            table = f'`{table}`' if ' ' in table else table
             select_values = ''
             joindiagnose = False
             joinoperation = False
             for val in args:
-                TXT = f'`{val}`' if ' ' in val else val
+                column = f'`{val}`' if ' ' in val else val
                 if val in self.dg_kategorija:
                     joindiagnose = True
                     self.lock.release()
                     kategorija = self.execute_selectquery(f'SELECT id_kategorija from kategorija WHERE Kategorija = "{val}"')[0][0]
                     self.lock.acquire()
-                    select_values += f'GROUP_CONCAT(DISTINCT CASE WHEN dijagnoza.id_kategorija={kategorija} THEN `MKB - šifra` END) AS {TXT},'
+                    select_values += f'GROUP_CONCAT(DISTINCT CASE WHEN dijagnoza.id_kategorija={kategorija} THEN `MKB - šifra` END) AS {column},'
                 elif val in self.dr_funkcija:
                     joinoperation = True
                     self.lock.release()
                     funkcija = self.execute_selectquery(f'SELECT id_funkcija from funkcija WHERE Funkcija = "{val}"')[0][0]
                     self.lock.acquire()
-                    select_values += f'GROUP_CONCAT(DISTINCT CASE WHEN operacija.id_funkcija = {funkcija} THEN Zaposleni END) AS {TXT},'
+                    select_values += f'GROUP_CONCAT(DISTINCT CASE WHEN operacija.id_funkcija = {funkcija} THEN Zaposleni END) AS {column},'
                 else:
-                    select_values += f'{table}.{TXT},'
+                    select_values += f'{table}.{column},'
             select_values = select_values.rstrip(',')
 
             where_pairs = ''
-            for k,v in kwargs.items():
-                TXT = f'`{k}`' if ' ' in k else k
+            for k,values in kwargs.items():
+                values:dict
                 if k in self.dg_kategorija:
                     joindiagnose = True
                 elif k in self.dr_funkcija:
                     joinoperation = True
-
-                if isinstance(v,set):
-                    where_pairs += '( '
-                    for val in v:
-                        where_pairs += self.creating_where_part(TXT,val,'OR')
-                    where_pairs = where_pairs.rstrip(' OR ') + ' ) AND '
-                else:
-                    where_pairs += self.creating_where_part(TXT,v,'AND')
+                for k,values in kwargs.items():
+                    values:dict
+                    where_pairs += f'( {self.creating_where_part(k,values)} ) AND '
             where_pairs = where_pairs.rstrip(' AND ')
 
             join_tables = ''
@@ -168,8 +189,8 @@ class Database:
 
             query = f'SELECT {select_values} FROM {table} {join_tables} '
             if where_pairs:
-                query += f' WHERE {where_pairs}'
-            query += f' GROUP BY {table}.id_pacijent'
+                query += f'WHERE {where_pairs} '
+            query += f'GROUP BY {table}.id_pacijent'
 
             if 'FROM pacijent' in query:
                 self.PatientQuery = query
@@ -287,7 +308,6 @@ class Database:
                 value.append(id[1])
                 value = tuple(value)
 
-                table = table if ' ' not in table else f'`{table}`'
                 logginquery = f'UPDATE {table} SET {loggin} WHERE {id[0]} = {id[1]}'
                 query = f'UPDATE {table} SET {settin} WHERE {id[0]} = ?'
 
@@ -316,7 +336,6 @@ class Database:
                 loggin = loggin.rstrip(', ')
                 values = tuple(values)
 
-                table = table if ' ' not in table else f'`{table}`'
                 query = f'INSERT INTO {table} ({columns}) VALUES ({('?, '*counter).rstrip(', ')})'
                 logginquery = f'INSERT INTO {table} ({columns}) VALUES ({loggin})'
 
@@ -337,7 +356,6 @@ class Database:
                 for ID in ids:
                     where += f'{ID[0]} = {ID[1]} AND '
                 where = where.rstrip(' AND ')
-                table = table if ' ' not in table else f'`{table}`'
                 query = f'DELETE FROM {table} WHERE {where}'
 
                 self.LoggingQuery = self.format_sql(query)
@@ -394,4 +412,11 @@ if __name__=='__main__':
     print(RHMH.dr_funkcija)
     print(RHMH.logs)
     print(RHMH.session)
+
+    print(RHMH.opis_slike)
+    print(RHMH.format_slike)
+    print(RHMH.pol)
     
+
+    table = RHMH.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')
+    print(table)

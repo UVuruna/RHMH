@@ -73,7 +73,7 @@ F_SIZE = 11
 UserSession = {'User':'offline_admin@gmail.com'}
 
 row_height = 28
-SIGNS = ['EQUAL','LIKE','BETWEEN','NOT LIKE']
+SIGNS = ['EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN']
 IMAGES = {  'icon' : 'C:/Users/vurun/Desktop/App/RHMH.ico' ,
             'Title': ('C:/Users/vurun/Desktop/App/GodHand_Transparent_smallest.png' , ('Pacijenti RHMH', 0.007, 0.033 )) ,
             'Swap': [ ('C:/Users/vurun/Desktop/App/dark_swap.png',33,33) , ('C:/Users/vurun/Desktop/App/color_swap.png',33,33) ] ,
@@ -84,10 +84,10 @@ IMAGES = {  'icon' : 'C:/Users/vurun/Desktop/App/RHMH.ico' ,
             'Loading': 'C:/Users/vurun/Desktop/App/loading_circle.png' ,
             'Password': [('C:/Users/vurun/Desktop/App/eye.png',270,270)] , 
             'MUVS':     [('C:/Users/vurun/Desktop/App/muvs12.png',280,280)],
-            'Signs': [  ('C:/Users/vurun/Desktop/App/sign_equal.png',48,32),
-                        ('C:/Users/vurun/Desktop/App/sign_like.png',48,32),
-                        ('C:/Users/vurun/Desktop/App/sign_between.png',48,32),
-                        ('C:/Users/vurun/Desktop/App/sign_notlike.png',48,32)   ]   }
+            'Signs': [  ('C:/Users/vurun/Desktop/App/sign_equal.png',42,28),
+                        ('C:/Users/vurun/Desktop/App/sign_like.png',42,28),
+                        ('C:/Users/vurun/Desktop/App/sign_notlike.png',42,28),
+                        ('C:/Users/vurun/Desktop/App/sign_between.png',42,28)   ]   }
 
 search_signs = {'EQUAL': {'sign':'=','sr':'JESTE','en':'EQUAL'},
                 'LIKE': {'sign':'≈','sr':'PRIBLIŽNO','en':'LIKE'},

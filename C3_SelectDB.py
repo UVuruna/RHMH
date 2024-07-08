@@ -87,8 +87,13 @@ class SelectDB(Controller):
     def search_bar_remove(event=None):
         to_remove = [k for k in Controller.SearchBar_widgets.keys() if int(k[-1]) == Controller.SearchBar_number]
         for key in to_remove:
-            SelectDB.empty_widget(Controller.SearchBar_widgets[key])
-            Controller.SearchBar_widgets[key].grid_remove()
+            widget:Frame = Controller.SearchBar_widgets[key]
+            if 'bar' in key:
+                widget.grid_remove()
+            else:
+                SelectDB.empty_widget(widget)
+                if not ('option' in key):
+                    widget.grid_remove()
         Controller.SearchBar_number-=1
 
         if not Controller.SearchAdd_Button.winfo_ismapped():
@@ -102,6 +107,7 @@ class SelectDB(Controller):
             Controller.SearchRemove_Button.grid()
         Controller.SearchBar_number+=1
         Controller.SearchBar_widgets[f'search_option_{Controller.SearchBar_number}'].grid()
+        Controller.SearchBar_widgets[f'search_bar_{Controller.SearchBar_number}'].grid()
 
         if Controller.SearchBar_number==max_searchby:
             Controller.SearchAdd_Button.grid_remove()
@@ -184,40 +190,90 @@ class SelectDB(Controller):
     @staticmethod
     def search_options(n,event):
         search_option = Controller.SearchBar_widgets[f'search_option_{n}'].get()
-        if search_option == 'Pol':
-            for k,v in Controller.SearchBar_widgets.items():
-                if k==f'search_type_{n}':
-                    v.configure(text='=')
-                v.grid() if k==f'equal_{n}' or ('search' in k  and k[-1]==str(n)) \
-                    else v.grid_remove() if k[-1]==str(n) else None
-        elif search_option in ['Godište','Starost']:
-            for k,v in Controller.SearchBar_widgets.items():
-                if k==f'search_type_{n}':
-                    v.configure(text='od-do')
-                v.grid() if k==f'from_{n}' or k==f'to_{n}' or ('search' in k and k[-1]==str(n))  \
-                    else v.grid_remove() if k[-1]==str(n) else None
-        elif 'Datum' in search_option:
-            for k,v in Controller.SearchBar_widgets.items():
-                if k==f'search_type_{n}':
-                    v.configure(text='od-do')
-                v.grid() if ('date' in k or 'search' in k) and k[-1]==str(n) \
-                    else v.grid_remove() if k[-1]==str(n) else None
-        else:
-            for k,v in Controller.SearchBar_widgets.items():
-                if k==f'search_type_{n}':
-                    v.configure(text='≈')
-                v.grid() if k==f'like_{n}' or ('search' in k and k[-1]==str(n)) \
-                    else v.grid_remove() if k[-1]==str(n) else None
 
-    def search_options_swap(event, signimages:list, signorder:list):
+        if search_option in ['Datum Prijema', 'Datum Operacije', 'Datum Otpusta', 'ID Time']:
+            for widget_type,widget in Controller.SearchBar_widgets.items():
+                if widget_type == f'search_sign_{n}':
+                    widget:tb.Label # SAMO BETWEEN
+                    widget.unbind('<ButtonRelease-1>')
+                    widget.configure(image=Controller.signimages[-1], text=SIGNS[-1])
+
+                widget.grid() if widget_type in [f'date1_{n}',f'date2_{n}'] or ('search' in widget_type and widget_type[-1]==str(n))  \
+                    else widget.grid_remove() if widget_type[-1]==str(n) else None
+                    
+        elif search_option in ['Godište', 'Starost', 'Veličina', 'width', 'height', 'pixels']:
+            for widget_type,widget in Controller.SearchBar_widgets.items():
+                if widget_type == f'search_sign_{n}':
+                    widget:tb.Label
+                    images = Controller.signimages[::-1]
+                    signs = SIGNS[::-1]
+                    out = signs.index('LIKE')
+                    images.pop(out)
+                    signs.pop(out)
+                    widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
+                    widget.configure(image=images[0], text=SIGNS[0])
+
+                widget.grid() if widget_type in [f'entry1_{n}',f'entry2_{n}'] or ('search' in widget_type and widget_type[-1]==str(n))  \
+                    else widget.grid_remove() if widget_type[-1]==str(n) else None
+                
+        elif search_option in ['Pol', 'Format', 'Opis', 'Email']:
+            for widget_type,widget in Controller.SearchBar_widgets.items():
+                if widget_type == f'search_sign_{n}':
+                    widget:tb.Label
+                    images = Controller.signimages[:]
+                    signs = SIGNS[:]
+                    for out in [SIGNS.index('BETWEEN'),SIGNS.index('LIKE')]:
+                        images.pop(out)
+                        signs.pop(out)
+                    widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
+                    widget.configure(image=images[0], text=SIGNS[0])
+
+                if widget_type==f'combo_{n}':
+                    widget:tb.Combobox
+                    values = RHMH.email if search_option=='Email' else \
+                                RHMH.pol if search_option=='Pol' else \
+                                    RHMH.opis_slike if search_option=='Opis' else \
+                                        RHMH.format_slike if search_option=='Format' else None
+                    widget.configure(values=values, height=len(values))
+
+                widget.grid() if widget_type==f'combo_{n}' or ('search' in widget_type and widget_type[-1]==str(n)) \
+                    else widget.grid_remove() if widget_type[-1]==str(n) else None
+        else:
+            for widget_type,widget in Controller.SearchBar_widgets.items():
+                if widget_type == f'search_sign_{n}':
+                    widget:tb.Label
+                    images = Controller.signimages[:]
+                    signs = SIGNS[:]
+                    out = signs.index('BETWEEN')
+                    images.pop(out)
+                    signs.pop(out)
+                    widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
+                    widget.configure(image=images[0], text=SIGNS[0])
+
+                widget.grid() if widget_type == f'entry1_{n}' or ('search' in widget_type and widget_type[-1]==str(n))  \
+                    else widget.grid_remove() if widget_type[-1]==str(n) else None
+
+    def search_options_swap(event, signimages:list, signorder:list, n:int):
         signlabel:tb.Label = event.widget
         for order in [signimages,signorder]: # rotation
             last_choice = order.pop(0) 
             order.append(last_choice)
-        
+
+        widg_type:str ; widget:tb.Entry ; widget:widgets.DateEntry
+        for widg_type,widget in Controller.SearchBar_widgets.items():
+            if widg_type[-1]!=str(n):
+                continue
+            if 'BETWEEN' in signorder:
+                if widg_type == f'entry2_{n}':
+                    if signorder[0] != 'BETWEEN':
+                        widget.grid_remove()
+                    else:
+                        widget.grid()
+                    break
+
         signlabel.configure(image=signimages[0], text=signorder[0])
-        print(signlabel.cget("text"))
-        signlabel.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,signimages,signorder))
+        print(f"text u sign labelu: {signlabel.cget("text")}")
+        signlabel.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event, signimages, signorder, n))
 
     @staticmethod
     def Graph_afterchoice():
@@ -251,7 +307,6 @@ class SelectDB(Controller):
         def removing_widgets(widgets_to_remove):
             widget:tb.Combobox
             stringvar:StringVar
-
             for widgetname in widgets_to_remove:
                 widget,stringvar = Controller.Graph_FormVariables[widgetname]
                 if widget.winfo_ismapped():
@@ -319,7 +374,6 @@ class SelectDB(Controller):
                         add_button.grid()
             return
 
-        print(Next_Names)
         widgetnames = ['Y','X1-1','X1-2','X1-3','X2-1','X2-2','X2-3']
         removing_widgets(widgetnames[widgetnames.index(Next_Names[-1])+1:])
         if not Values:
@@ -426,54 +480,55 @@ class SelectDB(Controller):
         focus = Controller.NoteBook.index(Controller.NoteBook.select())
         TAB = Controller.NoteBook.tab(focus,'text')
 
-        def searching_dict_create():
+        def searching_dict_create() -> set:
+            def saving_location(SIGN):
+                if not SIGN in searching[option]:
+                    searching[option][SIGN] = set()
+                return searching[option][SIGN]
+            
             searching = dict()
             for n in range(1,Controller.SearchBar_number+1):
-                option = Controller.SearchBar_widgets[f'search_option_{n}'].get()
+                column_widget:tb.Combobox = Controller.SearchBar_widgets[f'search_option_{n}']
+                if not column_widget.winfo_ismapped(): 
+                    break # Stane cim prvi nije mapiran dalje nema nista
+
+                option = Controller.get_widget_value(column_widget) # COLUMN
+                if not option: 
+                    return # Izlazi iz funkcija ako ima prazan SEARCH
+                
                 try:
                     searching[option]
                 except KeyError:
-                    searching[option] = set()
-                if not option:
-                    continue
-                else:
-                    search_type = Controller.SearchBar_widgets[f'search_type_{n}'].cget('text')
+                    searching[option] = dict()
 
-                if search_type == 'od-do':
-                    if 'Datum' in option:
+                search_type = Controller.get_widget_value(Controller.SearchBar_widgets[f'search_sign_{n}']) # SIGN
+                searchlocation:set = saving_location(search_type) # DICT lokacija gde ce ubacivati vrednost
+
+                if search_type == 'BETWEEN': # Dodaje TUPLE (x,y)
+                    if 'Datum' in option or option=='ID Time':
                         # FROM Form Date Formate TO RHMH Date Format
-                        searching[option].add((datetime.strptime(Controller.SearchBar_widgets[f'date_from_{n}'].entry.get(),'%d-%b-%Y').strftime('%Y-%m-%d'),
-                                            datetime.strptime(Controller.SearchBar_widgets[f'date_to_{n}'].entry.get(),'%d-%b-%Y').strftime('%Y-%m-%d')))
+                        fromdate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date1_{n}'])
+                        todate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date1_{n}'])
+                        try:
+                            fromdate = datetime.strptime(fromdate,'%d-%b-%Y').strftime('%Y-%m-%d')
+                            todate = datetime.strptime(todate,'%d-%b-%Y').strftime('%Y-%m-%d')
+                        except Exception:
+                            pass
+                        searchlocation.add( ( fromdate, todate ) )
                     else:
-                        searching[option].add((Controller.SearchBar_widgets[f'from_{n}'].get(),Controller.SearchBar_widgets[f'to_{n}'].get()))
-                elif search_type == '=':
-                    searching[option].add(Controller.SearchBar_widgets[f'equal_{n}'].get())
-                else: # Like ≈
-                    searching[option].add((Controller.SearchBar_widgets[f'like_{n}'].get(),))
+                        From = Controller.get_widget_value(Controller.SearchBar_widgets[f'entry1_{n}'])
+                        To = Controller.get_widget_value(Controller.SearchBar_widgets[f'entry2_{n}'])
+                        searchlocation.add( ( From,To ) )
 
-            for k,v in searching.items(): # OVO JE ZBOG SETOVA DA PREBACI U LISTU
-                if len(v)==1:   # Uvek je prvo set jer pretpostavlja da ce ih biti vise istih
-                    searching[k] = list(v)[0]
+                elif search_type in ['EQUAL','LIKE','NOT LIKE']: 
+                    searchlocation.add(Controller.get_widget_value(Controller.SearchBar_widgets[f'entry1_{n}']))
+
             return searching
-
-        if TAB != 'Slike': # Ovo je da bi SLIKE table mogao sa prazan search da filtrira sta se nalazi u PACIJENT tabeli
-            for element in Controller.SearchBar.winfo_children():
-                if element.winfo_ismapped():
-                    if isinstance(element,Entry):
-                        if element.get():
-                            continue
-                        else:
-                            return
-                    elif isinstance(element,widgets.DateEntry):
-                        if element.entry.get():
-                            continue
-                        else:
-                            return
 
         if TAB == 'Pacijenti':
             columns = SelectDB.selected_columns(Controller.Pacijenti_ColumnVars.items() , Controller.Table_Pacijenti , columnvar=True)
             searching = searching_dict_create()
-            view = SelectDB.LoggingData(RHMH.execute_join_select('pacijent',*(columns),**searching),'Pacijenti Search SELECT')
+            view = RHMH.execute_join_select('pacijent',*(columns),**searching)
 
             for item in Controller.Table_Pacijenti.get_children():
                 Controller.Table_Pacijenti.delete(item)
@@ -482,7 +537,7 @@ class SelectDB(Controller):
 
         elif TAB == 'Slike':
             searching = searching_dict_create()
-            view = SelectDB.LoggingData(RHMH.execute_select('slike',*(Controller.TableSlike_Columns[1:]),**searching),'Slike Search SELECT')
+            view = RHMH.execute_select('slike',*(Controller.TableSlike_Columns[1:]),**searching)
   
             for item in Controller.Table_Slike.get_children():
                 Controller.Table_Slike.delete(item)
@@ -491,7 +546,7 @@ class SelectDB(Controller):
 
         elif TAB == 'Katalog':
             searching = searching_dict_create()
-            view = SelectDB.LoggingData(RHMH.execute_select('mkb10',*(Controller.TableMKB_Columns[1:]),**searching),'MKB Search SELECT')
+            view = RHMH.execute_select('mkb10',*(Controller.TableMKB_Columns[1:]),**searching)
 
             for item in Controller.Table_MKB.get_children():
                 Controller.Table_MKB.delete(item)
@@ -627,11 +682,13 @@ class SelectDB(Controller):
     def tab_change(event):
 
         def filter_buttons_swap(maintable, switch):
+            filtermain:tb.Checkbutton = Controller.buttons['Filter Main Table'][0]
             if switch is True:
-                Controller.buttons['Filter Main Table'][0].grid()
+                filtermain.grid()
             else:
-                Controller.buttons['Filter Main Table'][0].grid_remove()
+                filtermain.grid_remove()
 
+            widget:ctk.CTkButton ; widget:tb.Checkbutton
             for widget in Controller.buttons['Filter Patient']:
                 if maintable is False:
                     widget.grid_remove()
@@ -648,11 +705,15 @@ class SelectDB(Controller):
             for i in range(1,max_searchby+1):
                 Controller.SearchBar_widgets[f'search_option_{i}'].configure(values=values)
 
-            for Type,Widget in Controller.SearchBar_widgets.items():
-                SelectDB.empty_widget(Widget)
-                if 'search_option' not in Type:
+            Widget:tb.Entry
+            for Type,Widget in Controller.SearchBar_widgets.items(): # Ovo sredjuje samo prvu search liniju sto je ostala
+                if Type[-1]!='1':
+                    continue
+                if not ('option' in Type or 'bar' in Type):
                     if Widget.winfo_ismapped():
-                        Widget.grid_remove() 
+                        Widget.grid_remove()
+                SelectDB.empty_widget(Widget)
+
 
         focus = Controller.NoteBook.index(Controller.NoteBook.select())
         TAB = Controller.NoteBook.tab(focus,'text')

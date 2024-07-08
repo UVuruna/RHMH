@@ -176,54 +176,48 @@ class MainPanel:
         n = Controller.SearchBar_number
         ROW = Controller.SearchBar_number-1
 
-        def grid_set(widget,col,colspan=1,remove=True):
-            widget.grid(row=ROW, column=col, columnspan=colspan, padx=search_padding[0], pady=search_padding[1],sticky=EW)
-            if remove:
-                widget.grid_remove()
+        unite_frame = Frame(Controller.SearchBar)
+        unite_frame.grid(row=ROW, column=4, sticky=EW)
+        Controller.SearchBar_widgets[f'search_bar_{Controller.SearchBar_number}'] = unite_frame
 
         def create_widgets():
+            # Selectin SEARCH Column
             col_val = Controller.TablePacijenti_Columns[1:] 
-            Search_option = tb.Combobox(Controller.SearchBar, width=19, values=col_val, height=len(col_val), font=font_entry, state='readonly')
+            Search_option = tb.Combobox(unite_frame, width=19, values=col_val, height=len(col_val), font=font_entry, state='readonly')
+            Search_option.grid(row=ROW, column=4, padx=search_padding[0], pady=search_padding[1], sticky=EW)
+
             Controller.SearchBar_widgets[f'search_option_{Controller.SearchBar_number}'] = Search_option
-            grid_set(Search_option,4,remove=False)
             Search_option.bind('<<ComboboxSelected>>', lambda event: SelectDB.search_options(n,event))
             
+            # Selecting SEARCH Sign
+            Controller.signimages = Media.label_ImageLoad(IMAGES['Signs'])
+            Search_Sign = tb.Label(unite_frame, text=SIGNS[0], image=Controller.signimages[0])
+            Search_Sign.grid(row=ROW, column=5, sticky=EW)
+            Search_Sign.grid_remove()
 
-            Search_type_label = tb.Label(Controller.SearchBar, width=7, anchor=CENTER, bootstyle=labelColor, text='', font=font_entry)
-            Controller.SearchBar_widgets[f'search_type_{Controller.SearchBar_number}'] = Search_type_label
-            grid_set(Search_type_label,5)
-
-            signimages = Media.label_ImageLoad(IMAGES['Signs'])
-            sign = tb.Label(Controller.SearchBar, text='EQUAL', image=signimages[0])
-            grid_set(sign,4,remove=False)
-            sign.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,signimages,SIGNS[:]))
+            Controller.SearchBar_widgets[f'search_sign_{Controller.SearchBar_number}'] = Search_Sign
+            Search_Sign.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,Controller.signimages[:],SIGNS[:],n))
         
-            sex_val = ['Muško','Žensko']
-            Search_input_equal = tb.Combobox(Controller.SearchBar, values=sex_val, height=len(sex_val), width=search_1_width, font=font_entry, state='readonly')
-            Controller.SearchBar_widgets[f'equal_{Controller.SearchBar_number}'] = Search_input_equal
-            grid_set(Search_input_equal,6,colspan=2)
+            # SEARCH Input FRAMES
+            input_frame = Frame(unite_frame)
+            input_frame.grid(row=ROW, column=6, sticky=EW)
 
-            Search_input_like = tb.Entry(Controller.SearchBar, width=search_1_width, font=font_entry)
-            Controller.SearchBar_widgets[f'like_{Controller.SearchBar_number}'] = Search_input_like
-            grid_set(Search_input_like,6,colspan=2)
+            combo = tb.Combobox(input_frame, values=[], width=search_1_width, font=font_entry, state='readonly')
+            combo.grid(row=0, column=0, padx=search_padding[0], pady=search_padding[1], sticky=EW)
+            combo.grid_remove()
+            Controller.SearchBar_widgets[f'combo_{Controller.SearchBar_number}'] = combo
 
-            Search_date_from = widgets.DateEntry(Controller.SearchBar, width=search_2_width+2, dateformat='%d-%b-%Y', firstweekday=0)
-            Search_date_from.entry.delete(0,END)
-            Controller.SearchBar_widgets[f'date_from_{Controller.SearchBar_number}'] = Search_date_from
-            grid_set(Search_date_from,6)
+            for i in range(2):
+                entry = tb.Entry(input_frame, width=search_1_width, font=font_entry)
+                entry.grid(row=0, column=i, padx=search_padding[0], pady=search_padding[1], sticky=EW)
+                entry.grid_remove()
+                Controller.SearchBar_widgets[f'entry{i+1}_{Controller.SearchBar_number}'] = entry
 
-            Search_date_to = widgets.DateEntry(Controller.SearchBar, width=search_2_width+2, dateformat='%d-%b-%Y', firstweekday=0)
-            Search_date_to.entry.delete(0,END)
-            Controller.SearchBar_widgets[f'date_to_{Controller.SearchBar_number}'] = Search_date_to
-            grid_set(Search_date_to,7)
-
-            Search_input_from = tb.Entry(Controller.SearchBar, width=search_2_width, font=font_entry)
-            Controller.SearchBar_widgets[f'from_{Controller.SearchBar_number}'] = Search_input_from
-            grid_set(Search_input_from,6)
-
-            Search_input_to = tb.Entry(Controller.SearchBar, width=search_2_width, font=font_entry)
-            Controller.SearchBar_widgets[f'to_{Controller.SearchBar_number}'] = Search_input_to
-            grid_set(Search_input_to,7)
+                date = widgets.DateEntry(input_frame, width=search_2_width+2, dateformat='%d-%b-%Y', firstweekday=0)
+                date.grid(row=0, column=i, padx=search_padding[0], pady=search_padding[1], sticky=EW)
+                date.grid_remove()
+                date.entry.delete(0,END)
+                Controller.SearchBar_widgets[f'date{i+1}_{Controller.SearchBar_number}'] = date
 
         create_widgets()
         Controller.SearchBar_number += 1

@@ -69,7 +69,7 @@ class FormPanel:
         lbl = tb.Label(FormPanel.Form_Frame, anchor=CENTER, bootstyle=labelColor, text=formname, font=font_groups())
         lbl.grid(row=0, column=1, columnspan=2, padx=title_padding[0], pady=title_padding[1], sticky=NSEW)
 
-        swap.bind('<FocusIn>', lambda event,form='Default': ManageDB.Validation_Method(event,form))
+        swap.bind('<Button-1>', lambda event,form='Default': ManageDB.Validation_Method(event,form))
         lbl.bind('<Enter>', lambda event,form='Default': ManageDB.Validation_Method(event,form))
         return lbl
 

@@ -31,6 +31,7 @@ class Controller:
     TableSession_Columns =     tuple()
     
     SearchBar: Frame = None
+    signimages: list = None
     SearchBar_widgets = dict()
     SearchBar_number = 1
     SearchAdd_Button: tb.Label = None
@@ -84,7 +85,7 @@ class Controller:
         elif isinstance(widget, tb.Treeview):
             for item in widget.get_children():
                 widget.delete(item)
-        elif isinstance(widget,tb.Label):
+        elif isinstance(widget,tb.Label) and widget.cget('text') not in SIGNS:
             widget.config(text='')
 
     @staticmethod
@@ -97,12 +98,15 @@ class Controller:
 
     @staticmethod
     def get_widget_value(widget):
-        if isinstance(widget, StringVar):
+        if isinstance(widget, StringVar) or \
+            isinstance(widget, tb.Combobox):
             return widget.get()
         elif isinstance(widget, Text):
             return widget.get('1.0', END).strip()
         elif isinstance(widget, widgets.DateEntry):
             return widget.entry.get()
+        elif isinstance(widget,tb.Label):
+            return widget.cget('text')
         else:
             return None
 

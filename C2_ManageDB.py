@@ -418,7 +418,7 @@ class ManageDB(Controller):
 
     @staticmethod
     def Delete_Patient():
-        patient = Controller.PatientInfo.cget('text')
+        patient = Controller.get_widget_value(Controller.PatientInfo)
         confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete\n{patient}?', alert=True)
         if confirm=='Yes':
