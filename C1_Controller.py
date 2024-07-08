@@ -98,8 +98,9 @@ class Controller:
 
     @staticmethod
     def get_widget_value(widget):
-        if isinstance(widget, StringVar) or \
-            isinstance(widget, tb.Combobox):
+        if  isinstance(widget, StringVar) or \
+                isinstance(widget, tb.Combobox) or \
+                    isinstance(widget, tb.Entry):
             return widget.get()
         elif isinstance(widget, Text):
             return widget.get('1.0', END).strip()

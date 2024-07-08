@@ -166,7 +166,7 @@ class SelectDB(Controller):
             table.heading(col, text=TXT, anchor=W, command=lambda c=col: sort_treeview(c, False))
             table.column(col, stretch=False)
             if 'id_' in col:
-                print(table,col)
+                print(col)
                 table.column(col, width=0)
             elif i==0: # counting column
                 table.column(col, width=int(F_SIZE*4), minwidth=F_SIZE*2)
@@ -211,7 +211,7 @@ class SelectDB(Controller):
                     images.pop(out)
                     signs.pop(out)
                     widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
-                    widget.configure(image=images[0], text=SIGNS[0])
+                    widget.configure(image=images[0], text=signs[0])
 
                 widget.grid() if widget_type in [f'entry1_{n}',f'entry2_{n}'] or ('search' in widget_type and widget_type[-1]==str(n))  \
                     else widget.grid_remove() if widget_type[-1]==str(n) else None
@@ -226,7 +226,7 @@ class SelectDB(Controller):
                         images.pop(out)
                         signs.pop(out)
                     widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
-                    widget.configure(image=images[0], text=SIGNS[0])
+                    widget.configure(image=images[0], text=signs[0])
 
                 if widget_type==f'combo_{n}':
                     widget:tb.Combobox
@@ -248,11 +248,12 @@ class SelectDB(Controller):
                     images.pop(out)
                     signs.pop(out)
                     widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
-                    widget.configure(image=images[0], text=SIGNS[0])
+                    widget.configure(image=images[0], text=signs[0])
 
                 widget.grid() if widget_type == f'entry1_{n}' or ('search' in widget_type and widget_type[-1]==str(n))  \
                     else widget.grid_remove() if widget_type[-1]==str(n) else None
 
+    @staticmethod
     def search_options_swap(event, signimages:list, signorder:list, n:int):
         signlabel:tb.Label = event.widget
         for order in [signimages,signorder]: # rotation
@@ -267,12 +268,12 @@ class SelectDB(Controller):
                 if widg_type == f'entry2_{n}':
                     if signorder[0] != 'BETWEEN':
                         widget.grid_remove()
+                        Controller.empty_widget(widget)
                     else:
                         widget.grid()
                     break
 
         signlabel.configure(image=signimages[0], text=signorder[0])
-        print(f"text u sign labelu: {signlabel.cget("text")}")
         signlabel.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event, signimages, signorder, n))
 
     @staticmethod
@@ -487,6 +488,7 @@ class SelectDB(Controller):
                 return searching[option][SIGN]
             
             searching = dict()
+
             for n in range(1,Controller.SearchBar_number+1):
                 column_widget:tb.Combobox = Controller.SearchBar_widgets[f'search_option_{n}']
                 if not column_widget.winfo_ismapped(): 
@@ -501,14 +503,14 @@ class SelectDB(Controller):
                 except KeyError:
                     searching[option] = dict()
 
-                search_type = Controller.get_widget_value(Controller.SearchBar_widgets[f'search_sign_{n}']) # SIGN
-                searchlocation:set = saving_location(search_type) # DICT lokacija gde ce ubacivati vrednost
+                sign = Controller.get_widget_value(Controller.SearchBar_widgets[f'search_sign_{n}']) # SIGN
+                searchlocation:set = saving_location(sign) # DICT lokacija gde ce ubacivati vrednost
 
-                if search_type == 'BETWEEN': # Dodaje TUPLE (x,y)
+                if sign == 'BETWEEN': # Dodaje TUPLE (x,y)
                     if 'Datum' in option or option=='ID Time':
                         # FROM Form Date Formate TO RHMH Date Format
                         fromdate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date1_{n}'])
-                        todate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date1_{n}'])
+                        todate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date2_{n}'])
                         try:
                             fromdate = datetime.strptime(fromdate,'%d-%b-%Y').strftime('%Y-%m-%d')
                             todate = datetime.strptime(todate,'%d-%b-%Y').strftime('%Y-%m-%d')
@@ -520,9 +522,12 @@ class SelectDB(Controller):
                         To = Controller.get_widget_value(Controller.SearchBar_widgets[f'entry2_{n}'])
                         searchlocation.add( ( From,To ) )
 
-                elif search_type in ['EQUAL','LIKE','NOT LIKE']: 
-                    searchlocation.add(Controller.get_widget_value(Controller.SearchBar_widgets[f'entry1_{n}']))
-
+                elif sign in ['EQUAL','LIKE','NOT LIKE']:
+                    if option in ['Pol', 'Format', 'Opis', 'Email']:
+                        result = Controller.get_widget_value(Controller.SearchBar_widgets[f'combo_{n}'])
+                    else:
+                        result = Controller.get_widget_value(Controller.SearchBar_widgets[f'entry1_{n}'])
+                    searchlocation.add( result )
             return searching
 
         if TAB == 'Pacijenti':

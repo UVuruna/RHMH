@@ -26,6 +26,10 @@ class Database:
         self.dg_kategorija = [i[0] for i in self.execute_selectquery('SELECT Kategorija from kategorija')]
         self.dr_funkcija = [i[0] for i in self.execute_selectquery('SELECT Funkcija from funkcija')]
 
+    def format_sql(self,query):
+        formatted_query = sqlparse.format(query, reindent=True, keyword_case='upper')
+        return formatted_query
+
     def connect(self):
         self.connection = sqlite3.connect(self.database)
         self.cursor = self.connection.cursor()
@@ -47,23 +51,20 @@ class Database:
             finally:
                 self.close_connection()
 
-    def format_sql(self,query):
-        formatted_query = sqlparse.format(query, reindent=True, keyword_case='upper')
-        return formatted_query
-
     def creating_where_part(self, column:str, values:dict):
+        returnquery = ''
+
         if column in self.dg_kategorija:
             self.lock.release()
             kategorija = self.execute_selectquery(f'SELECT id_kategorija from kategorija WHERE Kategorija = "{column}"')[0][0]
             self.lock.acquire()
-            returnquery = ''
             for sign,value in values.items():
                 if sign == 'EQUAL':
                     if len(value)>1:
                         value = [f'"{v}"' for v in value]
                         returnquery += f'( `MKB - šifra` IN ({', '.join(value)}) AND dijagnoza.id_kategorija = {kategorija} ) OR '
                     else:
-                        returnquery += f'( `MKB - šifra` = "{value[0]}" AND dijagnoza.id_kategorija = {kategorija} ) OR '
+                        returnquery += f'( `MKB - šifra` = "{list(value)[0]}" AND dijagnoza.id_kategorija = {kategorija} ) OR '
                 elif sign in ['LIKE','NOT LIKE']:
                     for val in value:
                         returnquery += f'( `MKB - šifra` {sign} "%{val}%" AND dijagnoza.id_kategorija = {kategorija} ) OR '
@@ -78,7 +79,7 @@ class Database:
                         value = [f'"{v}"' for v in value]
                         returnquery += f'( Zaposleni IN ({', '.join(value)}) AND operacija.id_funkcija = {funkcija} ) OR '
                     else:
-                        returnquery += f'( Zaposleni = "{value[0]}" AND operacija.id_funkcija = {funkcija} ) OR '
+                        returnquery += f'( Zaposleni = "{list(value)[0]}" AND operacija.id_funkcija = {funkcija} ) OR '
                 elif sign in ['LIKE','NOT LIKE']:
                     for val in value:
                         returnquery += f'( Zaposleni {sign} "%{val}%" AND operacija.id_funkcija = {funkcija} ) OR '
@@ -91,16 +92,16 @@ class Database:
                         value = [f'"{v}"' for v in value]
                         returnquery += f'{column} IN ({', '.join(value)}) OR '
                     else:
-                        returnquery += f'{column} = "{value[0]}" OR '
+                        returnquery += f'{column} = "{list(value)[0]}" OR '
                 elif sign in ['LIKE','NOT LIKE']:
                     for val in value:
                         returnquery += f'{column} {sign} "%{val}%" OR '
                 elif sign == 'BETWEEN':
                     for val in value:
                         returnquery += f'( {column} {sign} "{val[0]}" AND "{val[1]}" ) OR '
+
         returnquery = returnquery.rstrip(' OR ')
         return returnquery
-
          
     def execute_selectquery(self,query):
         with self.lock:
@@ -119,10 +120,13 @@ class Database:
             select_values = ','.join(f'`{a}`' if ' ' in a else a for a in args)
             where_pairs = ''
 
+            self.lock.release()
             for k,values in kwargs.items():
                 values:dict
                 where_pairs += f'( {self.creating_where_part(k,values)} ) AND '
+
             where_pairs = where_pairs.rstrip(' AND ')
+            self.lock.acquire()
             
             query = f'SELECT {select_values} FROM {table}'
             if where_pairs:
@@ -132,6 +136,8 @@ class Database:
                 self.PatientQuery = query
 
             self.LoggingQuery = self.format_sql(query)
+            print(self.LoggingQuery)
+            
             self.connect()
             self.cursor.execute(query)
             view = self.cursor.fetchall()
@@ -164,6 +170,7 @@ class Database:
                     select_values += f'{table}.{column},'
             select_values = select_values.rstrip(',')
 
+            self.lock.release()
             where_pairs = ''
             for k,values in kwargs.items():
                 values:dict
@@ -171,10 +178,10 @@ class Database:
                     joindiagnose = True
                 elif k in self.dr_funkcija:
                     joinoperation = True
-                for k,values in kwargs.items():
-                    values:dict
-                    where_pairs += f'( {self.creating_where_part(k,values)} ) AND '
+                where_pairs += f'( {self.creating_where_part(k,values)} ) AND '
+
             where_pairs = where_pairs.rstrip(' AND ')
+            self.lock.acquire()
 
             join_tables = ''
             if joindiagnose:
@@ -195,6 +202,7 @@ class Database:
             if 'FROM pacijent' in query:
                 self.PatientQuery = query
             self.LoggingQuery = self.format_sql(query)
+            print(self.LoggingQuery)
 
             self.connect()
             self.cursor.execute(query)
@@ -204,7 +212,7 @@ class Database:
             self.close_connection()
             self.lock.release()
  
-    def execute_filter_select(self,columns):
+    def execute_filter_select(self,columns:dict):
         if not self.PatientQuery or 'FROM pacijent' not in self.PatientQuery:
             return
         with self.lock:

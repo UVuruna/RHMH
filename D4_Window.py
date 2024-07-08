@@ -22,7 +22,7 @@ class GUI:
         connected = GoogleDrive.connect()
         print(f"Connected = {connected}")
 
-        GoogleDrive.download_File(RHMH_DB['id'],'RHMH.db')
+        #GoogleDrive.download_File(RHMH_DB['id'],'RHMH.db')
         UserSession['User'] = GoogleDrive.get_UserEmail()
 
         RHMH.start_RHMH_db()

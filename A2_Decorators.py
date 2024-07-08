@@ -60,9 +60,11 @@ def error_catcher():
                 print(traceback.format_exc())
                 Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')[:3]}' 
                 fullerror = traceback.format_exc()
+                print("krece insert error")
                 RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
                                         'Query':func.__qualname__, 'Full Query':RHMH.LoggingQuery,
                                         'Error':str(e), 'Full Error': fullerror})
+                print('odradjuje insert error')
                 return
         return wrapper
     return decorator
