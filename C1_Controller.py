@@ -2,62 +2,69 @@ from A1_Variables import *
 from B2_SQLite import RHMH
 
 class Controller:
-    Admin = False
-    GodMode = False
-    FreeQuery_Frame:   Frame = None
-    FreeQuery:         StringVar = None
+    ROOT:Tk = None
+    Connected:bool = False
+    buttons = {'Filter Patient':[]}
+    MessageBoxParent: Frame = None
+    
+        # ADMIN
+    Admin: bool             = False
+    GodMode: bool           = False
+    FreeQuery_Frame: Frame  = None
+    FreeQuery: StringVar    = None
 
-    NoteBook:          tb.Notebook = None
-    Table_Pacijenti:   tb.ttk.Treeview = None
-    Table_Slike:       tb.ttk.Treeview = None
-    Table_MKB:         tb.ttk.Treeview = None
-    Table_Zaposleni:   tb.ttk.Treeview = None
-    Table_Logs:        tb.ttk.Treeview = None
-    Table_Session:     tb.ttk.Treeview = None
+        # NOTEBOOK
+    NoteBook:          tb.Notebook      = None
+
+    Table_Pacijenti:   tb.ttk.Treeview  = None
+    Pacijenti_ColumnVars                = dict()
+    FilterOptions                       = dict()
+    TablePacijenti_Columns              = tuple(MainTablePacijenti.keys())
+    Patient_FormVariables               = {'pacijent':{},'dijagnoza':{},'operacija':{},'slike':{}}
+    Table_Slike:       tb.ttk.Treeview  = None
+    TableSlike_Columns: tuple           = None
+    Slike_HideTable:    Frame           = None
+
+    Table_MKB:         tb.ttk.Treeview  = None
+    TableMKB_Columns:  tuple            = None
+    Table_Zaposleni:   tb.ttk.Treeview  = None
+    TableZaposleni_Columns: tuple       = None
+    Katalog_FormVariables               = dict()
+
+    Graph_Canvas: Frame = None
+    Graph_FormVariables = dict()
+
+    Table_Logs:        tb.ttk.Treeview  = None
+    TableLogs_Columns: tuple            = None
+    Logs_FormVariables                  = dict()
+    Table_Session:     tb.ttk.Treeview  = None
+    TableSession_Columns: tuple         = None
+
+    About_Tab:      Frame = None
+    Settings_Tab:   Frame = None
 
     Table_Names = dict()
     
-    Graph_Frame:       Frame = None
-    About_Tab:         Frame = None
-    Settings_Tab:      Frame = None
     
-    TablePacijenti_Columns =   tuple(MainTablePacijenti.keys())
-    Pacijenti_ColumnVars =     dict()
-
-    TableSlike_Columns =       tuple()
-    TableMKB_Columns =         tuple()
-    TableZaposleni_Columns =   tuple()
-    TableLogs_Columns =        tuple()
-    TableSession_Columns =     tuple()
-    
-    SearchBar: Frame = None
-    signimages: list = None
-    SearchBar_widgets = dict()
-    SearchBar_number = 1
-    SearchAdd_Button: tb.Label = None
+        # SEARCH BAR
+    SearchBar: Frame    = None
+    SearchBar_widgets   = dict()
+    SearchBar_number    = 1
+    SearchAdd_Button: tb.Label    = None
     SearchRemove_Button: tb.Label = None
+    signimages: list    = None
     
-    ROOT:Tk = None
-
-    buttons = {'Filter Patient':[]}
-    Slike_HideTable: Frame = None
-
-    MessageBoxParent: Frame = None
+        # FORM
     PatientFocus_ID = None
-
-    Validation_Widgets = {'Default':[], 'Alternative':[]}
-    Valid_Default: bool = True
-    Valid_Alternative: bool = True
-
 
     FormTitle = None
     PatientInfo = None
     MainTable_IDS = list()
-    Patient_FormVariables = {'pacijent':{},'dijagnoza':{},'operacija':{},'slike':{}}
-    Katalog_FormVariables =    dict()
-    Logs_FormVariables =       dict()
-    Graph_FormVariables =      dict()
-    FilterOptions =            dict()
+
+        # VALIDATION FORM
+    Validation_Widgets = {'Default':[], 'Alternative':[]}
+    Valid_Default: bool = True
+    Valid_Alternative: bool = True
 
     MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
     Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
@@ -76,17 +83,17 @@ class Controller:
         if isinstance(widget, StringVar) or \
             isinstance(widget, tb.Combobox):
             widget.set('')
-        elif isinstance(widget, Text):
-            widget.delete('1.0', END)
-        elif isinstance(widget, widgets.DateEntry):
-            widget.entry.delete(0,END)
         elif isinstance(widget, tb.Entry):
             widget.delete(0,END)
+        elif isinstance(widget, widgets.DateEntry):
+            widget.entry.delete(0,END)
+        elif isinstance(widget, Text):
+            widget.delete('1.0', END)
+        elif isinstance(widget,tb.Label) and widget.cget('text') not in SIGNS:
+            widget.config(text='')
         elif isinstance(widget, tb.Treeview):
             for item in widget.get_children():
                 widget.delete(item)
-        elif isinstance(widget,tb.Label) and widget.cget('text') not in SIGNS:
-            widget.config(text='')
 
     @staticmethod
     def is_DB_date(date_string): # Checks if it is RHMH Date Format
@@ -102,12 +109,12 @@ class Controller:
                 isinstance(widget, tb.Combobox) or \
                     isinstance(widget, tb.Entry):
             return widget.get()
-        elif isinstance(widget, Text):
-            return widget.get('1.0', END).strip()
         elif isinstance(widget, widgets.DateEntry):
             return widget.entry.get()
         elif isinstance(widget,tb.Label):
             return widget.cget('text')
+        elif isinstance(widget, Text):
+            return widget.get('1.0', END).strip()
         else:
             return None
 
@@ -153,3 +160,6 @@ class Controller:
                                                 'Query':query_type,'Full Query':RHMH.LoggingQuery})
             Controller.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
         return result
+
+if __name__=='__main__':
+    pass

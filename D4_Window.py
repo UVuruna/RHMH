@@ -1,13 +1,14 @@
 from A1_Variables import *
-from A2_Decorators import spam_stopper
+from A2_Decorators import spam_stopper,PC
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH
+from B3_Media import Media
 from C1_Controller import Controller
 from C2_ManageDB import ManageDB
 from C3_SelectDB import SelectDB
-from D1_TopFrame import TopPanel
-from D2_FormFrame import FormPanel
-from D3_TabelFrame import MainPanel
+from D1_TopPanel import TopPanel
+from D2_FormPanel import FormPanel
+from D3_TabelPanel import MainPanel
 
 class GUI:
     root:Tk = None
@@ -15,15 +16,18 @@ class GUI:
 
     title_visible:BooleanVar = None
 
-    def load_GUIapp(root:Tk):
+    @staticmethod
+    def initialize(root:Tk) -> None:
+
         print(f'Vreme do LOAD GUI: {(time.time_ns()-TIME_START)/10**9:.2f} s')
 
         Controller.ROOT = root
         connected = GoogleDrive.connect()
         print(f"Connected = {connected}")
 
-        #GoogleDrive.download_File(RHMH_DB['id'],'RHMH.db')
+        GoogleDrive.download_File(RHMH_DB['id'],'RHMH.db')
         UserSession['User'] = GoogleDrive.get_UserEmail()
+        threading.Thread(target=GUI.get_PC_info).start()
 
         RHMH.start_RHMH_db()
 
@@ -34,9 +38,10 @@ class GUI:
         GUI.root.grid_rowconfigure(1, weight=1)
         GUI.root.grid_columnconfigure(1, weight=1)
 
-        TopPanel.load_TopFrame(GUI.root)
-        FormPanel.load_FormFrame(GUI.root)
-        MainPanel.load_MainPanel(GUI.root)
+        TopPanel.initialize(GUI.root)
+        FormPanel.initialize(GUI.root)
+        MainPanel.initialize(GUI.root)
+        Media.initialize()
         GUI.Buttons_SpamStopper()
         
         GUI.menu = GUI.RootMenu_Create()
@@ -48,6 +53,16 @@ class GUI:
 
         print(f'Ukupno Vreme za pokretanje programa: {(time.time_ns()-TIME_START)/10**9:.2f} s')
 
+    @staticmethod
+    def get_PC_info():
+        cpu = PC.get_cpu_info()
+        gpu = PC.get_gpu_info()
+        ram = PC.get_ram_info()
+        UserSession['PC']['CPU'] = cpu
+        UserSession['PC']['GPU'] = gpu
+        UserSession['PC']['RAM'] = ram
+
+    @staticmethod
     def Buttons_SpamStopper():
         for button in Controller.buttons.values():
             if isinstance(button,tuple):
@@ -62,6 +77,7 @@ class GUI:
                     last_cmd = filterbutton.cget('command')
                     filterbutton.configure(command=spam_stopper(filterbutton,GUI.root)(last_cmd))
 
+    @staticmethod
     def EXIT():
         response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'])
         if response == 'Save':
@@ -70,19 +86,22 @@ class GUI:
         if response == 'Exit':
             GUI.root.destroy()
     
+    @staticmethod
     def uploading_to_GoogleDrive():
         print('Uploading to Google Drive...')
         #GoogleDrive.upload_UpdateFile(RHMH_DB['id'],'RHMH.db',RHMH_DB['mime'])
         print('Upload finished')
 
+    @staticmethod
     def show_form_frame():
         if not FormPanel.Form_Frame.winfo_ismapped():
-            FormPanel.Form_Frame.grid(row=1, column=0, padx=shape_padding[0], pady=shape_padding[1], sticky=NSEW)
+            FormPanel.Form_Frame.grid(row=1, column=0, padx=padding_6, pady=padding_0_6, sticky=NSEW)
             FormPanel.form_visible.set(True)
         else:
             FormPanel.Form_Frame.grid_forget()
             FormPanel.form_visible.set(False) 
 
+    @staticmethod
     def show_title_frame():
         if not TopPanel.Top_Frame.winfo_ismapped():
             TopPanel.Top_Frame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
@@ -91,6 +110,7 @@ class GUI:
             TopPanel.Top_Frame.grid_forget()
             GUI.title_visible.set(False) 
 
+    @staticmethod
     def do_popup(event):
         GUI.menu:Menu
         try: 
@@ -98,6 +118,7 @@ class GUI:
         finally: 
             GUI.menu.grab_release() 
 
+    @staticmethod
     def RootMenu_Create():
         m = Menu(GUI.root, tearoff = 0) 
         GUI.title_visible = BooleanVar()
@@ -107,7 +128,13 @@ class GUI:
         m.add_separator() 
         m.add_command(label ='Export Selection', command= lambda: SelectDB.export_table(tb.ttk.Treeview.selection))
         m.add_command(label ='Export Table', command= lambda: SelectDB.export_table(tb.ttk.Treeview.get_children))
-        m.add_separator() 
+        m.add_command(label ='Clear Form', command= Controller.Clear_Form)
+        m.add_separator()
         m.add_command(label ='Settings', command= lambda: SelectDB.NoteBook.select(6))
         m.add_command(label ='About', command= lambda: SelectDB.NoteBook.select(7))
+        m.add_separator()
+        m.add_command(label ='Upload to Drive', command= ManageDB.Upload_DB)
         return m
+    
+if __name__=='__main__':
+    pass

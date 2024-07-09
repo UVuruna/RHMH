@@ -109,7 +109,7 @@ class SelectDB(Controller):
         Controller.SearchBar_widgets[f'search_option_{Controller.SearchBar_number}'].grid()
         Controller.SearchBar_widgets[f'search_bar_{Controller.SearchBar_number}'].grid()
 
-        if Controller.SearchBar_number==max_searchby:
+        if Controller.SearchBar_number==max_searchbars:
             Controller.SearchAdd_Button.grid_remove()
 
     @staticmethod
@@ -277,25 +277,93 @@ class SelectDB(Controller):
         signlabel.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event, signimages, signorder, n))
 
     @staticmethod
-    def Graph_afterchoice():
-        show = ('bars','pie')
-        hide = ()
-        if Controller.Graph_FormVariables['X2-1'][1].get():
+    def Show_Graph():
+        print('showing graph')
+        for k,value in Controller.Graph_FormVariables.items():
+            if isinstance(value,tuple):
+                selection_widget:StringVar = value[1]
+                selection = selection_widget.get()
+                if selection:
+                    print(f'{k}: {selection}')
+            elif isinstance(value,dict):
+                optional:tb.Checkbutton = value['color'][0]
+                if optional.winfo_ismapped():
+                    print('color ',             value['color'][1].get())
+                print('values ',            value['values'][1].get())
+                print('Filter Main Table ', value['Filter Main Table'][1].get())
+                print('radio ',             value['radio']['choice'].get())
+        #canvas = FigureCanvasTkAgg(Graph.figure, master=Controller.Graph_Canvas)
+        #canvas.draw()
+
+    @staticmethod
+    def graph_add_button(event):
+        widget:tb.Combobox = Controller.Graph_FormVariables['X2-1'][0]
+        lastchoice:StringVar = Controller.Graph_FormVariables['X1-1'][1].get()
+        Values = graph_Xoptions[:]
+        vreme = ['Godina' , 'Mesec' , 'Dan' , 'Dan u Sedmici']
+        dijagnoza = ['Trauma', 'MKB Grupe','MKB Pojedinačno']
+        if lastchoice in vreme:
+            removelist = vreme[:vreme.index(lastchoice)+1] if not 'Dan' in lastchoice else vreme
+            for val in removelist:
+                Values.remove(val)
+        elif lastchoice in dijagnoza:
+            if lastchoice == 'Trauma':
+                removelist = ['MKB Pojedinačno','Trauma']
+            elif lastchoice == 'MKB Grupe':
+                removelist = ['MKB Grupe','Trauma']
+            else:
+                removelist = dijagnoza
+            for val in removelist:
+                Values.remove(val)
+        else:
+            Values.remove(lastchoice)
+
+        width = len(max(Values, key=len))
+        width = width-4 if width>20 else 3 if width<3 else width-1
+        widget.configure(values=Values, width=width)
+        widget.grid()
+        SelectDB.removing_graph_afterchoice()
+        event.widget.grid_remove()
+
+    @staticmethod
+    def removing_graph_afterchoice():
+        for k,v in Controller.Graph_FormVariables['afterchoice'].items():
+            if k=='radio':
+                for widget in v['widgets'].values():
+                    widget:tb.Radiobutton
+                    if widget.winfo_ismapped():
+                        widget.grid_remove()
+            else:
+                widget:tb.Checkbutton = v[0]
+                if widget.winfo_ismapped():
+                    widget.grid_remove()
+
+    @staticmethod
+    def Graph_afterchoice(double:bool):
+        if double is True:
             show = ('bars','stacked')
             hide = ('color')
+        elif double is False:
+            show = ('bars','pie')
+            hide = ()
         for k,v in Controller.Graph_FormVariables['afterchoice'].items():
             if k=='radio':
                 for txt,widget in v['widgets'].items():
                     widget:tb.Radiobutton
                     if txt in show:
-                        widget.grid()
+                        if not widget.winfo_ismapped():
+                            widget.grid()
                     else:
-                        widget.grid_remove()
-                
-            elif not k in hide:
-                v[0].grid()
+                        if widget.winfo_ismapped():
+                            widget.grid_remove()   
             else:
-                v[0].grid_forget()
+                widget:tb.Checkbutton = v[0]
+                if not k in hide:
+                    if not widget.winfo_ismapped():
+                        widget.grid()
+                else:
+                    if widget.winfo_ismapped():
+                        widget.grid_remove()
 
     @staticmethod
     def Graph_Options(event,option:str):
@@ -304,16 +372,32 @@ class SelectDB(Controller):
         add_button:tb.Label = Controller.Graph_FormVariables['Add']
         choice = widget.get()
         Values = []
-        
+        add_button.grid_remove()
+        execute_button.configure(state=DISABLED)
+        FINAL = False
+
+        def finishing_setup(option):
+            nonlocal FINAL
+            execute_button.configure(state=NORMAL)
+            FINAL = True
+            if 'X1' in option:
+                SelectDB.Graph_afterchoice(double=False)
+                add_button.grid()
+            else:
+                SelectDB.Graph_afterchoice(double=True)
+
         def removing_widgets(widgets_to_remove):
             widget:tb.Combobox
             stringvar:StringVar
+
             for widgetname in widgets_to_remove:
                 widget,stringvar = Controller.Graph_FormVariables[widgetname]
                 if widget.winfo_ismapped():
                     widget.grid_remove()
                 stringvar.set('')
-            execute_button.configure(state=DISABLED)  
+
+            if FINAL is False:
+                SelectDB.removing_graph_afterchoice()
 
         if option == 'Y':
             Values.append(graph_Xoptions[:])
@@ -352,31 +436,30 @@ class SelectDB(Controller):
                 Next_Names = [option.replace('-1','-2')]
                 Values.append(RHMH.dr_funkcija)
             else:
-                SelectDB.Graph_afterchoice()
-                add_button.grid()
+                finishing_setup(option)
+                
 
         elif option in ['X1-2','X2-2']:
-            combo3:tb.Combobox = Controller.Graph_FormVariables['X1-3'][0]
+            Next_Names = [option]
+            combo3:tb.Combobox = Controller.Graph_FormVariables[f'{option[:2]}-3'][0]
             if combo3.winfo_ismapped():
+                Next_Names = [option.replace('-2','-3')]
                 if combo3.get():
-                    SelectDB.Graph_afterchoice()
-                    if int(option[1])==1:
-                        add_button.grid()
+                    finishing_setup(option)
             else:
-                SelectDB.Graph_afterchoice()
-                if int(option[1])==1:
-                        add_button.grid()
-            return
+                finishing_setup(option)
+            
         elif option in ['X1-3','X2-3']:
             combo2:tb.Combobox = Controller.Graph_FormVariables['X1-2'][1]
             if combo2.get():
-                SelectDB.Graph_afterchoice()
-                if int(option[1])==1:
-                        add_button.grid()
-            return
+                finishing_setup(option)
 
-        widgetnames = ['Y','X1-1','X1-2','X1-3','X2-1','X2-2','X2-3']
-        removing_widgets(widgetnames[widgetnames.index(Next_Names[-1])+1:])
+        
+        try:
+            widgetnames = ['Y','X1-1','X1-2','X1-3','X2-1','X2-2','X2-3']
+            removing_widgets(widgetnames[widgetnames.index(Next_Names[-1])+1:])
+        except UnboundLocalError:
+            return
         if not Values:
             return
         for name,value in zip(Next_Names,Values):
@@ -700,14 +783,13 @@ class SelectDB(Controller):
                 else:
                     widget.grid()
 
-
         def tab_swapping(values):
             if not Controller.SearchBar.winfo_ismapped():
                 Controller.SearchBar.grid()
 
             for i in range(Controller.SearchBar_number,1,-1):
                 SelectDB.search_bar_remove()
-            for i in range(1,max_searchby+1):
+            for i in range(1,max_searchbars+1):
                 Controller.SearchBar_widgets[f'search_option_{i}'].configure(values=values)
 
             Widget:tb.Entry
@@ -718,7 +800,6 @@ class SelectDB(Controller):
                     if Widget.winfo_ismapped():
                         Widget.grid_remove()
                 SelectDB.empty_widget(Widget)
-
 
         focus = Controller.NoteBook.index(Controller.NoteBook.select())
         TAB = Controller.NoteBook.tab(focus,'text')
@@ -766,3 +847,6 @@ class SelectDB(Controller):
             Controller.SearchBar.grid_remove()
             if Controller.NoteBook.tab(6, "state") == "normal":
                 Controller.NoteBook.hide(6)
+
+if __name__=='__main__':
+    pass

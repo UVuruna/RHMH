@@ -8,14 +8,14 @@ from C3_SelectDB import SelectDB
 class MainPanel:
 
     @staticmethod
-    def load_MainPanel(root:Tk) -> None:
+    def initialize(root:Tk) -> None:
       
         Controller.FilterOptions = {'Datum Operacije':'Operisan' , 'Datum Otpusta':'Otpušten'}
 
         # PARENT FRAME for RIGHT PANEL
         notebookROW = 9
         Window_Frame = Frame(root)
-        Window_Frame.grid(row=1, column=1, padx=shape_padding[0], pady=shape_padding[1], sticky=NSEW)
+        Window_Frame.grid(row=1, column=1, padx=padding_6, pady=padding_0_6, sticky=NSEW)
         Controller.MessageBoxParent = Window_Frame
                 # Ovo znaci da ce se NOTEBOOK siriti sa WINDOW
         Window_Frame.grid_rowconfigure(notebookROW, weight=1) 
@@ -23,8 +23,8 @@ class MainPanel:
 
             # Search BAR Frame -- TOP of RIGHT PANES
         searchButtonROW = 8
-        Controller.SearchBar = Frame(Window_Frame, bd=bd_inner_frame, relief=RIDGE)
-        Controller.SearchBar.grid(row=0, column=0, padx=shape_padding[0], pady=shape_padding[1], sticky=NSEW)
+        Controller.SearchBar = Frame(Window_Frame, bd=3, relief=RIDGE)
+        Controller.SearchBar.grid(row=0, column=0, padx=padding_6, pady=padding_0_6, sticky=NSEW)
                 # Ovo znaci da ce se zadnja 2 BUTONNA uvek biti desno
         Controller.SearchBar.grid_columnconfigure(searchButtonROW,weight=1)
         Controller.SearchBar.grid_rowconfigure(0,weight=1)  
@@ -34,15 +34,15 @@ class MainPanel:
         MainPanel.SearchBar_StaticPart(searchButtonROW)
         Controller.SearchAdd_Button,Controller.SearchRemove_Button = MainPanel.SearchBar_AddRemove()
 
-        for _ in range(max_searchby):
+        for _ in range(max_searchbars):
              MainPanel.SearchBar_DynamicPart() # Napravi sve samo jednom
-        for _ in range(max_searchby-1):
+        for _ in range(max_searchbars-1):
             SelectDB.search_bar_remove() # Ostavi samo jedan
         
 
             # NOTE NOTEBOOK
-        Controller.NoteBook = tb.Notebook(Window_Frame)#, bootstyle=bootstyle_table)
-        Controller.NoteBook.grid(row=notebookROW, column=0, padx=shape_padding[0], pady=shape_padding[1], sticky=NSEW)
+        Controller.NoteBook = tb.Notebook(Window_Frame)
+        Controller.NoteBook.grid(row=notebookROW, column=0, padx=padding_6, pady=padding_0_6, sticky=NSEW)
         Controller.NoteBook.bind('<<NotebookTabChanged>>', SelectDB.tab_change)
 
                 # NOTEBOOK Tab PACIJENTI -- 0
@@ -72,7 +72,7 @@ class MainPanel:
         SelectDB.selected_columns(Controller.TableZaposleni_Columns , Controller.Table_Zaposleni , columnvar=False)
 
             # NOTEBOOK Tab GRAPH -- 3
-        Controller.Graph_Frame = MainPanel.GraphTab_Create()
+        Controller.Graph_Canvas = MainPanel.GraphTab_Create()
 
             # NOTEBOOK Tab LOGS -- 4
         Controller.Table_Logs, Controller.FreeQuery_Frame = MainPanel.LogsTab_Create('Logs', SelectDB.fill_LogsForm)
@@ -98,12 +98,12 @@ class MainPanel:
             Controller.FilterOptions[col] = [txt,IntVar()] # Ovde dodajen varijablu int da bi mogao da menjam sa json
 
             cb = tb.Checkbutton(parent_frame, text=txt, variable=Controller.FilterOptions[col][1], bootstyle='success, round-toggle')
-            cb.grid(row=0, column=i, padx=form_padding_button[0], pady=(0,3))
+            cb.grid(row=0, column=i, padx=padding_6, pady=(0,3))
 
-            butt = ctk.CTkButton(parent_frame, text='FILTER', width=form_butt_width, height=form_butt_height//2, corner_radius=10,
-                            font=font_label(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'],text_color_disabled=ThemeColors['secondary'],
+            butt = ctk.CTkButton(parent_frame, text='FILTER', width=buttonX, height=buttonY//2, corner_radius=10,
+                            font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'],text_color_disabled=ThemeColors['secondary'],
                                 command=lambda column=col: SelectDB.filter_data(column))
-            butt.grid(row=1, column=i, padx=form_padding_button[0], pady=(0,3))
+            butt.grid(row=1, column=i, padx=padding_6, pady=(0,3))
             Controller.buttons['Filter Patient'] += [cb,butt]
 
     @staticmethod
@@ -111,44 +111,44 @@ class MainPanel:
         cb = tb.Checkbutton(parent, text='      FILTER\n from Pacijenti', bootstyle='info, round-toggle')
         savingplace['Filter Main Table'] = (cb,IntVar())
         cb.configure(variable=savingplace['Filter Main Table'][1])
-        cb.grid(row=row, column=col, rowspan=rowspan, padx=main_title_padding[0], pady=form_padding_button[1], sticky=sticky)
+        cb.grid(row=row, column=col, rowspan=rowspan, padx=padding_12, pady=padding_6, sticky=sticky)
         cb.grid_remove()
 
     @staticmethod
     def SearchBar_StaticPart(searchButtonROW):
             # JUST LABEL for SEARCH (SEARCH BY, PRETRAZI)
-        tb.Label(Controller.SearchBar, anchor=CENTER, bootstyle=labelColor, text='SEARCH BY', font=font_entry).grid(
-                            row=0, column=1, rowspan=max_searchby, padx=form_padding_button[0], pady=form_padding_button[1], sticky=NSEW)
+        tb.Label(Controller.SearchBar, anchor=CENTER, bootstyle=color_labeltext, text='SEARCH BY', font=font_default).grid(
+                            row=0, column=1, rowspan=max_searchbars, padx=padding_6, pady=padding_6, sticky=NSEW)
             # FILTER OPTIONS
         filterFrame = Frame(Controller.SearchBar)
-        filterFrame.grid(row=0,column=searchButtonROW,rowspan=max_searchby,sticky=SE)
+        filterFrame.grid(row=0,column=searchButtonROW,rowspan=max_searchbars,sticky=SE)
 
         MainPanel.Roundbutton_Create(filterFrame)
 
-        butf = ctk.CTkButton(filterFrame, text='FILTER\nBOTH', width=form_butt_width, height=form_butt_height, corner_radius=10,
-                        font=font_label(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+        butf = ctk.CTkButton(filterFrame, text='FILTER\nBOTH', width=buttonX, height=buttonY, corner_radius=10,
+                        font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                             command=lambda column=['Datum Operacije','Datum Otpusta']: SelectDB.filter_data(column))
-        butf.grid(row=0, column=2, rowspan=max_searchby,
-                padx=(form_padding_button[0][0],33), pady=form_padding_button[1], sticky=SE)
+        butf.grid(row=0, column=2, rowspan=max_searchbars,
+                padx=(padding_6[0],33), pady=padding_6, sticky=SE)
         Controller.buttons['Filter Patient'].append(butf)
 
         MainPanel.filter_maintable_switch(parent=filterFrame,
                                           savingplace=Controller.buttons,
-                                          row=0, col=0, rowspan=max_searchby, sticky=SE)
+                                          row=0, col=0, rowspan=max_searchbars, sticky=SE)
 
             # BUTTONS for SEARCH and SHOWALL
-        buts = ctk.CTkButton(Controller.SearchBar, text='SEARCH', width=form_butt_width, height=form_butt_height, corner_radius=10,
-                        font=font_label(), fg_color=ThemeColors['primary'],  text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+        buts = ctk.CTkButton(Controller.SearchBar, text='SEARCH', width=buttonX, height=buttonY, corner_radius=10,
+                        font=font_medium(), fg_color=ThemeColors['primary'],  text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                         command=SelectDB.search_data)
-        buts.grid(row=0, column=searchButtonROW+3, rowspan=max_searchby,
-                padx=form_padding_button[0], pady=form_padding_button[1], sticky=SE)
+        buts.grid(row=0, column=searchButtonROW+3, rowspan=max_searchbars,
+                padx=padding_6, pady=padding_6, sticky=SE)
         Controller.buttons['Search'] = buts
 
-        buta = ctk.CTkButton(Controller.SearchBar, text='SHOW ALL', width=form_butt_width, height=form_butt_height, corner_radius=10,
-                        font=font_label(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+        buta = ctk.CTkButton(Controller.SearchBar, text='SHOW ALL', width=buttonX, height=buttonY, corner_radius=10,
+                        font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                         command=SelectDB.showall_data)
-        buta.grid(row=0, column=searchButtonROW+4, rowspan=max_searchby,
-                padx=form_padding_button[0], pady=form_padding_button[1], sticky=SE)
+        buta.grid(row=0, column=searchButtonROW+4, rowspan=max_searchbars,
+                padx=padding_6, pady=padding_6, sticky=SE)
         Controller.buttons['Show All'] = buta
 
     @staticmethod
@@ -157,13 +157,13 @@ class MainPanel:
         color_add, darker_add, color_remove, darker_remove = Media.label_ImageLoad(IMAGES['Add']+IMAGES['Remove'])
 
         add = tb.Label(Controller.SearchBar, image=color_add)
-        add.grid(row=0, column=0, rowspan=max_searchby, sticky=NW)
+        add.grid(row=0, column=0, rowspan=max_searchbars, sticky=NW)
         add.bind('<ButtonRelease-1>',SelectDB.search_bar_add)
         add.bind('<Enter>', lambda event,img=darker_add: Media.hover_label_button(event,img))
         add.bind('<Leave>', lambda event,img=color_add: Media.hover_label_button(event,img))
 
         remove = tb.Label(Controller.SearchBar, image=color_remove)
-        remove.grid(row=0, column=0, rowspan=max_searchby, sticky=SW)
+        remove.grid(row=0, column=0, rowspan=max_searchbars, sticky=SW)
         remove.bind('<ButtonRelease-1>',SelectDB.search_bar_remove)
         remove.bind('<Enter>', lambda event,img=darker_remove: Media.hover_label_button(event,img))
         remove.bind('<Leave>', lambda event,img=color_remove: Media.hover_label_button(event,img))
@@ -183,8 +183,8 @@ class MainPanel:
         def create_widgets():
             # Selectin SEARCH Column
             col_val = Controller.TablePacijenti_Columns[1:] 
-            Search_option = tb.Combobox(unite_frame, width=19, values=col_val, height=len(col_val), font=font_entry, state='readonly')
-            Search_option.grid(row=ROW, column=4, padx=search_padding[0], pady=search_padding[1], sticky=EW)
+            Search_option = tb.Combobox(unite_frame, width=19, values=col_val, height=len(col_val), font=font_default, state='readonly')
+            Search_option.grid(row=ROW, column=4, padx=padding_3, pady=padding_3, sticky=EW)
 
             Controller.SearchBar_widgets[f'search_option_{Controller.SearchBar_number}'] = Search_option
             Search_option.bind('<<ComboboxSelected>>', lambda event: SelectDB.search_options(n,event))
@@ -202,19 +202,19 @@ class MainPanel:
             input_frame = Frame(unite_frame)
             input_frame.grid(row=ROW, column=6, sticky=EW)
 
-            combo = tb.Combobox(input_frame, values=[], width=search_1_width, font=font_entry, state='readonly')
-            combo.grid(row=0, column=0, padx=search_padding[0], pady=search_padding[1], sticky=EW)
+            combo = tb.Combobox(input_frame, values=[], width=search_bigX, font=font_default, state='readonly')
+            combo.grid(row=0, column=0, padx=padding_3, pady=padding_3, sticky=EW)
             combo.grid_remove()
             Controller.SearchBar_widgets[f'combo_{Controller.SearchBar_number}'] = combo
 
             for i in range(2):
-                entry = tb.Entry(input_frame, width=search_1_width, font=font_entry)
-                entry.grid(row=0, column=i, padx=search_padding[0], pady=search_padding[1], sticky=EW)
+                entry = tb.Entry(input_frame, width=search_bigX, font=font_default)
+                entry.grid(row=0, column=i, padx=padding_3, pady=padding_3, sticky=EW)
                 entry.grid_remove()
                 Controller.SearchBar_widgets[f'entry{i+1}_{Controller.SearchBar_number}'] = entry
 
-                date = widgets.DateEntry(input_frame, width=search_2_width+2, dateformat='%d-%b-%Y', firstweekday=0)
-                date.grid(row=0, column=i, padx=search_padding[0], pady=search_padding[1], sticky=EW)
+                date = widgets.DateEntry(input_frame, width=search_smallX+2, dateformat='%d-%b-%Y', firstweekday=0)
+                date.grid(row=0, column=i, padx=padding_3, pady=padding_3, sticky=EW)
                 date.grid_remove()
                 date.entry.delete(0,END)
                 Controller.SearchBar_widgets[f'date{i+1}_{Controller.SearchBar_number}'] = date
@@ -230,8 +230,8 @@ class MainPanel:
 
         def PacijentiTable_Create():
             nonlocal table
-            scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{bootstyle_table}-round')
-            scroll_y = tb.Scrollbar(notebook_frame, orient=VERTICAL, bootstyle=f'{bootstyle_table}-round')
+            scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
+            scroll_y = tb.Scrollbar(notebook_frame, orient=VERTICAL, bootstyle=f'{style_scrollbar}-round')
 
             table = tb.ttk.Treeview(notebook_frame, columns=[], xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
             table.grid(row=1, column=0, sticky=NSEW)
@@ -279,16 +279,16 @@ class MainPanel:
                     frame = Frame(parent_frame, bd=2, relief=RAISED)
                     frame.grid(row=0, column=grouping[1], sticky=NSEW)
                     if dicty['group']:
-                        lbl = tb.Label(frame,anchor=CENTER, bootstyle=labelColor, text=dicty['group'], font=font_label())
+                        lbl = tb.Label(frame,anchor=CENTER, bootstyle=color_labeltext, text=dicty['group'], font=font_medium())
                         lbl.grid(row=0, column=0, pady=4)
                 if dicty['group']:
                     tb.Checkbutton(frame, text=dicty['checkbutton'], variable=Controller.Pacijenti_ColumnVars[orig_name],
-                            bootstyle=bootstyle_check).grid(row=1, column=grouping[2], padx=6, pady=(0,4))
+                            bootstyle=style_checkbutton).grid(row=1, column=grouping[2], padx=6, pady=(0,4))
                     grouping[2] += 1
 
                 else:
                     tb.Checkbutton(frame, text=dicty['checkbutton'], variable=Controller.Pacijenti_ColumnVars[orig_name],
-                            bootstyle=bootstyle_check).grid(row=swap, column=grouping[2]-swap, padx=6, pady=(8*(not swap),4)) # ovo pady ce dati 8,4,4 padding
+                            bootstyle=style_checkbutton).grid(row=swap, column=grouping[2]-swap, padx=6, pady=(8*(not swap),4)) # ovo pady ce dati 8,4,4 padding
                     grouping[2] += 1
                     swap = not swap # vrti 0/1 za redove checkbuttona kod None grupe
         frame.grid_columnconfigure([i for i in range(grouping[2])], weight=1) # na kraju jos jednom za poslednju grupu
@@ -315,18 +315,18 @@ class MainPanel:
             button_frame.grid_columnconfigure(0, weight=1)
 
             for i,butt in enumerate(Image_buttons):
-                button = ctk.CTkButton(button_frame, text=butt[0], width=form_butt_width, height=form_butt_height, corner_radius=10,
-                                font=font_label(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                button = ctk.CTkButton(button_frame, text=butt[0], width=buttonX, height=buttonY, corner_radius=10,
+                                font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                                 command=button_cmd[i])
-                button.grid(row=0, column=i, padx=form_padding_button[0], pady=form_padding_button[1], sticky=E)
+                button.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=E)
                 if butt[1]:
                     button.configure(fg_color=ThemeColors[butt[1]])
                 Controller.buttons[butt[0].replace('\n',' ')] = button
 
         def TableSlike_Create(parent, row, column):
             nonlocal table
-            scroll_x = tb.Scrollbar(parent, orient=HORIZONTAL, bootstyle=f'{bootstyle_table}-round')
-            scroll_y = tb.Scrollbar(parent, orient=VERTICAL, bootstyle=f'{bootstyle_table}-round')
+            scroll_x = tb.Scrollbar(parent, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
+            scroll_y = tb.Scrollbar(parent, orient=VERTICAL, bootstyle=f'{style_scrollbar}-round')
 
             table = tb.ttk.Treeview(parent, columns=[], xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
             table.grid(row=row, column=column, sticky=NSEW)
@@ -385,8 +385,8 @@ class MainPanel:
             PartFrame.grid_rowconfigure(1, weight=1) # tabela se siri
             PartFrame.grid_columnconfigure(0, weight=1) # tabela se siri
 
-            scroll_x = tb.Scrollbar(PartFrame, orient=HORIZONTAL, bootstyle=f'{bootstyle_table}-round')
-            scroll_y = tb.Scrollbar(PartFrame, orient=VERTICAL, bootstyle=f'{bootstyle_table}-round')
+            scroll_x = tb.Scrollbar(PartFrame, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
+            scroll_y = tb.Scrollbar(PartFrame, orient=VERTICAL, bootstyle=f'{style_scrollbar}-round')
 
             table = tb.ttk.Treeview(PartFrame, columns=[], xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
             table.grid(row=1, column=0, sticky=NSEW)
@@ -429,10 +429,10 @@ class MainPanel:
                         frame.grid_columnconfigure([i for i in range(len(values)-1)], weight=1)
                         frame.grid_rowconfigure(0, weight=1)
                     else:
-                        button = ctk.CTkButton(frame, text=butt[0], width=form_butt_width, height=form_butt_height, corner_radius=10,
-                            font=font_label(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                        button = ctk.CTkButton(frame, text=butt[0], width=buttonX, height=buttonY, corner_radius=10,
+                            font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                             command=buttons[j-1])
-                        button.grid(row=0, column=j-1, padx=form_padding_button[0], pady=form_padding_button[1])
+                        button.grid(row=0, column=j-1, padx=padding_6, pady=padding_6)
                         if butt[1]:
                             button.configure(fg_color=ThemeColors[butt[1]])
                         Controller.buttons[butt[0].replace('\n',' ')] = button
@@ -445,17 +445,17 @@ class MainPanel:
                     VALUES = RHMH.dr_funkcija if values[0]=='Funkcija' else RHMH.dg_kategorija if values[0]=='Kategorija' else None
                     tb.Combobox(frame, values=VALUES, justify=CENTER,
                                 textvariable=Controller.Katalog_FormVariables[values[0]],
-                                width=values[1], font=font_entry, state='readonly').grid(padx=12, pady=form_padding_entry[1])
+                                width=values[1], font=font_default, state='readonly').grid(padx=12, pady=padding_3)
                     frame.grid_configure(sticky=E)
                     frame.grid_rowconfigure(0, weight=1)
                     parent_frame.grid_columnconfigure(values[2][1], weight=1)
                 else:
                     Controller.Katalog_FormVariables[column] = StringVar()
-                    tb.Label(frame, anchor=CENTER, justify=CENTER, bootstyle=labelColor, text=values[0], font=font_entry).grid(
-                                row=0, column=0, padx=form_padding_entry[0], pady=form_padding_entry[1], sticky=EW)
-                    tb.Entry(frame, width=values[1], font=font_entry,
+                    tb.Label(frame, anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, text=values[0], font=font_default).grid(
+                                row=0, column=0, padx=padding_3_12, pady=padding_3, sticky=EW)
+                    tb.Entry(frame, width=values[1], font=font_default,
                                 textvariable=Controller.Katalog_FormVariables[column]).grid(
-                                    row=0, column=1, padx=form_padding_entry[0], pady=form_padding_entry[1], sticky=EW)
+                                    row=0, column=1, padx=padding_3_12, pady=padding_3, sticky=EW)
                     frame.grid_columnconfigure(1,weight=1) # Ovo kaze da se siri entry a ne label
                     frame.grid_rowconfigure(0,weight=1) # Ovo mora jer je Opis Dijagnoze u 2 reda da bi se rasirio prvi label          
 
@@ -470,19 +470,19 @@ class MainPanel:
         freequery_frame.grid_columnconfigure(0, weight=1)
 
         Controller.FreeQuery = StringVar()
-        tb.Entry(freequery_frame, font=font_entry, textvariable=Controller.FreeQuery).grid(
-                    row=0, column=0, padx=form_padding_entry[0], pady=form_padding_entry[1], sticky=EW)
+        tb.Entry(freequery_frame, font=font_default, textvariable=Controller.FreeQuery).grid(
+                    row=0, column=0, padx=padding_3_12, pady=padding_3, sticky=EW)
         
-        button = ctk.CTkButton(freequery_frame, text='Free\nQuery', width=form_butt_width, height=form_butt_height, corner_radius=10,
-            font=font_label(), fg_color=ThemeColors['danger'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+        button = ctk.CTkButton(freequery_frame, text='Free\nQuery', width=buttonX, height=buttonY, corner_radius=10,
+            font=font_medium(), fg_color=ThemeColors['danger'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
             command=ManageDB.FreeQuery_Execute)
-        button.grid(row=0, column=1, padx=form_padding_button[0], pady=form_padding_button[1])
+        button.grid(row=0, column=1, padx=padding_6, pady=padding_6)
         freequery_frame.grid_remove()
         Controller.buttons['Free Query'] = button
 
         # Left Table Panel
-        scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{bootstyle_table}-round')
-        scroll_y = tb.Scrollbar(notebook_frame, orient=VERTICAL, bootstyle=f'{bootstyle_table}-round')
+        scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
+        scroll_y = tb.Scrollbar(notebook_frame, orient=VERTICAL, bootstyle=f'{style_scrollbar}-round')
 
         table = tb.ttk.Treeview(notebook_frame, columns=[], xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
         table.grid(row=1, column=0, sticky=NSEW)
@@ -507,14 +507,14 @@ class MainPanel:
 
     @staticmethod
     def Log_SideFrame(parent_frame:Frame):
-        lbl1 = tb.Label(parent_frame,text='Full Query', anchor=CENTER, justify=CENTER, bootstyle=labelColor, font=font_label())
+        lbl1 = tb.Label(parent_frame,text='Full Query', anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, font=font_medium())
         lbl1.grid(row=0, column=0)
-        text1 = tb.Text(parent_frame, font=font_entry)
+        text1 = tb.Text(parent_frame, font=font_default)
         text1.grid(row=1, column=0, sticky=NSEW)
         Controller.Logs_FormVariables['Full Query'] = text1
-        lbl1 = tb.Label(parent_frame,text='Full Error', anchor=CENTER, justify=CENTER, bootstyle=labelColor, font=font_label())
+        lbl1 = tb.Label(parent_frame,text='Full Error', anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, font=font_medium())
         lbl1.grid(row=2, column=0)
-        text2 = tb.Text(parent_frame, font=font_entry)
+        text2 = tb.Text(parent_frame, font=font_default)
         text2.grid(row=3, column=0, sticky=NSEW)
         Controller.Logs_FormVariables['Full Error'] = text2
 
@@ -526,8 +526,8 @@ class MainPanel:
         notebook_frame = tb.Frame(Controller.NoteBook)
         Controller.NoteBook.add(notebook_frame, text=tabname)
 
-        scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{bootstyle_table}-round')
-        scroll_y = tb.Scrollbar(notebook_frame, orient=VERTICAL, bootstyle=f'{bootstyle_table}-round')
+        scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
+        scroll_y = tb.Scrollbar(notebook_frame, orient=VERTICAL, bootstyle=f'{style_scrollbar}-round')
 
         table = tb.ttk.Treeview(notebook_frame, columns=[], xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
         table.grid(row=0, column=0, sticky=NSEW)
@@ -553,50 +553,24 @@ class MainPanel:
         optionsframe = Frame(notebook_frame, bd=3, relief=RAISED)
         optionsframe.grid(row=0, column=0, sticky=EW)
         
-        def add_graph_grouping_option(event):
-            widget:tb.Combobox = Controller.Graph_FormVariables['X2-1'][0]
-            lastchoice:StringVar = Controller.Graph_FormVariables['X1-1'][1].get()
-            Values = graph_Xoptions[:]
-            vreme = ['Godina' , 'Mesec' , 'Dan' , 'Dan u Sedmici']
-            dijagnoza = ['Trauma', 'MKB Grupe','MKB Pojedinačno']
-            if lastchoice in vreme:
-                removelist = vreme[:vreme.index(lastchoice)+1] if not 'Dan' in lastchoice else vreme
-                for val in removelist:
-                    Values.remove(val)
-            elif lastchoice in dijagnoza:
-                if lastchoice == 'Trauma':
-                    removelist = ['MKB Pojedinačno','Trauma']
-                elif lastchoice == 'MKB Grupe':
-                    removelist = ['MKB Grupe','Trauma']
-                else:
-                    removelist = dijagnoza
-                for val in removelist:
-                    Values.remove(val)
-            else:
-                Values.remove(lastchoice)
-
-            width = len(max(Values, key=len))
-            width = width-4 if width>20 else 3 if width<3 else width-1
-            widget.configure(values=Values, width=width)
-            widget.grid()
-            event.widget.grid_remove()
-
         values = ['Broj Pacijenata' , 'Broj dana Hospitalizovan' , 'Broj dana od Prijema do Operacije' , 'Broj dana od Operacije do Otpusta']
-        width = len(max(values, key=len))-5
-        combo = tb.Combobox(optionsframe, values=values, width=width, font=font_entry, state='readonly')
+        width = len(max(values, key=len))-6
+        labelY = tb.Label(optionsframe, text=' Y-axis\n(Values)')
+        labelY.grid(row=0, column=0, rowspan=2, padx=(12,3), pady=padding_3)
+        combo = tb.Combobox(optionsframe, values=values, width=width, font=font_default, state='readonly')
         Controller.Graph_FormVariables['Y'] = (combo,StringVar())
         combo.configure(textvariable=Controller.Graph_FormVariables['Y'][1])
-        combo.grid(row=0, column=0, rowspan=2, padx=(form_padding_entry[0][0]+12, form_padding_entry[0][1]), pady=form_padding_entry[1])
+        combo.grid(row=0, column=1, rowspan=2, padx=padding_3, pady=padding_3)
         combo.bind("<<ComboboxSelected>>", lambda event, opt='Y': SelectDB.Graph_Options(event,opt))
 
-        def create_X_combo(row):
-            for i in range(1,4):
-                name = f'X{row+1}-{i}'
-                combo = tb.Combobox(optionsframe, values=[], font=font_entry, state='readonly')
+        def create_X_combo(row,col):
+            for i in range(col,col+3):
+                name = f'X{row+1}-{1+i-col}'
+                combo = tb.Combobox(optionsframe, values=[], font=font_default, state='readonly')
                 Controller.Graph_FormVariables[name] = (combo,StringVar())
                 combo.configure(textvariable=Controller.Graph_FormVariables[name][1])
 
-                combo.grid(row=row, column=i, padx=form_padding_entry[0], pady=form_padding_entry[1],sticky=EW)
+                combo.grid(row=row, column=i, padx=padding_3, pady=padding_3,sticky=EW)
                 combo.bind("<<ComboboxSelected>>", lambda event, opt=name: SelectDB.Graph_Options(event,opt))
                 combo.grid_remove()
     
@@ -604,7 +578,7 @@ class MainPanel:
             color_add, darker_add = Media.label_ImageLoad(IMAGES['Add'])
             add = tb.Label(optionsframe, image=color_add)
             add.grid(row=0, column=col, sticky=W)
-            add.bind('<ButtonRelease-1>',add_graph_grouping_option)
+            add.bind('<ButtonRelease-1>', SelectDB.graph_add_button)
             add.bind('<Enter>', lambda event,img=darker_add: Media.hover_label_button(event,img))
             add.bind('<Leave>', lambda event,img=color_add: Media.hover_label_button(event,img))
             Controller.Graph_FormVariables['Add'] = add
@@ -612,50 +586,58 @@ class MainPanel:
 
         def colorvalues_options(col):
             frame_c = Frame(optionsframe)
-            frame_c.grid(row=0, column=col, rowspan=2, padx=main_title_padding[0], pady=form_padding_button[1], sticky=NSEW)
+            frame_c.grid(row=0, column=col, rowspan=2, padx=padding_3, pady=padding_3, sticky=NSEW)
+            frame_c.grid_rowconfigure(0, weight=1)
             for i,txt in enumerate(['values','color']):
-                cb = tb.Checkbutton(frame_c, text=txt, bootstyle=bootstyle_check)
+                cb = tb.Checkbutton(frame_c, text=txt, bootstyle=style_checkbutton)
                 Controller.Graph_FormVariables['afterchoice'][txt] = (cb,IntVar())
                 cb.configure(variable=Controller.Graph_FormVariables['afterchoice'][txt][1])
 
-                cb.grid(row=i, column=0, padx=form_padding_button[0], pady=form_padding_button[1], sticky=W)
+                cb.grid(row=i, column=col, padx=padding_6, pady=padding_6, sticky='nsw')
                 cb.grid_remove()
 
         def radio_choice(col):
             frame_r = Frame(optionsframe)
-            frame_r.grid(row=0, column=col, rowspan=2, padx=main_title_padding[0], pady=form_padding_button[1], sticky=NSEW)
+            frame_r.grid(row=0, column=col, rowspan=2, padx=padding_3, pady=padding_3, sticky=NSEW)
             Controller.Graph_FormVariables['afterchoice']['radio'] = {'widgets':{},'choice':StringVar(value='bars')}
             for txt in ['bars','pie','stacked']:
                 ROW = 0 if txt=='bars' else 1
                 radio = tb.Radiobutton(frame_r, text=txt, variable=Controller.Graph_FormVariables['afterchoice']['radio']['choice'], value=txt)
-                radio.grid(row=ROW, column=0, padx=form_padding_button[0], pady=form_padding_button[1], sticky=W)
+                radio.grid(row=ROW, column=0, padx=padding_6, pady=padding_6, sticky=W)
                 Controller.Graph_FormVariables['afterchoice']['radio']['widgets'][txt] = radio
                 radio.grid_remove()
 
         def showgraph_button(col):
-            button = ctk.CTkButton(optionsframe, text='SHOW\nGraph', width=form_butt_width, height=form_butt_height, corner_radius=10,
-                font=font_label(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                command=ManageDB.Show_Graph)
-            button.grid(row=0, column=col, rowspan=2, padx=(6,18), pady=form_padding_button[1], sticky=E)
+            button = ctk.CTkButton(optionsframe, text='SHOW\nGraph', width=buttonX, height=buttonY, corner_radius=10,
+                font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                command=SelectDB.Show_Graph)
+            button.grid(row=0, column=col, rowspan=2, padx=padding_12, pady=padding_3, sticky=E)
             Controller.buttons['SHOW\nGraph'.replace('\n',' ')] = button
             button.configure(state=DISABLED)
 
         Controller.Graph_FormVariables['afterchoice'] = dict()
-        create_X_combo(row=0) # col 3 last
-        create_X_combo(row=1) # col 3 last
-        add_button(col=4)
-        radio_choice(col=5)
-        colorvalues_options(col=6)
+
+        labelY = tb.Label(optionsframe, text=' X-axis\n(Groups)')
+        labelY.grid(row=0, column=2, rowspan=2, padx=padding_6, pady=padding_3)
+        create_X_combo(row=0, col=3) 
+        create_X_combo(row=1, col=3) 
+
+        blankspace = 6
+        add_button(col=blankspace)
+        radio_choice(col=7)
+        colorvalues_options(col=8)
         MainPanel.filter_maintable_switch(parent= optionsframe,
                                           savingplace= Controller.Graph_FormVariables['afterchoice'],
-                                          row=0, col=7, rowspan=2, sticky=W)
-        showgraph_button(col=8)
+                                          row=0, col=9, rowspan=2, sticky=W)
+        showgraph_button(col=10)
 
-        optionsframe.grid_columnconfigure(4, weight=1) # checkbuttoni zauzimaju prazan i ravnaju E
+        optionsframe.grid_columnconfigure(blankspace, weight=1) # checkbuttoni zauzimaju prazan i ravnaju E
         optionsframe.grid_rowconfigure(0, weight=1)
 
         plotframe = Frame(notebook_frame, bd=3, relief=RAISED)
         plotframe.grid(row=1,column=0, sticky=NSEW)
+        
+
 
         return plotframe
 
@@ -672,3 +654,6 @@ class MainPanel:
         Controller.NoteBook.add(notebook_frame, text='About')
 
         return notebook_frame
+    
+if __name__=='__main__':
+    pass

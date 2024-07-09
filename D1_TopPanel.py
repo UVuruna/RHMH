@@ -11,7 +11,8 @@ class TopPanel:
     title_txt = None
 
     @staticmethod
-    def load_TopFrame(root:Tk):
+    def initialize(root:Tk) -> None:
+
         image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = IMAGES['Title']
 
         TopPanel.title_image = Image.open(image)
@@ -22,7 +23,7 @@ class TopPanel:
         TopPanel.Top_Frame.bind('<Button-1>' , ManageDB.lose_focus)
         TopPanel.Top_Frame.bind('<Configure>' , TopPanel.adjust_title_window)
 
-        TopPanel.reconect_button = ctk.CTkButton(root, text='Reconect', width=form_butt_width,height=form_butt_height//2, corner_radius=12, font=font_label(),
+        TopPanel.reconect_button = ctk.CTkButton(root, text='Reconect', width=buttonX,height=buttonY//2, corner_radius=12, font=font_medium(),
                                     fg_color=ThemeColors['warning'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                                     command=TopPanel.reconecting)
 
@@ -43,6 +44,9 @@ class TopPanel:
         TopPanel.Top_Frame.create_text( new_width * TopPanel.txt_X,
                                     new_height * TopPanel.txt_Y,
                                     text = TopPanel.title_txt,
-                                    anchor = NW, font = font_title(), fill = ThemeColors[titleTxtColor] )
+                                    anchor = NW, font = font_verybig(), fill = ThemeColors[color_titletext] )
 
         TopPanel.Top_Frame.create_window(new_width*0.93, 10, anchor=N, window=TopPanel.reconect_button) # position of button
+
+if __name__=='__main__':
+    pass

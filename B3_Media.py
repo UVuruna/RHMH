@@ -4,9 +4,12 @@ from PIL import Image, ImageTk
 pillow_heif.register_heif_opener()
 
 class Media:
+
     ReaderSetting = easyocr.Reader(['rs_latin','en'])
+    
+    GPU_VRAM_MB: int = None
+    Image_Reader_RAM: int = None
     Image_Reader_Zoom: float = 1.13
-    Image_Reader_RAM: int = 12000
 
     Slike_Viewer: Canvas = None
     Blob_Data = None
@@ -17,6 +20,21 @@ class Media:
     Image_Zoomed_Height: int = None
     delta = 1.18
     
+    @staticmethod
+    def initialize():
+        Media.GPU_VRAM_MB = Media.get_gpu_vram()
+        Media.Image_Reader_RAM = int(Media.GPU_VRAM_MB/2)
+
+    @staticmethod
+    def get_gpu_vram():
+        gpus = GPUtil.getGPUs()
+        if not gpus:
+            return 4096
+        gpu_total_memory = 0
+        gpu:GPU
+        for gpu in gpus:
+            gpu_total_memory += gpu.memoryTotal
+        return int(gpu_total_memory)
 
     @staticmethod
     def is_date(date_string):
@@ -82,10 +100,10 @@ class Media:
         top.resizable(False,False)
         top.attributes('-toolwindow', True)
         
-        tb.Label(top, text=f'{title} selected Images', anchor=CENTER, justify=CENTER, font=font_label()).grid(
+        tb.Label(top, text=f'{title} selected Images', anchor=CENTER, justify=CENTER, font=font_medium()).grid(
             row=0, column=0, columnspan=2, pady=24, sticky=NSEW)
 
-        text_widget = tb.Text(top, wrap=NONE, height=10, width=width, font=font_entry)
+        text_widget = tb.Text(top, wrap=NONE, height=10, width=width, font=font_default)
         text_widget.grid(row=1, column=0, sticky=NSEW)
 
         scrollbar = tb.Scrollbar(top, orient=VERTICAL, command=text_widget.yview)
@@ -99,7 +117,7 @@ class Media:
 
         text_widget.configure(state=DISABLED)
        
-        bar = tb.Floodgauge(top, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_groups())
+        bar = tb.Floodgauge(top, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_big())
         bar.grid(row=2, column=0, columnspan=2, padx=24, pady=24, sticky=EW)
 
         return text_widget,bar
@@ -152,7 +170,7 @@ class Media:
             return scale
         
         zoom = create_scale(top,4,(0.7,2.3),'Image Zoom',Media.Image_Reader_Zoom)
-        ram = create_scale(top,6,(1,12000),'Ram Usage',Media.Image_Reader_RAM)
+        ram = create_scale(top,6,(1,Media.GPU_VRAM_MB),'Ram Usage',Media.Image_Reader_RAM)
 
         button_frame = Frame(top)
         button_frame.grid(row=8, column=0, padx=12, pady=(24, 6),sticky='e')
@@ -170,13 +188,13 @@ class Media:
             result['action'] = 'Save'
             top.destroy()
 
-        ctk.CTkButton(button_frame, text='SAVE\nDEFAULT', width=form_butt_width-2, height=form_butt_height, corner_radius=12, font=font_label(),
+        ctk.CTkButton(button_frame, text='SAVE\nDEFAULT', width=buttonX-2, height=buttonY, corner_radius=12, font=font_medium(),
                     fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                    command=savedefault_command).grid(row=0, column=0, padx=form_padding_button[0], pady=form_padding_button[1])
+                    command=savedefault_command).grid(row=0, column=0, padx=padding_6[0], pady=padding_6[1])
         
-        ctk.CTkButton(button_frame, text='RUN', width=form_butt_width-4, height=form_butt_height, corner_radius=12, font=font_label(),
+        ctk.CTkButton(button_frame, text='RUN', width=buttonX-4, height=buttonY, corner_radius=12, font=font_medium(),
                     fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                    command=run_command).grid(row=0, column=1, padx=form_padding_button[0], pady=form_padding_button[1])
+                    command=run_command).grid(row=0, column=1, padx=padding_6[0], pady=padding_6[1])
 
         parent.wait_window(top)
         return result['action']
@@ -279,6 +297,7 @@ class Media:
             return_images.append(ImageTk.PhotoImage(resize_img))
         return return_images
 
+    @staticmethod
     def hover_label_button(event,img):
         label:tb.Label = event.widget
         label.config(image=img)
@@ -434,7 +453,11 @@ class Media:
 
 if __name__=='__main__':
     import torch
+    import psutil
     print('CUDA Available:', torch.cuda.is_available())
     print('CUDA Version:', torch.version.cuda)
+    print('CUDA VRAM:',torch.cuda.mem_get_info()[1])
     print('PyTorch Version:', torch.__version__)
     print('Device Name:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No CUDA Device')
+    free_memory = psutil.virtual_memory().available // 1024 ** 2
+    print(free_memory)

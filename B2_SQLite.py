@@ -66,8 +66,9 @@ class Database:
                     else:
                         returnquery += f'( `MKB - šifra` = "{list(value)[0]}" AND dijagnoza.id_kategorija = {kategorija} ) OR '
                 elif sign in ['LIKE','NOT LIKE']:
+                    operator = 'OR' if sign=='LIKE' else 'AND'
                     for val in value:
-                        returnquery += f'( `MKB - šifra` {sign} "%{val}%" AND dijagnoza.id_kategorija = {kategorija} ) OR '
+                        returnquery += f'( `MKB - šifra` {sign} "%{val}%" AND dijagnoza.id_kategorija = {kategorija} ) {operator} '
 
         elif column in self.dr_funkcija:
             self.lock.release()
@@ -81,8 +82,9 @@ class Database:
                     else:
                         returnquery += f'( Zaposleni = "{list(value)[0]}" AND operacija.id_funkcija = {funkcija} ) OR '
                 elif sign in ['LIKE','NOT LIKE']:
+                    operator = 'OR' if sign=='LIKE' else 'AND'
                     for val in value:
-                        returnquery += f'( Zaposleni {sign} "%{val}%" AND operacija.id_funkcija = {funkcija} ) OR '
+                        returnquery += f'( Zaposleni {sign} "%{val}%" AND operacija.id_funkcija = {funkcija} ) {operator} '
 
         else:
             column = column if ' ' not in column else f'`{column}`'
@@ -94,13 +96,16 @@ class Database:
                     else:
                         returnquery += f'{column} = "{list(value)[0]}" OR '
                 elif sign in ['LIKE','NOT LIKE']:
+                    operator = 'OR' if sign=='LIKE' else 'AND'
                     for val in value:
-                        returnquery += f'{column} {sign} "%{val}%" OR '
+                        returnquery += f'{column} {sign} "%{val}%" {operator} '
                 elif sign == 'BETWEEN':
                     for val in value:
                         returnquery += f'( {column} {sign} "{val[0]}" AND "{val[1]}" ) OR '
 
+
         returnquery = returnquery.rstrip(' OR ')
+        returnquery = returnquery.rstrip(' AND ')
         return returnquery
          
     def execute_selectquery(self,query):
@@ -136,8 +141,7 @@ class Database:
                 self.PatientQuery = query
 
             self.LoggingQuery = self.format_sql(query)
-            print(self.LoggingQuery)
-            
+
             self.connect()
             self.cursor.execute(query)
             view = self.cursor.fetchall()
@@ -202,7 +206,6 @@ class Database:
             if 'FROM pacijent' in query:
                 self.PatientQuery = query
             self.LoggingQuery = self.format_sql(query)
-            print(self.LoggingQuery)
 
             self.connect()
             self.cursor.execute(query)

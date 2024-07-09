@@ -88,3 +88,42 @@ class PasswordDialog(simpledialog.Dialog):
 
 def money():
     return f'MUVS {(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).total_seconds()//13*13:,.0f} $'
+
+class PC:
+
+    @staticmethod
+    def get_cpu_info():
+        cpu = cpuinfo.get_cpu_info() # OVO JE SPORO JAKO oko 1.5 sec ali thread ce resiti stvar
+        cpu_info = {
+            "Processor Name": cpu['brand_raw'],
+            "Physical Cores": psutil.cpu_count(logical=False),
+            "Total Cores": psutil.cpu_count(logical=True),
+            "Frequency": f"{psutil.cpu_freq().max:.0f} Mhz",
+            "L3 Cache": f'{cpu['l3_cache_size']//1024**2} MB'
+            }
+        return cpu_info
+
+    @staticmethod
+    def get_gpu_info():
+        gpus = GPUtil.getGPUs()
+        if not gpus:
+            return "No GPU found."
+        gpu_info = dict()
+        gpu:GPU
+        for gpu in gpus:
+            gpu_info[gpu.id] = {
+            "GPU Name": gpu.name,
+            "VRAM": f'{gpu.memoryTotal:,.0f} MB'
+            }
+        return gpu_info
+
+    @staticmethod
+    def get_ram_info():
+        svmem = psutil.virtual_memory()
+        ram_info = {
+            "Total RAM": f"{svmem.total / (1024 ** 3):.2f} GB"
+            }
+        return ram_info
+
+if __name__=='__main__':
+    a = time.time()

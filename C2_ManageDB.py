@@ -728,19 +728,10 @@ class ManageDB(Controller):
                     title=f'Fill From Image', message=report)
 
     @staticmethod
-    def Show_Graph():
-        print('showing graph')
-        for k,v in Controller.Graph_FormVariables.items():
-            print(f'{k}: {v.get()}')
-        print(Controller.Graph_Frame)
-
-    @staticmethod
     def Validation_Method(event=None,form=None):
         if form == 'Default':
             Controller.Valid_Default = True
 
-            Controller.Patient_FormVariables['operacija']['Asistent'].focus_force()
-            Controller.Patient_FormVariables['operacija']['Gostujući Specijalizant'].focus_force()
             for col,widget in Controller.Patient_FormVariables['pacijent'].items():
                 if 'Datum' in col:
                     if widget:
@@ -825,3 +816,10 @@ class ManageDB(Controller):
             RHMH.cursor.execute(query)
             RHMH.connection.commit()
             RHMH.close_connection()
+
+    @staticmethod
+    def Upload_DB():
+        print("Uploading")
+
+if __name__=='__main__':
+    pass
