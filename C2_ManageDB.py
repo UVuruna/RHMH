@@ -68,16 +68,7 @@ class ManageDB(Controller):
                     table.see(next_item)
         return 'break'
 
-    @staticmethod
-    def lose_focus(event):
-        event.widget.focus()
-        Controller.Table_Pacijenti.selection_set('')
-        Controller.Table_Slike.selection_set('')
-        Controller.Table_MKB.selection_set('')
-        Controller.Table_Zaposleni.selection_set('')
-        Controller.Table_Logs.selection_set('')
-        Controller.Table_Session.selection_set('')
-
+    @Controller.block_manageDB()
     @staticmethod
     def Add_Patient():
         if not (Controller.Valid_Default and Controller.Valid_Alternative):
@@ -153,6 +144,7 @@ class ManageDB(Controller):
         ManageDB.LoggingData(query_type='Add Patient',loggingdata=f'{ime}\n\n{logging[:-1]}')
         ManageDB.refresh_tables(table_names=['Pacijenti','Slike'])
 
+    @Controller.block_manageDB()
     @staticmethod
     def Add_Image():
         def open_file_dialog():
@@ -175,6 +167,7 @@ class ManageDB(Controller):
         ManageDB.refresh_tables(['Slike']) # plus vratiti panel sa tabelom i slikom
         print(UserSession)
 
+    @Controller.block_manageDB()
     @staticmethod
     def Add_MKB():
         mkb = ManageDB.get_widget_value(Controller.Katalog_FormVariables['MKB - šifra'])
@@ -195,6 +188,7 @@ class ManageDB(Controller):
             Messagebox.show_warning(parent=Controller.MessageBoxParent,
                     title=f'Inserting failed!', message='You didn`t fill the form')
     
+    @Controller.block_manageDB()
     @staticmethod
     def Add_Zaposleni():
         name = ManageDB.get_widget_value(Controller.Katalog_FormVariables['Zaposleni'])
@@ -211,6 +205,7 @@ class ManageDB(Controller):
             Messagebox.show_warning(parent=Controller.MessageBoxParent,
                     title=f'Inserting failed!', message='You didn`t enter Name of Employee')
 
+    @Controller.block_manageDB()
     @staticmethod
     def Update_Patient():
         if not (Controller.Valid_Default and Controller.Valid_Alternative):
@@ -338,10 +333,12 @@ class ManageDB(Controller):
             Messagebox.show_error(parent=Controller.MessageBoxParent,
                     title='Update failed!', message=report)
     
+    @Controller.block_manageDB()
     @staticmethod
     def Edit_Image():
         pass
 
+    @Controller.block_manageDB()
     @staticmethod
     def Update_MKB():
         mkb = ManageDB.get_widget_value(Controller.Katalog_FormVariables['MKB - šifra'])
@@ -384,6 +381,7 @@ class ManageDB(Controller):
         Messagebox.show_warning(parent=Controller.MessageBoxParent,
                 title=f'Updating failed!', message=report)
 
+    @Controller.block_manageDB()
     @staticmethod        
     def Update_Zaposleni():
         name = ManageDB.get_widget_value(Controller.Katalog_FormVariables['Zaposleni'])
@@ -416,6 +414,7 @@ class ManageDB(Controller):
         Messagebox.show_warning(parent=Controller.MessageBoxParent,
                 title=f'Updating failed!', message=report)
 
+    @Controller.block_manageDB()
     @staticmethod
     def Delete_Patient():
         patient = Controller.get_widget_value(Controller.PatientInfo)
@@ -438,6 +437,7 @@ class ManageDB(Controller):
             ManageDB.LoggingData(query_type='Delete Patient',loggingdata=patient)
             ManageDB.refresh_tables(table_names=['Pacijenti','Slike'])
     
+    @Controller.block_manageDB()
     @staticmethod
     def Delete_Image():
         selected_image:list = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1:6]
@@ -455,6 +455,7 @@ class ManageDB(Controller):
                     title=f'Deleting successfull', message=f'Deleted {selected_image_description}\nfrom Database and Google Drive')
             ManageDB.refresh_tables(table_names=['Slike'])
 
+    @Controller.block_manageDB()
     @staticmethod
     def Delete_MKB():
         mkb,opis = Controller.Table_MKB.item(Controller.Table_MKB.focus())['values'][1:3]
@@ -472,6 +473,7 @@ class ManageDB(Controller):
             ManageDB.LoggingData(query_type='Delete MKB',loggingdata=logging)
             ManageDB.refresh_tables(table_names=['Katalog'])
     
+    @Controller.block_manageDB()
     @staticmethod
     def Delete_Zaposleni():
         name = Controller.Table_Zaposleni.item(Controller.Table_Zaposleni.focus())['values'][1]
@@ -548,8 +550,10 @@ class ManageDB(Controller):
 
     @staticmethod
     def Show_Image_FullScreen(event=None,BLOB=None):
+        
         if not BLOB:
-            ID = event.widget.item(event.widget.focus())['values'][1].split('_')[0]
+            minitable:tb.ttk.Treeview = event.widget
+            ID = minitable.item(minitable.focus())['values'][1].split('_')[0]
             def execute():
                 Controller.Slike_HideTable.grid_remove()
                 ManageDB.Show_Image(ID=ID)
@@ -563,8 +567,6 @@ class ManageDB(Controller):
 
     @staticmethod
     def Show_Image(event=None,ID=False,BLOB=False):
-        if Media.Loading is True:
-            return
         if event:
             shift_pressed = event.state & 0x1
             ctrl_pressed = event.state & 0x4
@@ -622,7 +624,6 @@ class ManageDB(Controller):
                     showing_media()
                 except queue.Empty:
                     Controller.ROOT.after(50,check_queue)
-            Media.Loading = True
             check_queue()
         else:
             Media.Blob_Data = blob_data
@@ -655,7 +656,6 @@ class ManageDB(Controller):
                 Media.Slike_Viewer.image = thumbnail
                 Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
                 Media.Slike_Viewer.bind('<Button-1>',lambda event,video=video_data: Media.play_video(event,video))
-            Media.Loading = False 
 
     @staticmethod
     def Image_Read( result_queue):

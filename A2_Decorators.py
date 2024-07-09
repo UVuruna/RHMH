@@ -56,16 +56,12 @@ def error_catcher():
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                print(str(e))
-                print(traceback.format_exc())
-                Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')[:3]}' 
+                Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')}' 
                 fullerror = traceback.format_exc()
-                print("krece insert error")
                 RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
                                         'Query':func.__qualname__, 'Full Query':RHMH.LoggingQuery,
                                         'Error':str(e), 'Full Error': fullerror})
-                print('odradjuje insert error')
-                return
+                raise # Da bi radio try-except unutar metoda
         return wrapper
     return decorator
 
@@ -90,7 +86,6 @@ def money():
     return f'MUVS {(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).total_seconds()//13*13:,.0f} $'
 
 class PC:
-
     @staticmethod
     def get_cpu_info():
         cpu = cpuinfo.get_cpu_info() # OVO JE SPORO JAKO oko 1.5 sec ali thread ce resiti stvar

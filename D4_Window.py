@@ -18,17 +18,11 @@ class GUI:
 
     @staticmethod
     def initialize(root:Tk) -> None:
-
         print(f'Vreme do LOAD GUI: {(time.time_ns()-TIME_START)/10**9:.2f} s')
-
+        GoogleDrive.setup_connection()
         Controller.ROOT = root
-        connected = GoogleDrive.connect()
-        print(f"Connected = {connected}")
-
-        GoogleDrive.download_File(RHMH_DB['id'],'RHMH.db')
-        UserSession['User'] = GoogleDrive.get_UserEmail()
         threading.Thread(target=GUI.get_PC_info).start()
-
+    
         RHMH.start_RHMH_db()
 
         GUI.root = root
@@ -50,11 +44,13 @@ class GUI:
         GUI.root.bind('<Command-a>', ManageDB.selectall_tables)
         GUI.root.bind('\u004D\u0055\u0056', SelectDB.GodMode_Password)
         GUI.root.protocol('WM_DELETE_WINDOW',GUI.EXIT)
+        
+        #threading.Thread(target=Controller.starting_application).start()
 
         print(f'Ukupno Vreme za pokretanje programa: {(time.time_ns()-TIME_START)/10**9:.2f} s')
 
     @staticmethod
-    def get_PC_info():
+    def get_PC_info() -> None:
         cpu = PC.get_cpu_info()
         gpu = PC.get_gpu_info()
         ram = PC.get_ram_info()
@@ -63,8 +59,8 @@ class GUI:
         UserSession['PC']['RAM'] = ram
 
     @staticmethod
-    def Buttons_SpamStopper():
-        for button in Controller.buttons.values():
+    def Buttons_SpamStopper() -> None:
+        for button in Controller.Buttons.values():
             if isinstance(button,tuple):
                 continue
             if not isinstance(button,list):
@@ -78,7 +74,7 @@ class GUI:
                     filterbutton.configure(command=spam_stopper(filterbutton,GUI.root)(last_cmd))
 
     @staticmethod
-    def EXIT():
+    def EXIT() -> None:
         response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'])
         if response == 'Save':
             threading.Thread(target=GUI.uploading_to_GoogleDrive).start()
@@ -87,13 +83,13 @@ class GUI:
             GUI.root.destroy()
     
     @staticmethod
-    def uploading_to_GoogleDrive():
+    def uploading_to_GoogleDrive() -> None:
         print('Uploading to Google Drive...')
         #GoogleDrive.upload_UpdateFile(RHMH_DB['id'],'RHMH.db',RHMH_DB['mime'])
         print('Upload finished')
 
     @staticmethod
-    def show_form_frame():
+    def show_form_frame() -> None:
         if not FormPanel.Form_Frame.winfo_ismapped():
             FormPanel.Form_Frame.grid(row=1, column=0, padx=padding_6, pady=padding_0_6, sticky=NSEW)
             FormPanel.form_visible.set(True)
@@ -102,7 +98,7 @@ class GUI:
             FormPanel.form_visible.set(False) 
 
     @staticmethod
-    def show_title_frame():
+    def show_title_frame() -> None:
         if not TopPanel.Top_Frame.winfo_ismapped():
             TopPanel.Top_Frame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
             GUI.title_visible.set(True)
@@ -111,7 +107,7 @@ class GUI:
             GUI.title_visible.set(False) 
 
     @staticmethod
-    def do_popup(event):
+    def do_popup(event) -> None:
         GUI.menu:Menu
         try: 
             GUI.menu.tk_popup(event.x_root, event.y_root) 
@@ -119,7 +115,7 @@ class GUI:
             GUI.menu.grab_release() 
 
     @staticmethod
-    def RootMenu_Create():
+    def RootMenu_Create() -> Menu:
         m = Menu(GUI.root, tearoff = 0) 
         GUI.title_visible = BooleanVar()
         GUI.title_visible.set(True)

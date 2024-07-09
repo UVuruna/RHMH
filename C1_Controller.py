@@ -1,10 +1,11 @@
 from A1_Variables import *
+from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH
 
 class Controller:
     ROOT:Tk = None
     Connected:bool = False
-    buttons = {'Filter Patient':[]}
+    Buttons = {'Filter Patient':[]}
     MessageBoxParent: Frame = None
     
         # ADMIN
@@ -12,6 +13,12 @@ class Controller:
     GodMode: bool           = False
     FreeQuery_Frame: Frame  = None
     FreeQuery: StringVar    = None
+
+        # TOP - Title Frame
+    Top_Frame: Canvas = None
+    Reconnect_window = None
+    Reconnect_Button: ctk.CTkButton = None
+    
 
         # NOTEBOOK
     NoteBook:          tb.Notebook      = None
@@ -21,6 +28,7 @@ class Controller:
     FilterOptions                       = dict()
     TablePacijenti_Columns              = tuple(MainTablePacijenti.keys())
     Patient_FormVariables               = {'pacijent':{},'dijagnoza':{},'operacija':{},'slike':{}}
+
     Table_Slike:       tb.ttk.Treeview  = None
     TableSlike_Columns: tuple           = None
     Slike_HideTable:    Frame           = None
@@ -68,6 +76,51 @@ class Controller:
 
     MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
     Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
+
+    @staticmethod
+    def block_manageDB():
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                if Controller.Connected is False:
+                    report = 'You didnt download Database from Google Drive\n'
+                    report += 'Offline mode can only View from Local Database\n'
+                    report += 'Managing Database is forbidden in Offline mode\n'
+                    report += f'Please Recconect if you want to "{func.__name__}"\n'
+                    Messagebox.show_warning(parent=Controller.MessageBoxParent,
+                        title=f'{func.__name__} failed!', message=report)
+                else:
+                    func(*args, **kwargs)
+            return wrapper
+        return decorator
+
+    @staticmethod
+    def starting_application():
+        try:
+            if Controller.Connected == False:
+                email = GoogleDrive.get_UserEmail()
+                GoogleDrive.download_DB(RHMH_DB['id'],'RHMH.db')
+
+                Controller.Connected = True
+                if Controller.Reconnect_window:
+                    Controller.Top_Frame.delete(Controller.Reconnect_window)
+                    Controller.Reconnect_window = None
+                    Controller.ROOT.update()
+                if email:
+                    UserSession['User'] = email
+        except Exception as e:
+            width = Controller.Top_Frame.winfo_width()
+            Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
+
+    @staticmethod
+    def lose_focus(event):
+        event.widget.focus()
+        Controller.Table_Pacijenti.selection_set('')
+        Controller.Table_Slike.selection_set('')
+        Controller.Table_MKB.selection_set('')
+        Controller.Table_Zaposleni.selection_set('')
+        Controller.Table_Logs.selection_set('')
+        Controller.Table_Session.selection_set('')
 
     @staticmethod
     def Clear_Form():

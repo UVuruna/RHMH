@@ -13,7 +13,6 @@ class Media:
 
     Slike_Viewer: Canvas = None
     Blob_Data = None
-    Loading = False
     Image_Active: Image.Image = None
     Image_Scale: int = 1
     Image_Zoomed_Width: int = None

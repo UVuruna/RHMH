@@ -204,7 +204,7 @@ class FormPanel:
                                  fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                                  command=cmd)
             butt.grid(row=0, column=i, padx=padding_6, pady=padding_6)
-            Controller.buttons[but] = butt
+            Controller.Buttons[but] = butt
             if btype:
                 butt.configure(fg_color=ThemeColors[btype])
         Frame(parent).grid(row=24, columnspan=4, pady=padding_6) 

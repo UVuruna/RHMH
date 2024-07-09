@@ -1,25 +1,19 @@
 from A1_Variables import *
 
 class GoogleDrive:
-    SCOPES = None
+    SCOPES = [ 'https://www.googleapis.com/auth/drive',
+                'https://www.googleapis.com/auth/drive.file',
+                'https://www.googleapis.com/auth/admin.directory.user',
+                'https://www.googleapis.com/auth/userinfo.email',
+                'openid'
+                ]
     creds = None
     connection:build = None
     
     @staticmethod
-    def connect():
-        try:
-            GoogleDrive.SCOPES = [ 'https://www.googleapis.com/auth/drive',
-                            'https://www.googleapis.com/auth/drive.file',
-                            'https://www.googleapis.com/auth/admin.directory.user',
-                            'https://www.googleapis.com/auth/userinfo.email',
-                            'openid'
-                            ]
-            GoogleDrive.creds = GoogleDrive.authenticate_google_drive()
-            GoogleDrive.connection = build('drive', 'v3', credentials=GoogleDrive.creds)
-            return True
-        except Exception as e:
-            print(e)
-            return False
+    def setup_connection() -> None:
+        GoogleDrive.creds = GoogleDrive.authenticate_google_drive()
+        GoogleDrive.connection = build('drive', 'v3', credentials=GoogleDrive.creds)
 
     @staticmethod
     def authenticate_google_drive():
@@ -96,13 +90,16 @@ class GoogleDrive:
             return None, None
 
     @staticmethod
-    def download_File(file_id, destination): # return je destination
+    def download_DB(file_id, destination:str):
+        temp_destination = destination.split('.')[0] + '_progress.db'
         request = GoogleDrive.connection.files().get_media(fileId=file_id)
-        with open(destination, 'wb') as f:
+        with open(temp_destination, 'wb') as f:
             downloader = MediaIoBaseDownload(f, request)
             done = False
             while not done:
                 status, done = downloader.next_chunk()
+        os.remove(destination)
+        os.rename(temp_destination, destination)
     
     @staticmethod
     def download_BLOB(file_id):
@@ -150,8 +147,4 @@ class GoogleDrive:
         return True
 
 if __name__ == '__main__':
-
-    user = GoogleDrive()
-    user_email = user.get_UserEmail()
-    print(user_email)
-    user.download_File(RHMH_DB['id'],'RHMH.db')
+    pass

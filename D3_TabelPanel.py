@@ -28,7 +28,7 @@ class MainPanel:
                 # Ovo znaci da ce se zadnja 2 BUTONNA uvek biti desno
         Controller.SearchBar.grid_columnconfigure(searchButtonROW,weight=1)
         Controller.SearchBar.grid_rowconfigure(0,weight=1)  
-        Controller.SearchBar.bind('<Button-1>',ManageDB.lose_focus)
+        Controller.SearchBar.bind('<Button-1>',Controller.lose_focus)
 
                 # Create SEARCH BAR
         MainPanel.SearchBar_StaticPart(searchButtonROW)
@@ -104,7 +104,7 @@ class MainPanel:
                             font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'],text_color_disabled=ThemeColors['secondary'],
                                 command=lambda column=col: SelectDB.filter_data(column))
             butt.grid(row=1, column=i, padx=padding_6, pady=(0,3))
-            Controller.buttons['Filter Patient'] += [cb,butt]
+            Controller.Buttons['Filter Patient'] += [cb,butt]
 
     @staticmethod
     def filter_maintable_switch(parent, savingplace, row, col, rowspan, sticky):
@@ -130,10 +130,10 @@ class MainPanel:
                             command=lambda column=['Datum Operacije','Datum Otpusta']: SelectDB.filter_data(column))
         butf.grid(row=0, column=2, rowspan=max_searchbars,
                 padx=(padding_6[0],33), pady=padding_6, sticky=SE)
-        Controller.buttons['Filter Patient'].append(butf)
+        Controller.Buttons['Filter Patient'].append(butf)
 
         MainPanel.filter_maintable_switch(parent=filterFrame,
-                                          savingplace=Controller.buttons,
+                                          savingplace=Controller.Buttons,
                                           row=0, col=0, rowspan=max_searchbars, sticky=SE)
 
             # BUTTONS for SEARCH and SHOWALL
@@ -142,14 +142,14 @@ class MainPanel:
                         command=SelectDB.search_data)
         buts.grid(row=0, column=searchButtonROW+3, rowspan=max_searchbars,
                 padx=padding_6, pady=padding_6, sticky=SE)
-        Controller.buttons['Search'] = buts
+        Controller.Buttons['Search'] = buts
 
         buta = ctk.CTkButton(Controller.SearchBar, text='SHOW ALL', width=buttonX, height=buttonY, corner_radius=10,
                         font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                         command=SelectDB.showall_data)
         buta.grid(row=0, column=searchButtonROW+4, rowspan=max_searchbars,
                 padx=padding_6, pady=padding_6, sticky=SE)
-        Controller.buttons['Show All'] = buta
+        Controller.Buttons['Show All'] = buta
 
     @staticmethod
     def SearchBar_AddRemove():
@@ -321,7 +321,7 @@ class MainPanel:
                 button.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=E)
                 if butt[1]:
                     button.configure(fg_color=ThemeColors[butt[1]])
-                Controller.buttons[butt[0].replace('\n',' ')] = button
+                Controller.Buttons[butt[0].replace('\n',' ')] = button
 
         def TableSlike_Create(parent, row, column):
             nonlocal table
@@ -435,7 +435,7 @@ class MainPanel:
                         button.grid(row=0, column=j-1, padx=padding_6, pady=padding_6)
                         if butt[1]:
                             button.configure(fg_color=ThemeColors[butt[1]])
-                        Controller.buttons[butt[0].replace('\n',' ')] = button
+                        Controller.Buttons[butt[0].replace('\n',' ')] = button
                         
             else:
                 frame.grid(row=values[2][0], column=values[2][1], rowspan=values[2][2], columnspan=values[2][3], sticky=NSEW)
@@ -478,7 +478,7 @@ class MainPanel:
             command=ManageDB.FreeQuery_Execute)
         button.grid(row=0, column=1, padx=padding_6, pady=padding_6)
         freequery_frame.grid_remove()
-        Controller.buttons['Free Query'] = button
+        Controller.Buttons['Free Query'] = button
 
         # Left Table Panel
         scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
@@ -612,7 +612,7 @@ class MainPanel:
                 font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                 command=SelectDB.Show_Graph)
             button.grid(row=0, column=col, rowspan=2, padx=padding_12, pady=padding_3, sticky=E)
-            Controller.buttons['SHOW\nGraph'.replace('\n',' ')] = button
+            Controller.Buttons['SHOW\nGraph'.replace('\n',' ')] = button
             button.configure(state=DISABLED)
 
         Controller.Graph_FormVariables['afterchoice'] = dict()

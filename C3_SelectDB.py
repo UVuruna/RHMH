@@ -368,7 +368,7 @@ class SelectDB(Controller):
     @staticmethod
     def Graph_Options(event,option:str):
         widget:tb.Combobox = event.widget
-        execute_button:ctk.CTkButton = Controller.buttons['SHOW Graph']
+        execute_button:ctk.CTkButton = Controller.Buttons['SHOW Graph']
         add_button:tb.Label = Controller.Graph_FormVariables['Add']
         choice = widget.get()
         Values = []
@@ -495,7 +495,7 @@ class SelectDB(Controller):
     @staticmethod
     def fill_TableSlike(table):
         check = lambda x: True
-        if Controller.buttons['Filter Main Table'][1].get():
+        if Controller.Buttons['Filter Main Table'][1].get():
             check = lambda col: col in Controller.MainTable_IDS
         for i, row in enumerate(table):
             if check(row[1]):
@@ -770,14 +770,14 @@ class SelectDB(Controller):
     def tab_change(event):
 
         def filter_buttons_swap(maintable, switch):
-            filtermain:tb.Checkbutton = Controller.buttons['Filter Main Table'][0]
+            filtermain:tb.Checkbutton = Controller.Buttons['Filter Main Table'][0]
             if switch is True:
                 filtermain.grid()
             else:
                 filtermain.grid_remove()
 
             widget:ctk.CTkButton ; widget:tb.Checkbutton
-            for widget in Controller.buttons['Filter Patient']:
+            for widget in Controller.Buttons['Filter Patient']:
                 if maintable is False:
                     widget.grid_remove()
                 else:
