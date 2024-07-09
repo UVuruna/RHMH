@@ -39,12 +39,9 @@ def Classes_Decorating(CLASS_list:list):
     for CLASS in CLASS_list:
         CLASS:object
         for i,(name,method) in enumerate(inspect.getmembers(CLASS, predicate=inspect.isfunction)):
-            #if CLASS.__qualname__ in ['GoogleDrive','Controller']:
-                #decorated_method = method_efficency()(method)
-            #else:
             decorated_method = method_efficency()(error_catcher()(method))
             setattr(CLASS, name, decorated_method)
-        print(f'Decorated --> {CLASS.__qualname__} - {i+1} methods') # Google Drive dekorise -1 metod
+        print(f'Decorated --> {CLASS.__qualname__} - {i+1} methods')
 
 Classes_Decorating([GoogleDrive,Database,Media,Graph,Controller,ManageDB,SelectDB,TopPanel,FormPanel,MainPanel,GUI])
 
