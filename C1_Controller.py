@@ -1,6 +1,52 @@
 from A1_Variables import *
 from B1_GoogleDrive import GoogleDrive
+from B3_Media import Media
 from B2_SQLite import RHMH
+
+class GodMode(simpledialog.Dialog):
+    def __init__(self, parent, title):
+        self.password = None
+        self.eye_image = None
+        super().__init__(parent, title)
+
+    def body(self, master):
+        self.eye_image = Media.label_ImageLoad(IMAGES['Password'])
+        lbl = tb.Label(master, image=self.eye_image)
+        lbl.grid(row=0, column=0, padx=6, pady=6, sticky=NSEW)
+        self.password_entry = tb.Entry(master, show='*')
+        self.password_entry.grid(row=1, column=0, padx=13, pady=13)
+        return self.password_entry
+
+    def apply(self):
+        self.password = self.password_entry.get()
+
+    @staticmethod
+    def money():
+        message = '    MUVS\n'
+        message += f'{(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).total_seconds()//13*13:,.0f} $\n'
+        message += f'{(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).days//13*13:,.0f} Million $'
+        return message
+    
+    @staticmethod
+    def GodMode_Password(event):
+        dialog = GodMode(Controller.MessageBoxParent, 'Privileges Unlocking...')
+        if dialog.password=='63636':
+            Controller.Admin = True
+            info = 'New tabs:\n\t-Logs'
+            title = 'Admin unlocked'
+        elif dialog.password=='C12-Si28-C13-Si28-C12':
+            Controller.Admin = True
+            Controller.GodMode = True
+            Controller.FreeQuery_Frame.grid()
+            info = 'New tabs:\n\t-Logs\n\t-Session\n'
+            info += 'New button:\n\t-Free Query'
+            info += f'\n\n{GodMode.money()}'
+            title = 'God Mode unlocked'
+            Controller.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
+        else:
+            return
+        Controller.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
+        Messagebox.show_info(parent=Controller.MessageBoxParent, message=info, title=title)
 
 class Controller:
     ROOT:Tk = None
@@ -55,9 +101,11 @@ class Controller:
     
     
         # SEARCH BAR
+    max_SearchBars      = 5
+    SearchBar_number    = 1
     SearchBar: Frame    = None
     SearchBar_widgets   = dict()
-    SearchBar_number    = 1
+    
     SearchAdd_Button: tb.Label    = None
     SearchRemove_Button: tb.Label = None
     signimages: list    = None
@@ -74,11 +122,11 @@ class Controller:
     Valid_Default: bool = True
     Valid_Alternative: bool = True
 
-    MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
-    Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
+    MKB_validation_LIST:        list = None
+    Zaposleni_validation_LIST:  list = None
 
     @staticmethod
-    def block_manageDB():
+    def block_manageDB(): # DECORATOR
         def decorator(func):
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
@@ -86,7 +134,7 @@ class Controller:
                     report = 'You didnt download Database from Google Drive\n'
                     report += 'Offline mode can only View from Local Database\n'
                     report += 'Managing Database is forbidden in Offline mode\n'
-                    report += f'Please Recconect if you want to "{func.__name__}"\n'
+                    report += f'Please Reconnect if you want to "{func.__name__}"\n'
                     Messagebox.show_warning(parent=Controller.MessageBoxParent,
                         title=f'{func.__name__} failed!', message=report)
                 else:
@@ -99,7 +147,7 @@ class Controller:
         try:
             if Controller.Connected == False:
                 email = GoogleDrive.get_UserEmail()
-                GoogleDrive.download_DB(RHMH_DB['id'],'RHMH.db')
+                GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
 
                 Controller.Connected = True
                 if Controller.Reconnect_window:

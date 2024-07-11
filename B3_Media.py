@@ -1,12 +1,25 @@
 from A1_Variables import *
-from PIL import Image, ImageTk
 
 pillow_heif.register_heif_opener()
 
 class Media:
 
     ReaderSetting = easyocr.Reader(['rs_latin','en'])
+
+    OperacionaChoice = {
+        'Datum Operacije': None,
+        'Dg Latinski': None,
+        'Glavna Operativna dijagnoza': None,
+        'Sporedna Operativna dijagnoza':  None,
+        'Operator':  None,
+        'Asistent':  None,
+        'Anesteziolog':  None,
+        'Anestetičar':  None,
+        'Instrumentarka':  None,
+        'Gostujući Specijalizant':  None,
+    }
     
+    Reader_Type = None
     GPU_VRAM_MB: int = None
     Image_Reader_RAM: int = None
     Image_Reader_Zoom: float = 1.13
@@ -131,21 +144,22 @@ class Media:
 
         titletxt = ' - Choose your settings for new AI Reading of document.\n'+\
                     ' - You can save your settings as default values for future readings.'
-        title = tb.Label(top, text=titletxt, anchor='w', wraplength=310)
+        title = tb.Label(top, text=titletxt, anchor=W, wraplength=310)
         title.grid(row=0, column=0, padx=10, pady=(24,0)) 
         titleframe = Frame(top)
-        titleframe.grid(row=1, column=0, padx=10, sticky='w')
+        titleframe.grid(row=1, column=0, padx=10, sticky=W)
         titlelabels = [ (' Slower ','High Zoom and Less Ram','danger'),
                         (' Faster ','Low Zoom and More Ram','success'),
                         (' Precision ','Change Zoom and AI Type','primary') ]
         for i,(txt1,txt2,bt) in enumerate(titlelabels):
-            tb.Label(titleframe, anchor='w', justify='center', text=txt1, bootstyle=bt, wraplength=310).grid(row=i, column=0, padx=0)
-            tb.Label(titleframe, anchor='w', justify='left', text=txt2, wraplength=310).grid(row=i, column=1, padx=0)
+            tb.Label(titleframe, anchor=W, justify=CENTER, text=txt1, bootstyle=bt, wraplength=310).grid(row=i, column=0, padx=0)
+            tb.Label(titleframe, anchor=W, justify=LEFT, text=txt2, wraplength=310).grid(row=i, column=1, padx=0)
 
-        label = tb.Label(top, text=f'Image Reader Type', anchor='center', justify='center')
+        label = tb.Label(top, text=f'Image Reader Type', anchor=CENTER, justify=CENTER)
         label.grid(row=2, column=0, padx=12, pady=(24,6)) 
-        values = ['AI-Reader A', 'AI-Reader B', 'AI-Reader C']
-        combobox = tb.Combobox(top, values=values)
+        values = ['AI-Line Reader', 'AI-Paragraph Reader']
+        combobox = tb.Combobox(top, values=values, state='readonly')
+        combobox.set(values[0])
         combobox.grid(row=3, column=0, padx=12, pady=6)
 
         def create_scale(parent,row:int,fromto:tuple,text:str,default):
@@ -158,7 +172,7 @@ class Media:
                 def get_data(event):
                     label.config(text=f'{text}: {int(scale.get()):,} MB')
 
-            label = tb.Label(parent, text=f'{text}: {value}', anchor='center', justify='center')
+            label = tb.Label(parent, text=f'{text}: {value}', anchor=CENTER, justify=CENTER)
             label.grid(row=row, column=0, padx=20, pady=(16,6))    
 
             scale = tb.Scale(parent, from_=fromto[0], to=fromto[1], orient=HORIZONTAL, length=160, variable=StringVar())
@@ -171,21 +185,44 @@ class Media:
         zoom = create_scale(top,4,(0.7,2.3),'Image Zoom',Media.Image_Reader_Zoom)
         ram = create_scale(top,6,(1,Media.GPU_VRAM_MB),'Ram Usage',Media.Image_Reader_RAM)
 
-        button_frame = Frame(top)
-        button_frame.grid(row=8, column=0, padx=12, pady=(24, 6),sticky='e')
+        checkbutton_frame = Frame(top)
+        checkbutton_frame.grid(row=8, column=0, padx=12, pady=padding_6, sticky=NSEW)
+        checkbutton_frame.grid_columnconfigure(1,weight=1)
+   
+        col = 0
+        row = 0
+        for check in list(Media.OperacionaChoice.keys()):
+            txt = check.split(' ')
+            txt = ' '.join(txt) if len(txt)!=3 else ' '.join(txt[:2])
+            if col==2:
+                col = 0
+                row += 1
+            tb.Checkbutton()
+            cb = tb.Checkbutton(checkbutton_frame, text=txt, bootstyle=style_checkbutton)
+            Media.OperacionaChoice[check] = IntVar()
+            cb.configure(variable=Media.OperacionaChoice[check])
+            if row>1:
+                Media.OperacionaChoice[check].set(1)
+            cb.grid(row=row, column=col, padx=padding_12, pady=padding_6, sticky=W)
+            col += 1
 
         result = {'action':None}
         def run_command():
             Media.Image_Reader_RAM = int(ram.get())
             Media.Image_Reader_Zoom = round(zoom.get(),2)
+            Media.Reader_Type = combobox.get()
             result['action'] = 'Run'
             top.destroy()
 
         def savedefault_command():
             Media.Image_Reader_RAM = int(ram.get())
             Media.Image_Reader_Zoom = round(zoom.get(),2)
+            Media.Reader_Type = combobox.get()
             result['action'] = 'Save'
             top.destroy()
+
+        button_frame = Frame(top)
+        button_frame.grid(row=9, column=0, padx=12, pady=(24, 6), sticky=E)
 
         ctk.CTkButton(button_frame, text='SAVE\nDEFAULT', width=buttonX-2, height=buttonY, corner_radius=12, font=font_medium(),
                     fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
@@ -199,10 +236,18 @@ class Media:
         return result['action']
 
     @staticmethod
-    def OperacionaLista_ImageReader(image,output=['Datum Operacije', 'Glavna Operativna dijagnoza',
-                                   'Sporedna Operativna dijagnoza', 'Dg Latinski',
-                                   'Operator', 'Asistent', 'Anesteziolog',
-                                   'Anestetičar', 'Instrumentarka', 'Gostujući Specijalizant']):
+    def Operaciona_Reader(image):
+        if Media.Reader_Type == 'AI-Line Reader':
+            return Media.Operaciona_LineReader(image)
+        elif Media.Reader_Type == 'AI-Paragraph Reader':
+            return Media.Operacion_ParagraphReader(image)
+
+    @staticmethod
+    def Operacion_ParagraphReader(image):
+        pass
+
+    @staticmethod
+    def Operaciona_LineReader(image):
         print(f'Zoom {Media.Image_Reader_Zoom}')
         print(f'RAM {Media.Image_Reader_RAM}')
         result = Media.ReaderSetting.readtext(image, detail=0, mag_ratio=Media.Image_Reader_Zoom, batch_size=Media.Image_Reader_RAM)
@@ -216,8 +261,10 @@ class Media:
 
         # Initialize variables
         OUTPUT = {}
-        for col in output:
-            OUTPUT[col] = None if col in ['Datum Operacije','Dg Latinski'] else list()
+        var:IntVar
+        for col,var in Media.OperacionaChoice.items():
+            if var.get() == True:
+                OUTPUT[col] = None if col in ['Datum Operacije','Dg Latinski'] else list()
 
         DoctorsImage_dict = {'Operator':('Operator',['Operator']),
                              'Asist':('Asistent',['Asistent 1','Asistent 2','Asistent 3','Asistent']),
@@ -228,14 +275,15 @@ class Media:
         prosao_datum = False
         for i, detection in enumerate(result):
             print(i,'NEW: ',detection)
-            if prosao_datum is False and detection in ['PACIJENT','OPERACIONA LISTA','godište']:
-                prosao_datum = True
-            if  prosao_datum is False and not OUTPUT['Datum Operacije']:
-                date = Media.is_date(detection)
-                if date:
-                    OUTPUT['Datum Operacije'] = date
+            if 'Datum Operacije' in OUTPUT:
+                if prosao_datum is False and detection in ['PACIJENT','OPERACIONA LISTA','godište']:
                     prosao_datum = True
-            if 'Glavna operativna dijagnoza' in detection and 'Glavna Operativna dijagnoza' in OUTPUT:
+                if  prosao_datum is False and not OUTPUT['Datum Operacije']:
+                    date = Media.is_date(detection)
+                    if date:
+                        OUTPUT['Datum Operacije'] = date
+                        prosao_datum = True
+            if 'Glavna Operativna dijagnoza' in OUTPUT and 'Glavna operativna dijagnoza' in detection:
                 mkb,line = Media.mkb_find(detection,result,i)
                 if mkb is None:
                     continue
@@ -251,7 +299,7 @@ class Media:
                         OUTPUT['Dg Latinski'] = Dg_Latinski.replace('|','l')
                     except IndexError:
                         continue
-            elif 'Sporedna operativna dijagnoza' in detection and 'Sporedna Operativna dijagnoza' in OUTPUT:
+            elif 'Sporedna Operativna dijagnoza' in OUTPUT and 'Sporedna operativna dijagnoza' in detection:
                 mkb,line = Media.mkb_find(detection,result,i)
                 if mkb is None:
                     continue
@@ -320,9 +368,9 @@ class Media:
 
     @staticmethod
     def create_video_thumbnail(video_data):
-        if not os.path.exists('temporary'):
-            os.makedirs('temporary')
-        video_file = 'temporary/temp_video.mp4'
+        if not os.path.exists('_internal/temporary'):
+            os.makedirs('_internal/temporary')
+        video_file = '_internal/temporary/temp_video.mp4'
         with open(video_file, 'wb') as f:
             f.write(video_data)
 
@@ -356,9 +404,9 @@ class Media:
     @staticmethod
     def open_image(event,image_data):
         # Save video data to a temporary file
-        if not os.path.exists('temporary'):
-            os.makedirs('temporary')
-        image_file = 'temporary/temp_image.png'
+        if not os.path.exists('_internal/temporary'):
+            os.makedirs('_internal/temporary')
+        image_file = '_internal/temporary/temp_image.png'
         with open(image_file, 'wb') as f:
             f.write(image_data)
 
@@ -407,7 +455,7 @@ class Media:
         image = ImageTk.PhotoImage(image)
         Media.Slike_Viewer.delete('all')
 
-        Media.Slike_Viewer.create_image(Media.Slike_Viewer.winfo_width()//2, Media.Slike_Viewer.winfo_height()//2, anchor='center', image=image)
+        Media.Slike_Viewer.create_image(Media.Slike_Viewer.winfo_width()//2, Media.Slike_Viewer.winfo_height()//2, anchor=CENTER, image=image)
         Media.Slike_Viewer.image = image
         Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
    
@@ -460,3 +508,22 @@ if __name__=='__main__':
     print('Device Name:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No CUDA Device')
     free_memory = psutil.virtual_memory().available // 1024 ** 2
     print(free_memory)
+
+    root = Tk()
+    style = tb.Style(theme=THEME)
+
+    # CUVA u dicty BOJE iz TEME
+    for color_label in Colors.label_iter():
+        color = style.colors.get(color_label)
+        ThemeColors[color_label] = color
+
+    Media.initialize()
+    Media.ImageReader_SettingUp(root)
+    OUTPUT = {}
+    for col,var in Media.OperacionaChoice.items():
+        var:IntVar
+        if var.get() == True:
+            OUTPUT[col] = None if col in ['Datum Operacije','Dg Latinski'] else list()
+    print(Media.OperacionaChoice)
+    print(OUTPUT)
+    root.mainloop()

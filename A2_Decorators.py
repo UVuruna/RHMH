@@ -1,5 +1,4 @@
 from A1_Variables import *
-from B3_Media import Media
 from B2_SQLite import RHMH
 
 def spam_stopper(button:ctk.CTkButton,root:Tk):
@@ -19,6 +18,7 @@ def method_efficency():
         def wrapper(*args, **kwargs):
             start_perf = time.perf_counter_ns()
             start_process = time.process_time_ns()
+
             result = func(*args, **kwargs)
             
             end_process = time.process_time_ns()
@@ -27,11 +27,8 @@ def method_efficency():
             process_time_elapsed = (end_process - start_process) / 10**6  # ms
             perf_time_elapsed = (end_perf - start_perf) / 10**6  # ms
 
-            try:
-                Class,Method = func.__qualname__.split('.')
-            except ValueError:
-                Class = 'Initializing'
-                Method = func.__qualname__
+
+            Class,Method = func.__qualname__.split('.')
             if not Class in UserSession:
                 UserSession[Class] = {}
             if Method in UserSession[Class]:
@@ -56,6 +53,7 @@ def error_catcher():
             try:
                 return func(*args, **kwargs)
             except Exception as e:
+                print(e)
                 Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')}' 
                 fullerror = traceback.format_exc()
                 RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
@@ -65,27 +63,15 @@ def error_catcher():
         return wrapper
     return decorator
 
-class PasswordDialog(simpledialog.Dialog):
-    def __init__(self, parent, title):
-        self.password = None
-        self.eye_image = None
-        super().__init__(parent, title)
-
-    def body(self, master):
-        self.eye_image = Media.label_ImageLoad(IMAGES['Password'])
-        lbl = tb.Label(master, image=self.eye_image)
-        lbl.grid(row=0, column=0, padx=6, pady=6, sticky=NSEW)
-        self.password_entry = tb.Entry(master, show='*')
-        self.password_entry.grid(row=1, column=0, padx=13, pady=13)
-        return self.password_entry
-
-    def apply(self):
-        self.password = self.password_entry.get()
-
-def money():
-    return f'MUVS {(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).total_seconds()//13*13:,.0f} $'
-
 class PC:
+    @staticmethod
+    def get_available_fonts():
+        flist = findSystemFonts()
+        font_names = {FontProperties(fname=font).get_name() for font in flist}
+        font_names = list(font_names)
+        font_names.sort()
+        return font_names
+
     @staticmethod
     def get_cpu_info():
         cpu = cpuinfo.get_cpu_info() # OVO JE SPORO JAKO oko 1.5 sec ali thread ce resiti stvar

@@ -1,6 +1,7 @@
 from A1_Variables import *
-from B3_Media import Media
 from B2_SQLite import RHMH
+from B3_Media import Media
+from B4_Graph import Graph
 from C1_Controller import Controller
 from C2_ManageDB import ManageDB
 from C3_SelectDB import SelectDB
@@ -34,9 +35,9 @@ class MainPanel:
         MainPanel.SearchBar_StaticPart(searchButtonROW)
         Controller.SearchAdd_Button,Controller.SearchRemove_Button = MainPanel.SearchBar_AddRemove()
 
-        for _ in range(max_searchbars):
+        for _ in range(Controller.max_SearchBars):
              MainPanel.SearchBar_DynamicPart() # Napravi sve samo jednom
-        for _ in range(max_searchbars-1):
+        for _ in range(Controller.max_SearchBars-1):
             SelectDB.search_bar_remove() # Ostavi samo jedan
         
 
@@ -51,7 +52,7 @@ class MainPanel:
         SelectDB.selected_columns(Controller.Pacijenti_ColumnVars.items(),Controller.Table_Pacijenti , columnvar=True)
 
                  # NOTEBOOK Tab SLIKE  -- 1
-        Controller.Table_Slike = MainPanel.SlikeTab_Create('Slike',F_SIZE*50, ManageDB.Show_Image,
+        Controller.Table_Slike = MainPanel.SlikeTab_Create('Slike',F_SIZE*50, SelectDB.Show_Image,
                                 [ManageDB.Add_Image,ManageDB.Edit_Image,ManageDB.Delete_Image,ManageDB.Download_SelectedImages])
         Controller.TableSlike_Columns = tuple(['ID']+RHMH.slike)
         SelectDB.selected_columns(Controller.TableSlike_Columns , Controller.Table_Slike , columnvar=False)
@@ -118,36 +119,36 @@ class MainPanel:
     def SearchBar_StaticPart(searchButtonROW):
             # JUST LABEL for SEARCH (SEARCH BY, PRETRAZI)
         tb.Label(Controller.SearchBar, anchor=CENTER, bootstyle=color_labeltext, text='SEARCH BY', font=font_default).grid(
-                            row=0, column=1, rowspan=max_searchbars, padx=padding_6, pady=padding_6, sticky=NSEW)
+                            row=0, column=1, rowspan=Controller.max_SearchBars, padx=padding_6, pady=padding_6, sticky=NSEW)
             # FILTER OPTIONS
         filterFrame = Frame(Controller.SearchBar)
-        filterFrame.grid(row=0,column=searchButtonROW,rowspan=max_searchbars,sticky=SE)
+        filterFrame.grid(row=0,column=searchButtonROW,rowspan=Controller.max_SearchBars,sticky=SE)
 
         MainPanel.Roundbutton_Create(filterFrame)
 
         butf = ctk.CTkButton(filterFrame, text='FILTER\nBOTH', width=buttonX, height=buttonY, corner_radius=10,
                         font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                             command=lambda column=['Datum Operacije','Datum Otpusta']: SelectDB.filter_data(column))
-        butf.grid(row=0, column=2, rowspan=max_searchbars,
+        butf.grid(row=0, column=2, rowspan=Controller.max_SearchBars,
                 padx=(padding_6[0],33), pady=padding_6, sticky=SE)
         Controller.Buttons['Filter Patient'].append(butf)
 
         MainPanel.filter_maintable_switch(parent=filterFrame,
                                           savingplace=Controller.Buttons,
-                                          row=0, col=0, rowspan=max_searchbars, sticky=SE)
+                                          row=0, col=0, rowspan=Controller.max_SearchBars, sticky=SE)
 
             # BUTTONS for SEARCH and SHOWALL
         buts = ctk.CTkButton(Controller.SearchBar, text='SEARCH', width=buttonX, height=buttonY, corner_radius=10,
                         font=font_medium(), fg_color=ThemeColors['primary'],  text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                         command=SelectDB.search_data)
-        buts.grid(row=0, column=searchButtonROW+3, rowspan=max_searchbars,
+        buts.grid(row=0, column=searchButtonROW+3, rowspan=Controller.max_SearchBars,
                 padx=padding_6, pady=padding_6, sticky=SE)
         Controller.Buttons['Search'] = buts
 
         buta = ctk.CTkButton(Controller.SearchBar, text='SHOW ALL', width=buttonX, height=buttonY, corner_radius=10,
                         font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                         command=SelectDB.showall_data)
-        buta.grid(row=0, column=searchButtonROW+4, rowspan=max_searchbars,
+        buta.grid(row=0, column=searchButtonROW+4, rowspan=Controller.max_SearchBars,
                 padx=padding_6, pady=padding_6, sticky=SE)
         Controller.Buttons['Show All'] = buta
 
@@ -157,13 +158,13 @@ class MainPanel:
         color_add, darker_add, color_remove, darker_remove = Media.label_ImageLoad(IMAGES['Add']+IMAGES['Remove'])
 
         add = tb.Label(Controller.SearchBar, image=color_add)
-        add.grid(row=0, column=0, rowspan=max_searchbars, sticky=NW)
+        add.grid(row=0, column=0, rowspan=Controller.max_SearchBars, sticky=NW)
         add.bind('<ButtonRelease-1>',SelectDB.search_bar_add)
         add.bind('<Enter>', lambda event,img=darker_add: Media.hover_label_button(event,img))
         add.bind('<Leave>', lambda event,img=color_add: Media.hover_label_button(event,img))
 
         remove = tb.Label(Controller.SearchBar, image=color_remove)
-        remove.grid(row=0, column=0, rowspan=max_searchbars, sticky=SW)
+        remove.grid(row=0, column=0, rowspan=Controller.max_SearchBars, sticky=SW)
         remove.bind('<ButtonRelease-1>',SelectDB.search_bar_remove)
         remove.bind('<Enter>', lambda event,img=darker_remove: Media.hover_label_button(event,img))
         remove.bind('<Leave>', lambda event,img=color_remove: Media.hover_label_button(event,img))
@@ -238,8 +239,8 @@ class MainPanel:
             
             for bindevent in ['<ButtonRelease-1>','<KeyRelease-Down>','<KeyRelease-Up>']:
                 table.bind(bindevent,method)
-            table.bind('<Shift-Up>',ManageDB.shift_up)
-            table.bind('<Shift-Down>',ManageDB.shift_down)
+            table.bind('<Shift-Up>',SelectDB.shift_up)
+            table.bind('<Shift-Down>',SelectDB.shift_down)
 
             scroll_x.grid(row=2, column=0, sticky=EW)
             scroll_y.grid(row=1, column=1, sticky=NS)
@@ -333,8 +334,8 @@ class MainPanel:
             
             for bindevent in ['<ButtonRelease-1>','<KeyRelease-Down>','<KeyRelease-Up>']:
                 table.bind(bindevent, method)
-            table.bind('<Shift-Up>',ManageDB.shift_up)
-            table.bind('<Shift-Down>',ManageDB.shift_down)
+            table.bind('<Shift-Up>',SelectDB.shift_up)
+            table.bind('<Shift-Down>',SelectDB.shift_down)
 
             scroll_x.grid(row=row+1, column=column, sticky=EW)
             scroll_y.grid(row=row, column=column+1, sticky=NS)
@@ -394,8 +395,8 @@ class MainPanel:
             for bindevent in ['<ButtonRelease-1>','<KeyRelease-Down>','<KeyRelease-Up>']:
                 table.bind(bindevent,bindmethods['fill_Form'])
             table.bind('<Double-1>',bindmethods['double_click'])
-            table.bind('<Shift-Up>',ManageDB.shift_up)
-            table.bind('<Shift-Down>',ManageDB.shift_down)
+            table.bind('<Shift-Up>',SelectDB.shift_up)
+            table.bind('<Shift-Down>',SelectDB.shift_down)
 
             scroll_x.grid(row=2, column=0, sticky=EW)
             scroll_y.grid(row=1, column=1, sticky=NS)
@@ -414,7 +415,7 @@ class MainPanel:
         COLUMN += 1 # Right Part -- (1,-1) je za row,col za frejm ispod tabele
         tableZapo = Create_One_Side( zaposleniside['bindmethods'],
                                     *[Katalog_Entry['zaposleni'],zaposleniside['buttons']])
-        Controller.Table_Names[tabname] = tableMKB
+        Controller.Table_Names[tabname] = (tableMKB,tableZapo)
         return tableMKB,tableZapo
 
     @staticmethod
@@ -549,11 +550,10 @@ class MainPanel:
         notebook_frame.grid_rowconfigure(1, weight=1)
         notebook_frame.grid_columnconfigure(0, weight=1)
 
-
         optionsframe = Frame(notebook_frame, bd=3, relief=RAISED)
         optionsframe.grid(row=0, column=0, sticky=EW)
         
-        values = ['Broj Pacijenata' , 'Broj dana Hospitalizovan' , 'Broj dana od Prijema do Operacije' , 'Broj dana od Operacije do Otpusta']
+        values = list(Graph.Y_options.keys())
         width = len(max(values, key=len))-6
         labelY = tb.Label(optionsframe, text=' Y-axis\n(Values)')
         labelY.grid(row=0, column=0, rowspan=2, padx=(12,3), pady=padding_3)

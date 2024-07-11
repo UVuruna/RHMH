@@ -18,8 +18,8 @@ class GoogleDrive:
     @staticmethod
     def authenticate_google_drive():
         creds = None
-        token_path = 'www_token.pickle'
-        creds_path = 'www_credentials.json'
+        token_path = '_internal/www_token.pickle'
+        creds_path = '_internal/www_credentials.json'
 
         # Proverite da li postoji Token.pickle fajl koji čuva korisničke kredencijale
         if os.path.exists(token_path):
@@ -78,7 +78,7 @@ class GoogleDrive:
     
     @staticmethod
     def get_video_dimensions(file_path):
-        ffmpeg_path = 'D:/Work/4-Project/RHMH/SQLite/required_programs/ffprobe.exe'
+        ffmpeg_path = '_internal/required_programs/ffprobe.exe'
         os.environ['PATH'] += os.pathsep + os.path.dirname(ffmpeg_path)
         probe = ffmpeg.probe(file_path)
         video_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'video']

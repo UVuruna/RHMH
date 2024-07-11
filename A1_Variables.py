@@ -15,8 +15,7 @@ import io
 import os
 import ffmpeg
 import pickle
-import google.auth
-from google.auth.transport.requests import AuthorizedSession, Request
+from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
@@ -25,8 +24,8 @@ from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBa
 # Media
 import GPUtil
 from GPUtil import GPU
-import torch
-from PIL import Image, ImageTk, ImageDraw
+
+from PIL import Image, ImageTk
 import cv2
 import pillow_heif
 import subprocess
@@ -65,6 +64,8 @@ import threading
 from ttkbootstrap.style import Colors
 print(f"IMPORTINT time: {(time.time_ns()-TIME_START)/10**9:,.2f} s")
 
+directory = os.path.dirname(os.path.abspath(__file__))
+
 UserSession = {'User':'offline_admin@gmail.com','PC':{}}
 WAIT = 10 # ms
 BUTTON_LOCK = 500 # ms
@@ -73,7 +74,7 @@ WIDTH = 1720
 HEIGHT = 930
 app_name = 'Restruktivna Hirurgija Ortopedije'
 
-form_title = 'Pacijent'
+form_name = 'Pacijent'
 title_height = 180
 
 ThemeColors = {}
@@ -137,54 +138,25 @@ MainTablePacijenti = {
 }
 
 SIGNS = ['EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN']
-IMAGES = {  'icon' : 'C:/Users/vurun/Desktop/App/RHMH.ico' ,
-            'Title': ('C:/Users/vurun/Desktop/App/GodHand_Transparent_smallest.png' , ('Pacijenti RHMH', 0.007, 0.033 )) ,
-            'Swap': [ ('C:/Users/vurun/Desktop/App/dark_swap.png',33,33) , ('C:/Users/vurun/Desktop/App/color_swap.png',33,33) ] ,
-            'Hide': [ ('C:/Users/vurun/Desktop/App/dark_hide.png',48,33) , ('C:/Users/vurun/Desktop/App/color_hide.png',48,33) ] ,
-            'Add': [ ('C:/Users/vurun/Desktop/App/color_add.png',28,28) , ('C:/Users/vurun/Desktop/App/dark_add.png',28,28) ] ,
-            'Remove': [ ('C:/Users/vurun/Desktop/App/color_remove.png',28,28) , ('C:/Users/vurun/Desktop/App/dark_remove.png',28,28) ] ,
-            'Play Video': 'C:/Users/vurun/Desktop/App/play_button.png' ,
-            'Loading': 'C:/Users/vurun/Desktop/App/loading_circle.png' ,
-            'Password': [('C:/Users/vurun/Desktop/App/eye.png',270,270)] , 
-            'MUVS':     [('C:/Users/vurun/Desktop/App/muvs12.png',280,280)],
-            'Signs': [  ('C:/Users/vurun/Desktop/App/sign_equal.png',42,28),
-                        ('C:/Users/vurun/Desktop/App/sign_like.png',42,28),
-                        ('C:/Users/vurun/Desktop/App/sign_notlike.png',42,28),
-                        ('C:/Users/vurun/Desktop/App/sign_between.png',42,28)   ]   }
-
-max_searchbars = 5
-form_name = 'Pacijent'
-form_groups = {'Default': {'start':4,'Hospitalizacija':3,'Dijagnoza':None},'Alternative': {'start':1,'Doktori':6,'Slike':None}}
-
-default_form_entry = {  'Ime': ('Ime', 'Validate', large_width),
-                        'Prezime': ('Prezime', 'Validate', large_width),
-                        'Godište': ('Godište', 'Validate', small_width),
-                        'Pol': ('Pol', 'Combobox', small_width, ('Muško', 'Žensko')),
-                        'Datum Prijema': ('Prijem', 'DateEntry', medium_width),
-                        'Datum Operacije': ('Operacija', 'DateEntry', medium_width),
-                        'Datum Otpusta': ('Otpust', 'DateEntry', medium_width),  
-                        'Uputna dijagnoza': ('Uputna\nDijagnoza', 'Validate', small_width),
-                        'Osnovni Uzrok Hospitalizacije': ('Osnovni Uzrok\nHospitalizacije', 'Validate', small_width),
-                        'Glavna Operativna dijagnoza': ('Glavna\nOperativna', 'Validate', verylarge_width),
-                        'Sporedna Operativna dijagnoza': ('Sporedna\nOperativna', 'Validate', verylarge_width),
-                        'Prateća dijagnoza': ('Prateća\nDijagnoza', 'Validate', verylarge_width),
-                        'Dg Latinski': ('Dg Latin', 'Text', verylarge_width) }
-
-alternative_form_entry = {  'Patient Info':('','Info'),
-                            'Operator': ('Operator', 'Validate', verylarge_width),
-                            'Asistent': ('Asistent', 'Text', verylarge_width),
-                            'Anesteziolog': ('Anesteziolog', 'Validate', verylarge_width),
-                            'Anestetičar': ('Anestetičar', 'Validate', verylarge_width),
-                            'Instrumentarka': ('Instrumentarka', 'Validate', verylarge_width),
-                            'Gostujući Specijalizant': ('Gostujući\nSpecijalizant', 'Text', verylarge_width),
-                            'Slike':('','Slike'),
-                            'Opis':('Opis','StringVar',verylarge_width-4) }
-
-Form_buttons = [('ADD\nPatient',None),
-                ('UPDATE\nPatient',None),
-                ('DELETE\nPatient','danger'),
-                ('FILL FORM\nFrom Image','info'),
-                ('CLEAR\nFORM','warning')  ]
+IMAGES = {  'icon' :    os.path.join(directory,'_internal/Slike/RHMH.ico') ,
+            'Title':  [ os.path.join(directory,'_internal/Slike/GodHand_Transparent_smallest.png') ,
+                            ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
+            'Swap':   [ (os.path.join(directory,'_internal/Slike/dark_swap.png'),33,33) ,
+                            (os.path.join(directory,'_internal/Slike/color_swap.png'),33,33)  ] ,
+            'Hide':   [ (os.path.join(directory,'_internal/Slike/dark_hide.png'),48,33) ,
+                            (os.path.join(directory,'_internal/Slike/color_hide.png'),48,33)  ] ,
+            'Add':    [ (os.path.join(directory,'_internal/Slike/color_add.png'),28,28) ,
+                            (os.path.join(directory,'_internal/Slike/dark_add.png'),28,28)    ] ,
+            'Remove': [ (os.path.join(directory,'_internal/Slike/color_remove.png'),28,28) ,
+                            (os.path.join(directory,'_internal/Slike/dark_remove.png'),28,28) ] ,
+            'Play Video': os.path.join(directory,'_internal/Slike/play_button.png') ,
+            'Loading':    os.path.join(directory,'_internal/Slike/loading_circle.png') ,
+            'Password':  [ (os.path.join(directory,'_internal/Slike/eye.png'),270,270) ] , 
+            'MUVS':      [ (os.path.join(directory,'_internal/Slike/muvs.png'),280,280) ],
+            'Signs':  [ (os.path.join(directory,'_internal/Slike/sign_equal.png'),42,28),
+                            (os.path.join(directory,'_internal/Slike/sign_like.png'),42,28),
+                                (os.path.join(directory,'_internal/Slike/sign_notlike.png'),42,28),
+                                    (os.path.join(directory,'_internal/Slike/sign_between.png'),42,28)   ]   }
 
 Image_buttons = [   ('ADD\nImage',None),
                     ('EDIT\nImage',None),
@@ -218,7 +190,10 @@ Slike_Editor = {
 
 GD_Slike_folder = ['1e-KyYcDIt_V2Gn79blz0gESZLpeV4xVn']
 GD_RHMH_folder = ['1ybEVItyB75BParYUN2-ab_oVe2tBj1NW']
-RHMH_DB = {'id':'1vLJxgeqXMXfqGE_PTrtywdL69TPZDjhw','mime':'application/x-sqlite3'}
+RHMH_dict = {
+    'path':'_internal/RHMH.db',
+    'id':'1vLJxgeqXMXfqGE_PTrtywdL69TPZDjhw',
+    'mime':'application/x-sqlite3'}
 
 MIME = {'PNG' : 'image/png',
         'JPG' : 'image/jpeg',
@@ -227,6 +202,3 @@ MIME = {'PNG' : 'image/png',
         'HEIC' : 'image/heic',
         'MP4': 'video/mp4',
         'MOV': 'video/quicktime'}
-
-
-graph_Xoptions = [ 'Godina' , 'Mesec' , 'Dan u Sedmici' , 'Dan' , 'Trauma' , 'MKB Grupe' , 'MKB Pojedinačno' , 'Starost' , 'Pol' , 'Zaposleni' ]

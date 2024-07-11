@@ -9,7 +9,16 @@ class Database:
 
     def start_RHMH_db(self):
         self.PatientQuery = str()
-        self.LoggingQuery = None
+        self.LoggingQuery:str = None
+
+        self.LastQuery = {
+            'pacijent': None,
+            'slike': None,
+            'mkb10': None,
+            'zaposleni': None,
+            'logs': None,
+            'session': None
+        }
 
         self.pacijent = self.show_columns('pacijent')
         self.slike = self.show_columns('slike')[:-1]
@@ -141,6 +150,7 @@ class Database:
                 self.PatientQuery = query
 
             self.LoggingQuery = self.format_sql(query)
+            self.LastQuery[table] = query
 
             self.connect()
             self.cursor.execute(query)
@@ -206,6 +216,7 @@ class Database:
             if 'FROM pacijent' in query:
                 self.PatientQuery = query
             self.LoggingQuery = self.format_sql(query)
+            self.LastQuery[table] = query
 
             self.connect()
             self.cursor.execute(query)
@@ -237,7 +248,8 @@ class Database:
                     query = self.PatientQuery+f' {wherenull}'
 
                 self.LoggingQuery = self.format_sql(query)
-            
+                self.LastQuery['pacijent'] = query
+
                 self.connect()
                 self.cursor.execute(query)
                 view = self.cursor.fetchall()
@@ -389,11 +401,31 @@ class Database:
                 self.close_connection()
                 #'''
 
-    def get_distinct_mkb(self):
+    def get_distinct_mkb(self,mkb=''):
         with self.lock:
             try:
                 self.connect()
-                query = 'SELECT DISTINCT SUBSTR(mkb10.`MKB - šifra`,1,1) FROM dijagnoza JOIN mkb10 ON dijagnoza.id_dijagnoza = mkb10.id_dijagnoza'
+                query = f'SELECT DISTINCT SUBSTR(mkb10.`MKB - šifra`,1,{len(mkb)+1}) FROM dijagnoza JOIN mkb10 ON dijagnoza.id_dijagnoza = mkb10.id_dijagnoza'
+                if mkb:
+                    query += f' WHERE `MKB - šifra` LIKE "{mkb}%"'
+                query += ' GROUP BY `MKB - šifra`'
+                self.LoggingQuery = self.format_sql(query)
+                self.cursor.execute(query)
+                result = self.cursor.fetchall()
+                return [i[0] for i in result]
+            finally:
+                self.close_connection()
+    
+    def get_distinct_zaposleni(self,funkcija=None):
+        with self.lock:
+            try:
+                self.connect()
+                query = f'SELECT DISTINCT Zaposleni FROM operacija '
+                query += 'JOIN zaposleni ON operacija.id_zaposleni = zaposleni.id_zaposleni '
+                if funkcija:
+                    query += 'JOIN funkcija ON operacija.id_funkcija = funkcija.id_funkcija '
+                    query += f'WHERE funkcija.Funkcija = "{funkcija}" '
+                query += 'GROUP BY Zaposleni'
                 self.LoggingQuery = self.format_sql(query)
                 self.cursor.execute(query)
                 result = self.cursor.fetchall()
@@ -409,11 +441,11 @@ class Database:
             finally:
                 self.close_connection()
 
-
-RHMH = Database('RHMH.db')
-SLIKE = Database('SLIKE.db')
+RHMH = Database(RHMH_dict['path'])
+SLIKE = Database('_internal/SLIKE.db')
 
 if __name__=='__main__':
+    RHMH = Database('RHMH.db')
     RHMH.start_RHMH_db()
     print(RHMH.pacijent)
     print(RHMH.slike)

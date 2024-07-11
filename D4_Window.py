@@ -3,12 +3,12 @@ from A2_Decorators import spam_stopper,PC
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH
 from B3_Media import Media
-from C1_Controller import Controller
+from C1_Controller import Controller,GodMode
 from C2_ManageDB import ManageDB
 from C3_SelectDB import SelectDB
 from D1_TopPanel import TopPanel
 from D2_FormPanel import FormPanel
-from D3_TabelPanel import MainPanel
+from D3_MainPanel import MainPanel
 
 class GUI:
     root:Tk = None
@@ -18,35 +18,37 @@ class GUI:
 
     @staticmethod
     def initialize(root:Tk) -> None:
-        print(f'Vreme do LOAD GUI: {(time.time_ns()-TIME_START)/10**9:.2f} s')
-        GoogleDrive.setup_connection()
-        Controller.ROOT = root
-        threading.Thread(target=GUI.get_PC_info).start()
-    
-        RHMH.start_RHMH_db()
-
         GUI.root = root
-        GUI.root.title(app_name)
-        GUI.root.geometry(f'{WIDTH}x{HEIGHT}')
-        GUI.root.iconbitmap(IMAGES['icon'])
-        GUI.root.grid_rowconfigure(1, weight=1)
-        GUI.root.grid_columnconfigure(1, weight=1)
-
+        RHMH.start_RHMH_db()
+        threading.Thread(target=GUI.get_PC_info).start()
+        GoogleDrive.setup_connection()
+        
+        Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
+        Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
+        
+        Controller.ROOT = GUI.root
         TopPanel.initialize(GUI.root)
         FormPanel.initialize(GUI.root)
         MainPanel.initialize(GUI.root)
         Media.initialize()
         GUI.Buttons_SpamStopper()
+
         
         GUI.menu = GUI.RootMenu_Create()
         GUI.root.bind('<Button-3>', GUI.do_popup)
-        GUI.root.bind('<Control-a>', ManageDB.selectall_tables)
-        GUI.root.bind('<Command-a>', ManageDB.selectall_tables)
-        GUI.root.bind('\u004D\u0055\u0056', SelectDB.GodMode_Password)
+        GUI.root.bind('<Control-a>', SelectDB.selectall_tables)
+        GUI.root.bind('<Command-a>', SelectDB.selectall_tables)
+        GUI.root.bind('\u004D\u0055\u0056\u0031\u0033', GodMode.GodMode_Password)
         GUI.root.protocol('WM_DELETE_WINDOW',GUI.EXIT)
         
-        #threading.Thread(target=Controller.starting_application).start()
+        
+        GUI.root.title(app_name)
+        GUI.root.iconbitmap(IMAGES['icon'])
+        GUI.root.grid_rowconfigure(1, weight=1)
+        GUI.root.grid_columnconfigure(1, weight=1)
 
+        threading.Thread(target=Controller.starting_application).start()
+        GUI.root.geometry(f'{WIDTH}x{HEIGHT}')
         print(f'Ukupno Vreme za pokretanje programa: {(time.time_ns()-TIME_START)/10**9:.2f} s')
 
     @staticmethod
@@ -85,8 +87,8 @@ class GUI:
     @staticmethod
     def uploading_to_GoogleDrive() -> None:
         print('Uploading to Google Drive...')
-        #GoogleDrive.upload_UpdateFile(RHMH_DB['id'],'RHMH.db',RHMH_DB['mime'])
-        print('Upload finished')
+        GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
+        print('Upload finished') # DODATI MESSAGEBOX KADA ZAVRSI
 
     @staticmethod
     def show_form_frame() -> None:
@@ -122,14 +124,15 @@ class GUI:
         m.add_checkbutton(label='Show Title', variable=GUI.title_visible, command=GUI.show_title_frame)
         m.add_checkbutton(label='Show Form', variable=FormPanel.form_visible, command=GUI.show_form_frame)
         m.add_separator() 
-        m.add_command(label ='Export Selection', command= lambda: SelectDB.export_table(tb.ttk.Treeview.selection))
-        m.add_command(label ='Export Table', command= lambda: SelectDB.export_table(tb.ttk.Treeview.get_children))
+        m.add_command(label ='Export Selection', command= lambda: ManageDB.export_table(tb.ttk.Treeview.selection))
+        m.add_command(label ='Export Table', command= lambda: ManageDB.export_table(tb.ttk.Treeview.get_children))
         m.add_command(label ='Clear Form', command= Controller.Clear_Form)
+        m.add_command(label ='Empty Table', command= SelectDB.empty_tables)
         m.add_separator()
         m.add_command(label ='Settings', command= lambda: SelectDB.NoteBook.select(6))
         m.add_command(label ='About', command= lambda: SelectDB.NoteBook.select(7))
         m.add_separator()
-        m.add_command(label ='Upload to Drive', command= ManageDB.Upload_DB)
+        m.add_command(label ='Upload to Drive', command= GUI.uploading_to_GoogleDrive)
         return m
     
 if __name__=='__main__':

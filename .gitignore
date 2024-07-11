@@ -1,9 +1,6 @@
 __pycache__/
+_internal/
 .vscode/
-temporary/
-www_god_mode.json
-www_credentials.json
-www_token.pickle
 
 www_test.py
 www_test2.py
@@ -14,7 +11,6 @@ TB_Themes.json
 
 working_progress/
 OLD/
-required_programs/
 
 RHMH.db
 SLIKE.db

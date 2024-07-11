@@ -3,8 +3,56 @@ from B3_Media import Media
 from B2_SQLite import RHMH
 from C1_Controller import Controller
 from C2_ManageDB import ManageDB
+from C3_SelectDB import SelectDB
 
 class FormPanel:
+
+    form_buttons = {
+        ('ADD\nPatient',None) :             ManageDB.Add_Patient,
+        ('UPDATE\nPatient',None) :          ManageDB.Update_Patient,
+        ('DELETE\nPatient','danger') :      ManageDB.Delete_Patient,
+        ('FILL FORM\nFrom Image','info') :  ManageDB.Fill_FromImage,
+        ('CLEAR\nFORM','warning') :         ManageDB.Clear_Form
+        }
+
+    form_groups = {
+        'Default': {
+            'start':4,'Hospitalizacija':3,'Dijagnoza':None
+            },
+        'Alternative': {
+            'start':1,'Doktori':6,'Slike':None
+            }
+        }
+
+    form_entry = {
+        'Default' : {
+            'Ime': ('Ime', 'Validate', large_width),
+            'Prezime': ('Prezime', 'Validate', large_width),
+            'Godište': ('Godište', 'Validate', small_width),
+            'Pol': ('Pol', 'Combobox', small_width, ('Muško', 'Žensko')),
+            'Datum Prijema': ('Prijem', 'DateEntry', medium_width),
+            'Datum Operacije': ('Operacija', 'DateEntry', medium_width),
+            'Datum Otpusta': ('Otpust', 'DateEntry', medium_width),  
+            'Uputna dijagnoza': ('Uputna\nDijagnoza', 'Validate', small_width),
+            'Osnovni Uzrok Hospitalizacije': ('Osnovni Uzrok\nHospitalizacije', 'Validate', small_width),
+            'Glavna Operativna dijagnoza': ('Glavna\nOperativna', 'Validate', verylarge_width),
+            'Sporedna Operativna dijagnoza': ('Sporedna\nOperativna', 'Validate', verylarge_width),
+            'Prateća dijagnoza': ('Prateća\nDijagnoza', 'Validate', verylarge_width),
+            'Dg Latinski': ('Dg Latin', 'Text', verylarge_width)
+        } ,
+        'Alternative' : {
+            'Patient Info':('','Info'),
+            'Operator': ('Operator', 'Validate', verylarge_width),
+            'Asistent': ('Asistent', 'Text', verylarge_width),
+            'Anesteziolog': ('Anesteziolog', 'Validate', verylarge_width),
+            'Anestetičar': ('Anestetičar', 'Validate', verylarge_width),
+            'Instrumentarka': ('Instrumentarka', 'Validate', verylarge_width),
+            'Gostujući Specijalizant': ('Gostujući\nSpecijalizant', 'Text', verylarge_width),
+            'Slike':('','Slike'),
+            'Opis':('Opis','StringVar',verylarge_width-4)
+        }
+    }
+
     Form_Frame:Frame = None
     form_visible:BooleanVar = None
 
@@ -21,12 +69,6 @@ class FormPanel:
         
         FormPanel.form_visible = BooleanVar()
         FormPanel.form_visible.set(True)
-        
-        FormPanel.Form_button_fun =[ManageDB.Add_Patient,
-                                    ManageDB.Update_Patient,
-                                    ManageDB.Delete_Patient,
-                                    ManageDB.Fill_FromImage,
-                                    ManageDB.Clear_Form    ]
 
         FormPanel.valid_notblank = root.register(ManageDB.validate_notblank)
         FormPanel.valid_dijagnoza = root.register(ManageDB.validate_dijagnoza)
@@ -43,14 +85,31 @@ class FormPanel:
             # DEFAULT FORM CREATE
         FormPanel.DefaultForm = Frame(FormPanel.Form_Frame)
         FormPanel.DefaultForm.grid(row=1, column=0, columnspan=4, sticky=NSEW)
-        FormPanel.FormPatient_Create(FormPanel.DefaultForm, default_form_entry, form_groups['Default'], 'Default')
-        FormPanel.FormPatient_Buttons(FormPanel.DefaultForm,[3],Form_buttons[:3],'Default')
+
+        FormPanel.FormPatient_Create(
+            parent = FormPanel.DefaultForm,
+            form_id = 'Default'
+            )
+        FormPanel.FormPatient_Buttons(
+            parent = FormPanel.DefaultForm,
+            split = [3],
+            form_id = 'Default'
+            )
+        
             # ALTERNATIVE FORM CREATE
         FormPanel.AlternativeForm = Frame(FormPanel.Form_Frame)
         FormPanel.AlternativeForm.grid(row=1, column=0, columnspan=4, sticky=NSEW)
         FormPanel.AlternativeForm.grid_remove()
-        FormPanel.FormPatient_Create(FormPanel.AlternativeForm, alternative_form_entry, form_groups['Alternative'], 'Alternative')
-        FormPanel.FormPatient_Buttons(FormPanel.AlternativeForm,[3],Form_buttons,'Alternative')
+
+        FormPanel.FormPatient_Create(
+            parent = FormPanel.AlternativeForm,
+            form_id = 'Alternative'
+            )
+        FormPanel.FormPatient_Buttons(
+            parent = FormPanel.AlternativeForm,
+            split = [3],
+            form_id = 'Alternative'
+            )
 
     @staticmethod
     def Form_TopLabel(formname):
@@ -71,8 +130,7 @@ class FormPanel:
         lbl = tb.Label(FormPanel.Form_Frame, anchor=CENTER, bootstyle=color_labeltext, text=formname, font=font_big())
         lbl.grid(row=0, column=1, columnspan=2, padx=0, pady=padding_6, sticky=NSEW)
 
-        swap.bind('<Button-1>', lambda event,form='Default': ManageDB.Validation_Method(event,form))
-        lbl.bind('<Enter>', lambda event,form='Default': ManageDB.Validation_Method(event,form))
+        swap.bind('<Button-1>', ManageDB.Validation_Method)
         return lbl
 
     @staticmethod
@@ -83,7 +141,7 @@ class FormPanel:
         table = tb.ttk.Treeview(frame, columns=['ID', 'Opis', 'Veličina', 'width', 'height'],
                                 xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set, show='tree')
         table.grid(row=0, column=0, sticky=NSEW)
-        table.bind('<Double-1>',ManageDB.Show_Image_FullScreen)
+        table.bind('<Double-1>',SelectDB.Show_Image_FullScreen)
 
         def fill_Opis(event):
             try:
@@ -118,18 +176,18 @@ class FormPanel:
         return table
 
     @staticmethod
-    def FormPatient_Create( parent:Frame, form_dict, group, form):
+    def FormPatient_Create( parent:Frame, form_id:str):
         n=1
         group_names = []
         group_childs = []
 
-        for k,v in group.items():
+        for k,v in FormPanel.form_groups[form_id].items():
             if k!='start':
                 group_names.append(k)
             if v:
                 group_childs.append(v+group_childs[-1]) if group_childs else group_childs.append(v)
 
-        for i, (txt, data) in enumerate(form_dict.items()):           
+        for i, (txt, data) in enumerate(FormPanel.form_entry[form_id].items()):           
             if i in group_childs:
                 lbl = tb.Label(parent, anchor=CENTER, justify=CENTER,
                                 bootstyle=color_labeltext, text=group_names[n-1], font=font_big('normal'))
@@ -155,7 +213,7 @@ class FormPanel:
                 elif data[1]=='Combobox':
                     ent = tb.Combobox(parent, values=data[3], textvariable=Controller.Patient_FormVariables[table][txt], width=data[2],
                                       font=font_default, validate='focus', validatecommand=(FormPanel.valid_notblank, '%P'), state='readonly')
-                    Controller.Validation_Widgets[form].append(ent)
+                    Controller.Validation_Widgets[form_id].append(ent)
                 elif data[1] == 'Validate':
                     validcmd = FormPanel.valid_dijagnoza if ('dijagnoza' in txt or 'Uzrok' in txt) else \
                                     FormPanel.valid_godiste if txt=='Godište' else \
@@ -163,7 +221,7 @@ class FormPanel:
                                             FormPanel.valid_notblank
                     ent = tb.Entry(parent, width=data[2], textvariable=Controller.Patient_FormVariables[table][txt], font=font_default,
                                    validate='focus', validatecommand=(validcmd, '%P'))
-                    Controller.Validation_Widgets[form].append(ent)
+                    Controller.Validation_Widgets[form_id].append(ent)
             elif data[1] == 'Text':
                 height = 3 if txt=='Dg Latinski' else 2
                 ent = tb.Text(parent, width=data[2], height=height, font=font_default)
@@ -171,7 +229,7 @@ class FormPanel:
                 if txt in RHMH.dr_funkcija:
                     ent.bind('<FocusIn>', ManageDB.validate_zaposleni_Text)
                     ent.bind('<FocusOut>', ManageDB.validate_zaposleni_Text)
-                    Controller.Validation_Widgets[form].append(ent)
+                    Controller.Validation_Widgets[form_id].append(ent)
             elif data[1] == 'DateEntry':
                 ent = widgets.DateEntry(parent, width=data[2], dateformat='%d-%b-%Y', firstweekday=0)
                 ent.entry.delete(0, END)
@@ -192,19 +250,22 @@ class FormPanel:
                 ent.grid(row=i+n, column=2, columnspan=2, padx=padding_3_12, pady=padding_3, sticky='nsw')
 
     @staticmethod
-    def FormPatient_Buttons(parent,split,buttons,validationform):
+    def FormPatient_Buttons(parent: Frame , split:list , form_id:str):
         Frame(parent).grid(row=16, columnspan=4, pady=padding_6)
-        for i,((but,btype),cmd) in enumerate(zip(buttons,FormPanel.Form_button_fun)):
+        for i,(description,cmd) in enumerate(FormPanel.form_buttons.items()):
+            if i == 3 and form_id == 'Default':
+                break
+            btext,btype = description
             if i in split or i==0:
                 Buttons_Frame = Frame(parent)
                 Buttons_Frame.grid(row=18+i, columnspan=4)
-                Buttons_Frame.bind('<Enter>', lambda event,form=validationform: ManageDB.Validation_Method(event,form))
+                Buttons_Frame.bind('<Enter>', lambda event,form=form_id: ManageDB.Validation_Method(event,form))
 
-            butt = ctk.CTkButton(Buttons_Frame, text=but, width=buttonX,height=buttonY, corner_radius=12, font=font_medium(),
+            butt = ctk.CTkButton(Buttons_Frame, text=btext, width=buttonX,height=buttonY, corner_radius=12, font=font_medium(),
                                  fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                                  command=cmd)
             butt.grid(row=0, column=i, padx=padding_6, pady=padding_6)
-            Controller.Buttons[but] = butt
+            Controller.Buttons[btext] = butt
             if btype:
                 butt.configure(fg_color=ThemeColors[btype])
         Frame(parent).grid(row=24, columnspan=4, pady=padding_6) 

@@ -1,16 +1,52 @@
 from A1_Variables import *
-
-def get_available_fonts():
-    flist = findSystemFonts()
-
-    font_names = {FontProperties(fname=font).get_name() for font in flist}
-    font_names = list(font_names)
-    font_names.sort()
-
-    for font in font_names:
-        print(font)
+from B2_SQLite import RHMH
 
 class Graph:
+
+    Y_options = {
+        'Broj Pacijenata'                     : 1 ,
+        'Broj dana Hospitalizovan'            : '(julianday(`Datum Otpusta`) - julianday(`Datum Prijema`))' ,
+        'Broj dana od Prijema do Operacije'   : '(julianday(`Datum Operacije`) - julianday(`Datum Prijema`))'  ,
+        'Broj dana od Operacije do Otpusta'   : '(julianday(`Datum Otpusta`) - julianday(`Datum Operacije`))' }
+
+    X_options = {
+        'Godina' :          'strftime("%Y", `Datum Prijema`)' ,
+        'Mesec' :           'strftime("%m", `Datum Prijema`)' ,
+        'Dan u Sedmici' :   'strftime("%w", `Datum Prijema`)' ,
+        'Dan' :             'strftime("%d", `Datum Prijema`)' ,
+        'Trauma' :      'SUM(CASE WHEN `MKB - šifra` LIKE "S%" THEN 1 ELSE 0 END) AS Trauma, '  +
+                            'SUM(CASE WHEN `MKB - šifra` NOT LIKE "S%" THEN 1 ELSE 0 END) AS Ostale' ,
+        'Pol' :         'SUM(CASE WHEN Pol = "Muško" THEN 1 ELSE 0 END) AS Trauma AS Muško, '  +
+                            'SUM(CASE WHEN Pol = "Žensko" THEN 1 ELSE 0 END) AS Ostale AS Žensko' ,
+        'MKB Grupe' :       '' ,
+        'MKB Pojedinačno' : '' ,
+        'Starost' :         '' ,
+        'Zaposleni' :       '' }
+
+    WEEKDAY = {
+        '0': 'Nedelja',
+        '1': 'Ponedeljak',
+        '2': 'Utorak',
+        '3': 'Sreda',
+        '4': 'Četvrtak',
+        '5': 'Petak',
+        '6': 'Subota'
+        }
+    
+    MONTH = {
+        '01': 'Januar',
+        '02': 'Februar',
+        '03': 'Mart',
+        '04': 'April',
+        '05': 'Maj',
+        '06': 'Jun',
+        '07': 'Jul',
+        '08': 'Avgust',
+        '09': 'Septembar',
+        '10': 'Oktobar',
+        '11': 'Novembar',
+        '12': 'Decembar'
+    }
 
     @staticmethod
     def initialize( X, Y, title:str, X_label:str, Y_label:str, X2=None ) -> None:
@@ -118,6 +154,38 @@ class Graph:
         Graph.plot.set_xticks(index)
         Graph.plot.set_xticklabels(Graph.X)
         Graph.plot.legend()
+
+    @staticmethod
+    def Graph_DistinctMKB(Y, mkb=None) -> str:
+        MKBGroup = RHMH.get_distinct_mkb(mkb)
+        operation = 'SUM' if Y==1 else 'AVG'
+        txt =''
+        for m in MKBGroup:
+            txt += f'{operation}(CASE WHEN `MKB - šifra` LIKE "{m}%" THEN {Y} ELSE NULL END) AS {m}, '
+        return txt.rstrip(', ')
+
+    @staticmethod
+    def Graph_DistinctZaposleni(Y, funkcija=None) -> str:
+        Zaposleni = RHMH.get_distinct_zaposleni(funkcija)
+        operation = 'SUM' if Y==1 else 'AVG'
+        txt =''
+        for z in Zaposleni:
+            txt += f'{operation}(CASE WHEN Zaposleni = "{z}" THEN {Y} ELSE NULL END) AS {z}, '
+        return txt.rstrip(', ')
+
+    @staticmethod
+    def Graph_StarostGroups(Y, jump:int) -> str:
+        operation = 'SUM' if Y==1 else 'AVG'
+        txt =''
+        i = 0
+        j = 20
+        while j <= 80:
+            txt += f'{operation}(CASE WHEN Starost BETWEEN {i} AND {j-1} THEN {Y} ELSE NULL END) AS {i}-{j}, '
+            i = int(j)
+            j += jump
+        else:
+            txt += f'{operation}(CASE WHEN Starost >= {i} THEN {Y} ELSE NULL END) AS {i}+, '
+        return txt.rstrip(', ')
 
 if __name__=='__main__':
     pass

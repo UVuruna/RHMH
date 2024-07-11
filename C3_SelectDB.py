@@ -1,6 +1,7 @@
 from A1_Variables import *
-from A2_Decorators import PasswordDialog,money
+from B1_GoogleDrive import GoogleDrive
 from B3_Media import Media
+from B4_Graph import Graph
 from B2_SQLite import RHMH
 from C1_Controller import Controller
 
@@ -8,80 +9,126 @@ from C1_Controller import Controller
 class SelectDB(Controller):
     
     @staticmethod
-    def GodMode_Password(event):
-        dialog = PasswordDialog(Controller.MessageBoxParent, 'Privileges Unlocking...')
-        if dialog.password=='63636':
-            Controller.Admin = True
-            info = 'New tabs:\n\t-Logs\n\t-Session'
-            title = 'Admin unlocked'
-        elif dialog.password=='C12-Si28-C13-Si28-C12':
-            Controller.Admin = True
-            Controller.GodMode = True
-            Controller.FreeQuery_Frame.grid()
-            info = 'New tabs:\n\t-Logs\n\t-Session\n\n'
-            info += 'New button:\n\t-Free Query'
-            info += f'\n\n{money()}'
-            title = 'God Mode unlocked'
-        else:
-            return
-        Controller.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
-        Controller.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
-        Messagebox.show_info(parent=Controller.MessageBoxParent, message=info, title=title,)
+    def empty_tables():
+        focus = Controller.NoteBook.index(Controller.NoteBook.select())
+        TAB = Controller.NoteBook.tab(focus,'text')
+        if TAB == 'Pacijenti':
+            for item in Controller.Table_Pacijenti.get_children():
+                Controller.Table_Pacijenti.delete(item)
+        elif TAB == 'Slike':
+            for item in Controller.Table_Slike.get_children():
+                Controller.Table_Slike.delete(item)
+        elif TAB == 'Katalog':
+            for item in Controller.Table_MKB.get_children():
+                Controller.Table_MKB.delete(item)
+            for item in Controller.Table_Zaposleni.get_children():
+                Controller.Table_Zaposleni.delete(item)
+        elif TAB == 'Logs':
+            for item in Controller.Table_Logs.get_children():
+                Controller.Table_Logs.delete(item)
+        elif TAB == 'Session':
+            for item in Controller.Table_Session.get_children():
+                Controller.Table_Session.delete(item)
 
+    @staticmethod
+    def refresh_tables(table_names:list):
+        tables_db_names = {
+            'Pacijenti':['pacijent'],
+            'Slike':    ['slike'],          
+            'Katalog':  ['mkb10','zaposleni'],
+            'Logs':     ['logs'],
+            'Session':  ['session']
+        }
+        tables_fill_methods = {
+            'Pacijenti': SelectDB.fill_TablePacijenti,
+            'Slike':     SelectDB.fill_TableSlike,          
+            'Katalog':   SelectDB.fill_Tables_Other,
+            'Logs':      SelectDB.fill_Tables_Other,
+            'Session':   SelectDB.fill_Tables_Other
+        }
+
+        for table in table_names:
+            if table!='Katalog':
+                TABLE = [Controller.Table_Names[table]]
+            else:
+                TABLE = Controller.Table_Names[table]
+            for table_widget,db_name in zip(TABLE,tables_db_names[table]):
+                table_widget:tb.ttk.Treeview
+                lastquery = RHMH.LastQuery[db_name]
+                if lastquery:
+                    view = RHMH.execute_selectquery(lastquery)
+
+                    for item in table_widget.get_children():
+                        table_widget.delete(item)
+                    if view and len(view)!=0:
+                        if table in ['Pacijenti','Slike']:
+                            tables_fill_methods[table](view)
+                        else:
+                            tables_fill_methods[table](view,table_widget)
+
+    @staticmethod
+    def selectall_tables(event):
+        if event.state == 8:
+            return
+        focus = Controller.NoteBook.index(Controller.NoteBook.select())
+        TAB = Controller.NoteBook.tab(focus,'text')
+        if TAB == 'Pacijenti':
+            items = Controller.Table_Pacijenti.get_children()
+            Controller.Table_Pacijenti.selection_set(items)
+        elif TAB == 'Slike':
+            items = Controller.Table_Slike.get_children()
+            Controller.Table_Slike.selection_set(items)
+        elif TAB == 'Katalog':
+            items = Controller.Table_MKB.get_children()
+            Controller.Table_MKB.selection_set(items)
+        elif TAB == 'Logs':
+            items = Controller.Table_Logs.get_children()
+            Controller.Table_Logs.selection_set(items)
+        elif TAB == 'Session':
+            items = Controller.Table_Session.get_children()
+            Controller.Table_Session.selection_set(items)
+
+    @staticmethod
+    def shift_up( event):
+        table: tb.ttk.Treeview = event.widget
+        current = table.focus()
+        if current:
+            previous = table.prev(current)
+            if previous:
+                if previous not in table.selection():
+                    table.selection_add(previous)
+                    table.focus(previous)
+                    table.see(previous)
+                else:
+                    table.selection_remove(current)
+                    table.focus(previous)
+                    table.see(previous)
+        return 'break'
+    
+    @staticmethod
+    def shift_down( event):
+        table: tb.ttk.Treeview = event.widget
+        current = table.focus()
+        if current:
+            next_item = table.next(current)
+            if next_item:
+                if next_item not in table.selection():
+                    table.selection_add(next_item)
+                    table.focus(next_item)
+                    table.see(next_item)
+                else:
+                    table.selection_remove(current)
+                    table.focus(next_item)
+                    table.see(next_item)
+        return 'break'
+
+    @staticmethod
     def table_headings(treeview:tb.ttk.Treeview):
         columns = treeview["columns"]
         headings = []
         for col in columns:
             headings.append(col)
         return headings
-
-    @staticmethod
-    def export_selection():
-        focus = Controller.NoteBook.index(Controller.NoteBook.select())
-        TAB = Controller.NoteBook.tab(focus,'text')
-        table:tb.ttk.Treeview = Controller.Table_Names[TAB]
-        
-        data_frame = dict()
-        headings = SelectDB.table_headings(table)
-
-        for i,item_id in enumerate(table.selection()):
-            item_data = table.item(item_id)['values']
-            for col,val in zip(headings,item_data):
-                if col=='ID' or 'id_' in col:
-                    continue
-                if col not in data_frame:
-                    data_frame[col] = {}
-                data_frame[col][i+1] = val
-
-        export_data = pd.DataFrame(data_frame)
-        file_path = filedialog.asksaveasfilename(defaultextension=".xlsx", 
-                                    filetypes=[("Excel files", "*.xlsx")])
-        if file_path:
-            export_data.to_excel(file_path)
-
-    @staticmethod
-    def export_table(method:callable):
-        focus = Controller.NoteBook.index(Controller.NoteBook.select())
-        TAB = Controller.NoteBook.tab(focus,'text')
-        table:tb.ttk.Treeview = Controller.Table_Names[TAB]
-
-        data_frame = dict()
-        headings = SelectDB.table_headings(table)
-
-        for i,item_id in enumerate(method(table)):
-            item_data = table.item(item_id)['values']
-            for col,val in zip(headings,item_data):
-                if col=='ID' or 'id_' in col:
-                    continue
-                if col not in data_frame:
-                    data_frame[col] = {}
-                data_frame[col][i+1] = val
-
-        export_data = pd.DataFrame(data_frame)
-        file_path = filedialog.asksaveasfilename(defaultextension=".xlsx", 
-                                    filetypes=[("Excel files", "*.xlsx")])
-        if file_path:
-            export_data.to_excel(file_path)
 
     @staticmethod
     def search_bar_remove(event=None):
@@ -109,7 +156,7 @@ class SelectDB(Controller):
         Controller.SearchBar_widgets[f'search_option_{Controller.SearchBar_number}'].grid()
         Controller.SearchBar_widgets[f'search_bar_{Controller.SearchBar_number}'].grid()
 
-        if Controller.SearchBar_number==max_searchbars:
+        if Controller.SearchBar_number==Controller.max_SearchBars:
             Controller.SearchAdd_Button.grid_remove()
 
     @staticmethod
@@ -278,20 +325,49 @@ class SelectDB(Controller):
 
     @staticmethod
     def Show_Graph():
-        print('showing graph')
+        SelectDB.Graph_makeQuery()
+
+    @staticmethod
+    def Graph_makeQuery():
+        X1 = []
+        X2 = []
+        EXTRA = {}
         for k,value in Controller.Graph_FormVariables.items():
             if isinstance(value,tuple):
                 selection_widget:StringVar = value[1]
                 selection = selection_widget.get()
                 if selection:
-                    print(f'{k}: {selection}')
+                    if k=='Y':
+                        Y = selection
+                    elif k[:2]=='X1':
+                        X1.append(selection)
+                    elif k[:2]=='X2':
+                        X2.append(selection)
             elif isinstance(value,dict):
                 optional:tb.Checkbutton = value['color'][0]
                 if optional.winfo_ismapped():
-                    print('color ',             value['color'][1].get())
-                print('values ',            value['values'][1].get())
-                print('Filter Main Table ', value['Filter Main Table'][1].get())
-                print('radio ',             value['radio']['choice'].get())
+                    EXTRA['color'] = value['color'][1].get()
+
+                EXTRA['values'] = value['values'][1].get()
+                EXTRA['Filter Main Table'] = value['Filter Main Table'][1].get()
+
+                PLOT = value['radio']['choice'].get()
+
+        select = Graph.Y_options[Y]
+        if 'MKB' in X2[0]:
+            mkb = X2[1:-1][0] if X2[1:-1] else None # Proverava da li ima 3 ili 2
+            groups = Graph.Graph_DistinctMKB(Y=select, mkb=mkb)
+            where = f'Kategorija = {X2[-1]}'
+        elif X2[0] == 'Zaposleni':
+            funkcija = X2[1] if len(X2)==2 else None
+            groups = Graph.Graph_DistinctZaposleni(Y=select, funkcija=funkcija)
+        elif  X2[0] == 'Starost':
+            groups = Graph.Graph_StarostGroups(Y=select, jump=X2[1])
+        print(PLOT)   
+        print(Y)
+        print(X1)
+        print(X2)
+        print(EXTRA)
         #canvas = FigureCanvasTkAgg(Graph.figure, master=Controller.Graph_Canvas)
         #canvas.draw()
 
@@ -299,17 +375,20 @@ class SelectDB(Controller):
     def graph_add_button(event):
         widget:tb.Combobox = Controller.Graph_FormVariables['X2-1'][0]
         lastchoice:StringVar = Controller.Graph_FormVariables['X1-1'][1].get()
-        Values = graph_Xoptions[:]
+        Values = list(Graph.X_options.keys())
         vreme = ['Godina' , 'Mesec' , 'Dan' , 'Dan u Sedmici']
         dijagnoza = ['Trauma', 'MKB Grupe','MKB Pojedinačno']
         if lastchoice in vreme:
-            removelist = vreme[:vreme.index(lastchoice)+1] if not 'Dan' in lastchoice else vreme
-            for val in removelist:
-                Values.remove(val)
+            if lastchoice in vreme[2:]:
+                for val in vreme[2:]:
+                    Values.remove(val)
+            else:
+                if lastchoice=='Godina':
+                    Values.remove('Dan')
+                Values.remove(lastchoice)
+
         elif lastchoice in dijagnoza:
-            if lastchoice == 'Trauma':
-                removelist = ['MKB Pojedinačno','Trauma']
-            elif lastchoice == 'MKB Grupe':
+            if lastchoice == 'MKB Grupe':
                 removelist = ['MKB Grupe','Trauma']
             else:
                 removelist = dijagnoza
@@ -353,6 +432,9 @@ class SelectDB(Controller):
                     if txt in show:
                         if not widget.winfo_ismapped():
                             widget.grid()
+                        if txt =='bars':
+                            choice:StringVar = v['choice']
+                            choice.set(txt)
                     else:
                         if widget.winfo_ismapped():
                             widget.grid_remove()   
@@ -400,7 +482,7 @@ class SelectDB(Controller):
                 SelectDB.removing_graph_afterchoice()
 
         if option == 'Y':
-            Values.append(graph_Xoptions[:])
+            Values.append(list(Graph.X_options.keys()))
             if choice != 'Broj Pacijenata':
                 for val in ['Dan u Sedmici' , 'Dan']:
                     Values[0].remove(val)
@@ -422,7 +504,7 @@ class SelectDB(Controller):
                     Next_Names.append(option.replace('-1','-3'))
                     Values.append(RHMH.dg_kategorija)
                 else:
-                    Next_Names = [option.replace('-1','-3')]
+                    Next_Names = [option.replace('-1','-2')]
                     Values.append(RHMH.get_distinct_mkb())
             elif choice in ['MKB Grupe', 'Trauma']:
                 check = True
@@ -475,9 +557,9 @@ class SelectDB(Controller):
                 next_widget.grid()
 
     @staticmethod
-    def fill_TablePacijenti(table):
+    def fill_TablePacijenti(view):
         Controller.MainTable_IDS.clear()
-        for i, row in enumerate(table):
+        for i, row in enumerate(view):
             # FROM RHMH Date Format TO Table Date Format
             formatted_row = [i+1] + [datetime.strptime(cell,'%Y-%m-%d').strftime('%d-%b-%y') if SelectDB.is_DB_date(cell) \
                                         else ' , '.join(cell.split(',')) if isinstance(cell,str) and ',' in cell \
@@ -487,17 +569,17 @@ class SelectDB(Controller):
             Controller.Table_Pacijenti.insert('', END, values=formatted_row)
 
     @staticmethod
-    def fill_Tables_Other(view,table):
+    def fill_Tables_Other(view,table:tb.ttk.Treeview):
         for i, row in enumerate(view):
             formatted_row = [i+1] + [cell for cell in row]
             table.insert('', END, values=formatted_row)
 
     @staticmethod
-    def fill_TableSlike(table):
+    def fill_TableSlike(view):
         check = lambda x: True
         if Controller.Buttons['Filter Main Table'][1].get():
             check = lambda col: col in Controller.MainTable_IDS
-        for i, row in enumerate(table):
+        for i, row in enumerate(view):
             if check(row[1]):
                 formatted_row = [i+1] + [f'{cell:.2f} MB' if isinstance(cell,float) \
                                             else f'{cell/10**6:.2f} MP' if j==8 \
@@ -789,7 +871,7 @@ class SelectDB(Controller):
 
             for i in range(Controller.SearchBar_number,1,-1):
                 SelectDB.search_bar_remove()
-            for i in range(1,max_searchbars+1):
+            for i in range(1,Controller.max_SearchBars+1):
                 Controller.SearchBar_widgets[f'search_option_{i}'].configure(values=values)
 
             Widget:tb.Entry
@@ -847,6 +929,114 @@ class SelectDB(Controller):
             Controller.SearchBar.grid_remove()
             if Controller.NoteBook.tab(6, "state") == "normal":
                 Controller.NoteBook.hide(6)
+
+    @staticmethod
+    def Show_Image_FullScreen(event=None,BLOB=None):
+        if not BLOB:
+            minitable:tb.ttk.Treeview = event.widget
+            ID = minitable.item(minitable.focus())['values'][1].split('_')[0]
+            def execute():
+                Controller.Slike_HideTable.grid_remove()
+                SelectDB.Show_Image(ID=ID)
+        else:
+            def execute():
+                Controller.Slike_HideTable.grid_remove()
+                SelectDB.Show_Image(BLOB=BLOB)
+        Controller.NoteBook.select(1)
+
+        Controller.ROOT.after(WAIT,execute)
+
+    @staticmethod
+    def Show_Image(event=None,ID=False,BLOB=False):
+        if event:
+            shift_pressed = event.state & 0x1
+            ctrl_pressed = event.state & 0x4
+            if shift_pressed or ctrl_pressed:
+                return
+        Media.Slike_Viewer.delete('all')
+        Media.Image_Active = None
+
+        if BLOB is False:
+            if ID is False:
+                try:
+                    ID = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1]
+                except IndexError:
+                    return
+            media_type,google_ID = RHMH.execute_selectquery(f'SELECT Format,image_data from slike WHERE id_slike={ID}')[0]
+
+        events = ['<Button-1>','<Double-1>','<MouseWheel>','<Button-4>','<Button-5>','<ButtonPress-1','<B1-Motion>']
+        for event in events:
+            Media.Slike_Viewer.unbind(event)
+        Controller.ROOT.update() # CEKA SREDJIVANJE WIDGET
+
+        width = Media.Slike_Viewer.winfo_width()
+        height = Media.Slike_Viewer.winfo_height()
+        image = Image.open(IMAGES['Loading'])
+        image = Media.resize_image(image, width, height)
+        image = ImageTk.PhotoImage(image)
+
+        Media.Slike_Viewer.create_image(width//2, height//2, anchor='center', image=image)
+        Media.Slike_Viewer.image = image
+        Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
+        
+        # AFTER LOADING.. png Actual Image
+        if BLOB is False:
+            Controller.ROOT.after(WAIT,
+                            lambda ID=google_ID,mediatype=media_type: 
+                            SelectDB.Show_Image_execute(ID=ID,MediaType=mediatype))
+        else:
+            Controller.ROOT.after(WAIT,
+                            lambda mediatype='image',blob=BLOB: 
+                            SelectDB.Show_Image_execute(MediaType=mediatype,blob_data=blob))
+
+    @staticmethod
+    def Show_Image_execute(ID=None,MediaType=None,blob_data=False):
+        def showing_media():   
+            width = Media.Slike_Viewer.winfo_width()
+            height = Media.Slike_Viewer.winfo_height()
+            
+            if 'image' in MediaType:
+                Media.Image_Active = Media.get_image(Media.Blob_Data)
+                image = Media.resize_image(Media.Image_Active, width, height, savescale=True)
+                image = ImageTk.PhotoImage(image)
+
+                Media.Slike_Viewer.create_image(width//2, height//2,  anchor='center', image=image)
+                Media.Slike_Viewer.image = image
+                Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
+                Media.Slike_Viewer.bind('<Double-1>',lambda event,image_data=Media.Blob_Data: Media.open_image(event,image_data))
+                Media.Slike_Viewer.bind('<MouseWheel>', Media.zoom)
+                Media.Slike_Viewer.bind('<Button-4>', Media.zoom)
+                Media.Slike_Viewer.bind('<Button-5>', Media.zoom)
+                Media.Slike_Viewer.bind('<ButtonPress-1>', Media.move_from)
+                Media.Slike_Viewer.bind('<B1-Motion>',     Media.move_to)  
+            elif 'video' in MediaType:
+                thumbnail,video_data = Media.create_video_thumbnail(Media.Blob_Data)
+                thumbnail = Media.resize_image(thumbnail, width, height)
+                thumbnail = ImageTk.PhotoImage(thumbnail)
+                
+                Media.Slike_Viewer.create_image(width//2, height//2, anchor='center', image=thumbnail)
+                Media.Slike_Viewer.image = thumbnail
+                Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
+                Media.Slike_Viewer.bind('<Button-1>',lambda event,video=video_data: Media.play_video(event,video))
+
+        if blob_data is False:
+            queue_get_blob = queue.Queue()
+            def get_image_fromGD(GoogleID,queue):
+                image_blob = GoogleDrive.download_BLOB(GoogleID)
+                queue.put(image_blob)
+            thread = threading.Thread(target=get_image_fromGD,args=(ID,queue_get_blob))
+            thread.start()
+            
+            def check_queue():
+                try:
+                    Media.Blob_Data = queue_get_blob.get_nowait()
+                    showing_media()
+                except queue.Empty:
+                    Controller.ROOT.after(50,check_queue)
+            check_queue()
+        else:
+            Media.Blob_Data = blob_data
+            showing_media()
 
 if __name__=='__main__':
     pass

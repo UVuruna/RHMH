@@ -7,67 +7,6 @@ from C3_SelectDB import SelectDB
 
 class ManageDB(Controller):
 
-    @staticmethod
-    def refresh_tables(table_names:list):
-        for table in table_names:
-            SelectDB.showall_data(TAB=table)
-
-    @staticmethod
-    def selectall_tables(event):
-        if event.state == 8:
-            return
-        focus = Controller.NoteBook.index(Controller.NoteBook.select())
-        TAB = Controller.NoteBook.tab(focus,'text')
-        if TAB == 'Pacijenti':
-            items = Controller.Table_Pacijenti.get_children()
-            Controller.Table_Pacijenti.selection_set(items)
-        elif TAB == 'Slike':
-            items = Controller.Table_Slike.get_children()
-            Controller.Table_Slike.selection_set(items)
-        elif TAB == 'Katalog':
-            items = Controller.Table_MKB.get_children()
-            Controller.Table_MKB.selection_set(items)
-        elif TAB == 'Logs':
-            items = Controller.Table_Logs.get_children()
-            Controller.Table_Logs.selection_set(items)
-        elif TAB == 'Session':
-            items = Controller.Table_Session.get_children()
-            Controller.Table_Session.selection_set(items)
-
-    @staticmethod
-    def shift_up( event):
-        table: tb.ttk.Treeview = event.widget
-        current = table.focus()
-        if current:
-            previous = table.prev(current)
-            if previous:
-                if previous not in table.selection():
-                    table.selection_add(previous)
-                    table.focus(previous)
-                    table.see(previous)
-                else:
-                    table.selection_remove(current)
-                    table.focus(previous)
-                    table.see(previous)
-        return 'break'
-    
-    @staticmethod
-    def shift_down( event):
-        table: tb.ttk.Treeview = event.widget
-        current = table.focus()
-        if current:
-            next_item = table.next(current)
-            if next_item:
-                if next_item not in table.selection():
-                    table.selection_add(next_item)
-                    table.focus(next_item)
-                    table.see(next_item)
-                else:
-                    table.selection_remove(current)
-                    table.focus(next_item)
-                    table.see(next_item)
-        return 'break'
-
     @Controller.block_manageDB()
     @staticmethod
     def Add_Patient():
@@ -142,7 +81,7 @@ class ManageDB(Controller):
                 title=f'New Patient added', message=f'{ime}\n\n{report[:-1]}')
         
         ManageDB.LoggingData(query_type='Add Patient',loggingdata=f'{ime}\n\n{logging[:-1]}')
-        ManageDB.refresh_tables(table_names=['Pacijenti','Slike'])
+        SelectDB.refresh_tables(table_names=['Pacijenti','Slike'])
 
     @Controller.block_manageDB()
     @staticmethod
@@ -164,7 +103,7 @@ class ManageDB(Controller):
         
         file_path = open_file_dialog()
         print(file_path)
-        ManageDB.refresh_tables(['Slike']) # plus vratiti panel sa tabelom i slikom
+        SelectDB.refresh_tables(['Slike']) # plus vratiti panel sa tabelom i slikom
         print(UserSession)
 
     @Controller.block_manageDB()
@@ -182,8 +121,9 @@ class ManageDB(Controller):
             Messagebox.show_info(parent=Controller.MessageBoxParent,
                     title=f'New MKB added', message=report[:-1], alert=True)
             
+            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
             ManageDB.LoggingData(query_type='Add MKB',loggingdata=report[:-1])
-            ManageDB.refresh_tables(['Katalog'])
+            SelectDB.refresh_tables(['Katalog'])
         else:
             Messagebox.show_warning(parent=Controller.MessageBoxParent,
                     title=f'Inserting failed!', message='You didn`t fill the form')
@@ -199,8 +139,9 @@ class ManageDB(Controller):
             Messagebox.show_info(parent=Controller.MessageBoxParent,
                     title=f'New Employee added', message=report, alert=True)
             
+            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
             ManageDB.LoggingData(query_type='Add Employee',loggingdata=report)
-            ManageDB.refresh_tables(['Katalog'])
+            SelectDB.refresh_tables(['Katalog'])
         else:
             Messagebox.show_warning(parent=Controller.MessageBoxParent,
                     title=f'Inserting failed!', message='You didn`t enter Name of Employee')
@@ -327,7 +268,7 @@ class ManageDB(Controller):
                         title=f'Updating successfull', message=PATIENT)
                 
                 ManageDB.LoggingData(query_type='Update Patient',loggingdata=logging)
-                ManageDB.refresh_tables(table_names=['Pacijenti','Slike'])
+                SelectDB.refresh_tables(table_names=['Pacijenti','Slike'])
 
         except UnboundLocalError:
             Messagebox.show_error(parent=Controller.MessageBoxParent,
@@ -345,8 +286,7 @@ class ManageDB(Controller):
         opis = ManageDB.get_widget_value(Controller.Katalog_FormVariables['Opis Dijagnoze'])
 
         try:
-            selected_mkb = Controller.Table_MKB.item(Controller.Table_MKB.focus())['values'][1]
-            selected_opis = Controller.Table_MKB.item(Controller.Table_MKB.focus())['values'][2]
+            ID, selected_mkb, selected_opis = Controller.Table_MKB.item(Controller.Table_MKB.focus())['values'][1:]
             if selected_mkb:
                 if mkb and opis:
                     report = ''
@@ -359,7 +299,6 @@ class ManageDB(Controller):
                         report += f' - Opis (old):\n{selected_opis}\n'
 
                     if report:
-                        ID = RHMH.execute_selectquery(f'SELECT id_dijagnoza from mkb10 WHERE `MKB - šifra` = "{selected_mkb}"')[0][0]
                         reportquestion = 'Do you want to process update?\n\n'
                         confirmation = Messagebox.yesno(parent=Controller.MessageBoxParent,
                                 title=f'MKB Updating...', message=reportquestion+report[:-1], alert=True)
@@ -369,8 +308,9 @@ class ManageDB(Controller):
                             Messagebox.show_info(parent=Controller.MessageBoxParent,
                                     title=f'Updating successfull', message=report[:-1])
                             
+                            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
                             ManageDB.LoggingData(query_type='Update MKB',loggingdata=report[:-1])
-                            ManageDB.refresh_tables(table_names=['Katalog'])
+                            SelectDB.refresh_tables(table_names=['Katalog'])
                         return
                     else:
                         report = 'You made no changes'
@@ -386,11 +326,10 @@ class ManageDB(Controller):
     def Update_Zaposleni():
         name = ManageDB.get_widget_value(Controller.Katalog_FormVariables['Zaposleni'])
         try:
-            selected_name = Controller.Table_Zaposleni.item(Controller.Table_Zaposleni.focus())['values'][1]
+            ID, selected_name = Controller.Table_Zaposleni.item(Controller.Table_Zaposleni.focus())['values'][1:]
             if selected_name:
                 if name:
                     if name != selected_name:
-                        ID = RHMH.execute_selectquery(f'SELECT id_zaposleni from zaposleni WHERE Zaposleni = "{selected_name}"')[0][0]
                         reportquestion = 'Do you want to process update?\n\n'
                         report = f' - Ime (new):\n{name}\n'
                         report += f'\n - Ime (old):\n{selected_name}\n'
@@ -402,8 +341,9 @@ class ManageDB(Controller):
                             Messagebox.show_info(parent=Controller.MessageBoxParent,
                                     title=f'Updating successfull', message=report[:-1])
                             
+                            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
                             ManageDB.LoggingData(query_type='Update Employee',loggingdata=report[:-1])
-                            ManageDB.refresh_tables(table_names=['Katalog'])
+                            SelectDB.refresh_tables(table_names=['Katalog'])
                         return
                     else:
                         report = 'You made no changes'
@@ -435,34 +375,37 @@ class ManageDB(Controller):
                 patient += f'\n - {col}\n{val}\n'
 
             ManageDB.LoggingData(query_type='Delete Patient',loggingdata=patient)
-            ManageDB.refresh_tables(table_names=['Pacijenti','Slike'])
+            SelectDB.refresh_tables(table_names=['Pacijenti','Slike'])
     
     @Controller.block_manageDB()
     @staticmethod
     def Delete_Image():
-        selected_image:list = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1:6]
-        ID = selected_image[0]
-        PatientName = selected_image[2]
-        selected_image_description = f'{ID}: {PatientName} - {selected_image[3]} : ({selected_image[4]} - {selected_image[5]})'
+        selected_image:list = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1:7]
+        print(selected_image)
+        ID, id_pacijent, PatientName, Opis, Format, Velicina = selected_image
+        selected_image_description = f'{ID}: {PatientName} - {Opis} : ({Format} - {Velicina})'
         confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete\n{selected_image_description}?', alert=True)
         if confirm == 'Yes':
-            GoogleID = RHMH.execute_selectquery(f'SELECT image_date from slike WHERE id_slike = {ID}')[0][0]
+            GoogleID = RHMH.execute_selectquery(f'SELECT image_data from slike WHERE id_slike = {ID}')[0][0]
             RHMH.execute_Delete('slike',[('id_slike',ID)])
             print('DELETING ',GoogleID)
+
+
             #GoogleDrive.delete_file(GoogleID)
+
+
             Messagebox.show_info(parent=Controller.MessageBoxParent,
                     title=f'Deleting successfull', message=f'Deleted {selected_image_description}\nfrom Database and Google Drive')
-            ManageDB.refresh_tables(table_names=['Slike'])
+            SelectDB.refresh_tables(table_names=['Slike'])
 
     @Controller.block_manageDB()
     @staticmethod
     def Delete_MKB():
-        mkb,opis = Controller.Table_MKB.item(Controller.Table_MKB.focus())['values'][1:3]
+        ID, mkb, opis = Controller.Table_MKB.item(Controller.Table_MKB.focus())['values'][1:]
         confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete {mkb}?', alert=True)
         if confirm=='Yes':
-            ID = RHMH.execute_selectquery(f'SELECT id_dijagnoza from mkb10 WHERE `MKB - šifra` = "{mkb}"')[0][0]
             RHMH.execute_Delete('mkb10',[('id_dijagnoza',ID)])
 
             Messagebox.show_info(parent=Controller.MessageBoxParent,
@@ -470,23 +413,25 @@ class ManageDB(Controller):
             
             logging = f' - MKB:\n{mkb}\n'
             logging += f'\n - Opis:\n{opis}'
+
+            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
             ManageDB.LoggingData(query_type='Delete MKB',loggingdata=logging)
-            ManageDB.refresh_tables(table_names=['Katalog'])
+            SelectDB.refresh_tables(table_names=['Katalog'])
     
     @Controller.block_manageDB()
     @staticmethod
     def Delete_Zaposleni():
-        name = Controller.Table_Zaposleni.item(Controller.Table_Zaposleni.focus())['values'][1]
+        ID, name = Controller.Table_Zaposleni.item(Controller.Table_Zaposleni.focus())['values'][1:]
         confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete {name}?', alert=True)
         if confirm=='Yes':
-            ID = RHMH.execute_selectquery(f'SELECT id_zaposleni from zaposleni WHERE Zaposleni = "{name}"')[0][0]
             RHMH.execute_Delete('zaposleni',[('id_zaposleni',ID)])
             Messagebox.show_info(parent=Controller.MessageBoxParent,
                     title=f'Deleting successfull', message=f'Deleted {name}')
             
+            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
             ManageDB.LoggingData(query_type='Delete Employee',loggingdata=f' - Ime:\n{name}')
-            ManageDB.refresh_tables(table_names=['Katalog'])
+            SelectDB.refresh_tables(table_names=['Katalog'])
 
     @staticmethod
     def Download_SelectedImages():
@@ -549,115 +494,6 @@ class ManageDB(Controller):
             thread.start()
 
     @staticmethod
-    def Show_Image_FullScreen(event=None,BLOB=None):
-        
-        if not BLOB:
-            minitable:tb.ttk.Treeview = event.widget
-            ID = minitable.item(minitable.focus())['values'][1].split('_')[0]
-            def execute():
-                Controller.Slike_HideTable.grid_remove()
-                ManageDB.Show_Image(ID=ID)
-        else:
-            def execute():
-                Controller.Slike_HideTable.grid_remove()
-                ManageDB.Show_Image(BLOB=BLOB)
-        Controller.NoteBook.select(1)
-
-        Controller.ROOT.after(WAIT,execute)
-
-    @staticmethod
-    def Show_Image(event=None,ID=False,BLOB=False):
-        if event:
-            shift_pressed = event.state & 0x1
-            ctrl_pressed = event.state & 0x4
-            if shift_pressed or ctrl_pressed:
-                return
-        Media.Slike_Viewer.delete('all')
-        Media.Image_Active = None
-
-        if BLOB is False:
-            if ID is False:
-                try:
-                    ID = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1]
-                except IndexError:
-                    return
-            media_type,google_ID = RHMH.execute_selectquery(f'SELECT Format,image_data from slike WHERE id_slike={ID}')[0]
-
-        events = ['<Button-1>','<Double-1>','<MouseWheel>','<Button-4>','<Button-5>','<ButtonPress-1','<B1-Motion>']
-        for event in events:
-            Media.Slike_Viewer.unbind(event)
-        Controller.ROOT.update() # CEKA SREDJIVANJE WIDGET
-
-        width = Media.Slike_Viewer.winfo_width()
-        height = Media.Slike_Viewer.winfo_height()
-        image = Image.open(IMAGES['Loading'])
-        image = Media.resize_image(image, width, height)
-        image = ImageTk.PhotoImage(image)
-
-        Media.Slike_Viewer.create_image(width//2, height//2, anchor='center', image=image)
-        Media.Slike_Viewer.image = image
-        Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
-        
-        # AFTER LOADING.. png Actual Image
-        if BLOB is False:
-            Controller.ROOT.after(WAIT,
-                            lambda ID=google_ID,mediatype=media_type: 
-                            ManageDB.Show_Image_execute(ID=ID,MediaType=mediatype))
-        else:
-            Controller.ROOT.after(WAIT,
-                            lambda mediatype='image',blob=BLOB: 
-                            ManageDB.Show_Image_execute(MediaType=mediatype,blob_data=blob))
-
-    @staticmethod
-    def Show_Image_execute(ID=None,MediaType=None,blob_data=False):
-        if blob_data is False:
-            queue_get_blob = queue.Queue()
-            def get_image_fromGD(GoogleID,queue):
-                image_blob = GoogleDrive.download_BLOB(GoogleID)
-                queue.put(image_blob)
-            thread = threading.Thread(target=get_image_fromGD,args=(ID,queue_get_blob))
-            thread.start()
-            
-            def check_queue():
-                try:
-                    Media.Blob_Data = queue_get_blob.get_nowait()
-                    showing_media()
-                except queue.Empty:
-                    Controller.ROOT.after(50,check_queue)
-            check_queue()
-        else:
-            Media.Blob_Data = blob_data
-            showing_media()
-
-        def showing_media():   
-            width = Media.Slike_Viewer.winfo_width()
-            height = Media.Slike_Viewer.winfo_height()
-            
-            if 'image' in MediaType:
-                Media.Image_Active = Media.get_image(Media.Blob_Data)
-                image = Media.resize_image(Media.Image_Active, width, height, savescale=True)
-                image = ImageTk.PhotoImage(image)
-
-                Media.Slike_Viewer.create_image(width//2, height//2,  anchor='center', image=image)
-                Media.Slike_Viewer.image = image
-                Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
-                Media.Slike_Viewer.bind('<Double-1>',lambda event,image_data=Media.Blob_Data: Media.open_image(event,image_data))
-                Media.Slike_Viewer.bind('<MouseWheel>', Media.zoom)
-                Media.Slike_Viewer.bind('<Button-4>', Media.zoom)
-                Media.Slike_Viewer.bind('<Button-5>', Media.zoom)
-                Media.Slike_Viewer.bind('<ButtonPress-1>', Media.move_from)
-                Media.Slike_Viewer.bind('<B1-Motion>',     Media.move_to)  
-            elif 'video' in MediaType:
-                thumbnail,video_data = Media.create_video_thumbnail(Media.Blob_Data)
-                thumbnail = Media.resize_image(thumbnail, width, height)
-                thumbnail = ImageTk.PhotoImage(thumbnail)
-                
-                Media.Slike_Viewer.create_image(width//2, height//2, anchor='center', image=thumbnail)
-                Media.Slike_Viewer.image = thumbnail
-                Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
-                Media.Slike_Viewer.bind('<Button-1>',lambda event,video=video_data: Media.play_video(event,video))
-
-    @staticmethod
     def Image_Read( result_queue):
         try:
             data = result_queue.get_nowait()
@@ -711,9 +547,9 @@ class ManageDB(Controller):
 
             queue_analyzed_data = queue.Queue()
             def execute_fullscreen():
-                ManageDB.Show_Image_FullScreen(BLOB=image_blob)
+                SelectDB.Show_Image_FullScreen(BLOB=image_blob)
             def image_reader_with_queue(image, queue):
-                data = Media.OperacionaLista_ImageReader(image)
+                data = Media.Operaciona_Reader(image)
                 queue.put(data)
 
             if firsttry is True:
@@ -729,7 +565,7 @@ class ManageDB(Controller):
 
     @staticmethod
     def Validation_Method(event=None,form=None):
-        if form == 'Default':
+        if form is None or form == 'Default':
             Controller.Valid_Default = True
 
             for col,widget in Controller.Patient_FormVariables['pacijent'].items():
@@ -741,12 +577,16 @@ class ManageDB(Controller):
                                 datetime.strptime(value, '%d-%b-%Y')
                             except:
                                 Controller.Valid_Default = False
-        elif form == 'Alternative':
+        elif form is None or form == 'Alternative':
             Controller.Valid_Alternative = True
 
-        for widget in Controller.Validation_Widgets[form]:
-            widget:Widget
-            widget.focus_force()
+        
+        form = ['Default','Alternative'] if form is None else [form]
+        print(form)
+        for FORM in form:
+            for widget in Controller.Validation_Widgets[FORM]:
+                widget:Widget
+                widget.focus_force()
 
         Controller.MessageBoxParent.focus_force()
 
@@ -803,6 +643,31 @@ class ManageDB(Controller):
                     Controller.Valid_Alternative = False
         elif value.strip() and not (value.strip() in Controller.Zaposleni_validation_LIST):
             Controller.Valid_Alternative = False
+
+    @staticmethod
+    def export_table(method:callable):
+        focus = Controller.NoteBook.index(Controller.NoteBook.select())
+        TAB = Controller.NoteBook.tab(focus,'text')
+        table:tb.ttk.Treeview = Controller.Table_Names[TAB]
+        table = table if not isinstance(table,tuple) else table[0]
+
+        data_frame = dict()
+        headings = SelectDB.table_headings(table)
+
+        for i,item_id in enumerate(method(table)):
+            item_data = table.item(item_id)['values']
+            for col,val in zip(headings,item_data):
+                if col=='ID' or 'id_' in col:
+                    continue
+                if col not in data_frame:
+                    data_frame[col] = {}
+                data_frame[col][i+1] = val
+
+        export_data = pd.DataFrame(data_frame)
+        file_path = filedialog.asksaveasfilename(defaultextension=".xlsx", 
+                                    filetypes=[("Excel files", "*.xlsx")])
+        if file_path:
+            export_data.to_excel(file_path)
 
     @staticmethod
     def FreeQuery_Execute():
