@@ -349,6 +349,11 @@ class Media:
         label:tb.Label = event.widget
         label.config(image=img)
 
+    def image_to_blob(file_path):
+        with open(file_path, 'rb') as f:
+            blob_data = f.read()
+        return blob_data
+
     @staticmethod
     def get_image(image_blob_data): # Format za Canvas
         image = Image.open(io.BytesIO(image_blob_data))
@@ -459,6 +464,7 @@ class Media:
         Media.Slike_Viewer.image = image
         Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
    
+        '''
         print(f'Canvas width: {Media.Slike_Viewer.winfo_width()}')
         print(f'Canvas height: {Media.Slike_Viewer.winfo_height()}')
         print(f'Image width: {Media.Image_Zoomed_Width}')
@@ -476,6 +482,7 @@ class Media:
                  Media.Slike_Viewer.canvasy(Media.Slike_Viewer.winfo_height()))
         print(f'LRTB: {left,right,top,bottom}')
         print(f'bbox: {bbox}')
+        #'''
 
     @staticmethod
     def move_from(event):
@@ -485,6 +492,7 @@ class Media:
     def move_to(event):
         if Media.Image_Zoomed_Height:
             Media.Slike_Viewer.scan_dragto(event.x, event.y, gain=1)
+            '''
             X_scroll = Media.Slike_Viewer.xview()
             Y_scroll = Media.Slike_Viewer.yview()
             left,right = (X_scroll[0]*Media.Image_Zoomed_Width,
@@ -497,6 +505,7 @@ class Media:
                     Media.Slike_Viewer.canvasy(Media.Slike_Viewer.winfo_height()))
             print(f'LRTB: {left,right,top,bottom}')
             print(f'bbox: {bbox}')
+            #'''
 
 if __name__=='__main__':
     import torch

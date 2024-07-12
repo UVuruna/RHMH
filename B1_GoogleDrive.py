@@ -76,6 +76,7 @@ class GoogleDrive:
             'mimeType': file['mimeType']
         }
     
+    '''
     @staticmethod
     def get_video_dimensions(file_path):
         ffmpeg_path = '_internal/required_programs/ffprobe.exe'
@@ -88,6 +89,7 @@ class GoogleDrive:
             return width, height
         else:
             return None, None
+    #'''
 
     @staticmethod
     def download_DB(file_id, destination:str):

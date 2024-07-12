@@ -63,6 +63,14 @@ def error_catcher():
         return wrapper
     return decorator
 
+def print_dict(d, indent=0):
+    for key, value in d.items():
+        print('\t' * indent + str(key))
+        if isinstance(value, dict):
+            print_dict(value, indent+1)
+        else:
+            print('\t' * (indent+1) + str(value))
+
 class PC:
     @staticmethod
     def get_available_fonts():
@@ -80,7 +88,6 @@ class PC:
             "Physical Cores": psutil.cpu_count(logical=False),
             "Total Cores": psutil.cpu_count(logical=True),
             "Frequency": f"{psutil.cpu_freq().max:.0f} Mhz",
-            "L3 Cache": f'{cpu['l3_cache_size']//1024**2} MB'
             }
         return cpu_info
 

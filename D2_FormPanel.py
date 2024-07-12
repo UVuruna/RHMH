@@ -145,10 +145,13 @@ class FormPanel:
 
         def fill_Opis(event):
             try:
-                opis:str = event.widget.item(event.widget.focus())['values'][1]
-                opis = opis.split('_')[1]
+                tree:tb.ttk.Treeview = event.widget
+                id_slike,opis = tree.item(tree.focus())['values'][1].split('_')
                 opis = opis.split('.')[0]
                 Controller.Patient_FormVariables['slike']['Opis'].set(opis)
+                ID = f'{Controller.PatientFocus_ID}/{id_slike}'
+                Controller.Slike_FormVariables['ID'].configure(text=ID)
+                Controller.Slike_FormVariables['Opis'].set(opis)
             except IndexError:
                 return
 
@@ -210,6 +213,8 @@ class FormPanel:
                 Controller.Patient_FormVariables[table][txt] = StringVar()
                 if data[1]=='StringVar':
                     ent = tb.Entry(parent, textvariable=Controller.Patient_FormVariables[table][txt], width=data[2], font=font_default)
+                    if txt == 'Opis':
+                        ent.configure(state='readonly')
                 elif data[1]=='Combobox':
                     ent = tb.Combobox(parent, values=data[3], textvariable=Controller.Patient_FormVariables[table][txt], width=data[2],
                                       font=font_default, validate='focus', validatecommand=(FormPanel.valid_notblank, '%P'), state='readonly')

@@ -1,5 +1,5 @@
 from A1_Variables import *
-from A2_Decorators import spam_stopper,PC
+from A2_Decorators import spam_stopper,PC,print_dict
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH
 from B3_Media import Media
@@ -21,7 +21,6 @@ class GUI:
         GUI.root = root
         RHMH.start_RHMH_db()
         threading.Thread(target=GUI.get_PC_info).start()
-        GoogleDrive.setup_connection()
         
         Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
         Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
@@ -79,16 +78,11 @@ class GUI:
     def EXIT() -> None:
         response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'])
         if response == 'Save':
-            threading.Thread(target=GUI.uploading_to_GoogleDrive).start()
+            threading.Thread(target=Controller.uploading_to_GoogleDrive).start()
             GUI.root.destroy()
         if response == 'Exit':
+            print_dict(UserSession)
             GUI.root.destroy()
-    
-    @staticmethod
-    def uploading_to_GoogleDrive() -> None:
-        print('Uploading to Google Drive...')
-        GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
-        print('Upload finished') # DODATI MESSAGEBOX KADA ZAVRSI
 
     @staticmethod
     def show_form_frame() -> None:
@@ -132,7 +126,7 @@ class GUI:
         m.add_command(label ='Settings', command= lambda: SelectDB.NoteBook.select(6))
         m.add_command(label ='About', command= lambda: SelectDB.NoteBook.select(7))
         m.add_separator()
-        m.add_command(label ='Upload to Drive', command= GUI.uploading_to_GoogleDrive)
+        m.add_command(label ='Upload to Drive', command= Controller.uploading_to_GoogleDrive)
         return m
     
 if __name__=='__main__':

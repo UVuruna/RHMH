@@ -13,7 +13,7 @@ import traceback
 # GoogleDrive
 import io
 import os
-import ffmpeg
+#import ffmpeg
 import pickle
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -42,6 +42,7 @@ import matplotlib.cm as cm
 import numpy as np
 
 # SQLite
+from moviepy.editor import VideoFileClip
 import sqlite3
 import sqlparse
 from tkinter import simpledialog,messagebox

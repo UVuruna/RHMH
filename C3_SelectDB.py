@@ -62,9 +62,11 @@ class SelectDB(Controller):
                         table_widget.delete(item)
                     if view and len(view)!=0:
                         if table in ['Pacijenti','Slike']:
+                            print('refreshing')
                             tables_fill_methods[table](view)
                         else:
                             tables_fill_methods[table](view,table_widget)
+        print('done')
 
     @staticmethod
     def selectall_tables(event):
@@ -325,13 +327,9 @@ class SelectDB(Controller):
 
     @staticmethod
     def Show_Graph():
-        SelectDB.Graph_makeQuery()
-
-    @staticmethod
-    def Graph_makeQuery():
         X1 = []
         X2 = []
-        EXTRA = {}
+        COLOR = 1
         for k,value in Controller.Graph_FormVariables.items():
             if isinstance(value,tuple):
                 selection_widget:StringVar = value[1]
@@ -346,33 +344,96 @@ class SelectDB(Controller):
             elif isinstance(value,dict):
                 optional:tb.Checkbutton = value['color'][0]
                 if optional.winfo_ismapped():
-                    EXTRA['color'] = value['color'][1].get()
+                    COLOR = value['color'][1].get()
 
-                EXTRA['values'] = value['values'][1].get()
-                EXTRA['Filter Main Table'] = value['Filter Main Table'][1].get()
+                VALUES = value['values'][1].get()
+                FILTER = value['Filter Main Table'][1].get()
 
                 PLOT = value['radio']['choice'].get()
+        
+        FILTER = Controller.MainTable_IDS if FILTER else None
+        QUERY = Graph.Graph_makeQuery(Y,X1,X2,FILTER)
 
-        select = Graph.Y_options[Y]
-        if 'MKB' in X2[0]:
-            mkb = X2[1:-1][0] if X2[1:-1] else None # Proverava da li ima 3 ili 2
-            groups = Graph.Graph_DistinctMKB(Y=select, mkb=mkb)
-            where = f'Kategorija = {X2[-1]}'
-        elif X2[0] == 'Zaposleni':
-            funkcija = X2[1] if len(X2)==2 else None
-            groups = Graph.Graph_DistinctZaposleni(Y=select, funkcija=funkcija)
-        elif  X2[0] == 'Starost':
-            groups = Graph.Graph_StarostGroups(Y=select, jump=X2[1])
-        print(PLOT)   
-        print(Y)
-        print(X1)
-        print(X2)
-        print(EXTRA)
-        #canvas = FigureCanvasTkAgg(Graph.figure, master=Controller.Graph_Canvas)
-        #canvas.draw()
+        view = RHMH.execute_selectquery(QUERY)
 
+        X_groups = []
+        for i,X in enumerate([X1,X2]):
+            if not X:
+                continue
+            if X[0] in ['Pol','Trauma']:
+                lista = Graph.X_options[X[0]]
+                X_groups.append(lista[0])
+            elif 'MKB' in X[0]:
+                mkb = X[1] if len(X[1])==1 else None
+                X_groups.append(RHMH.get_distinct_mkb(mkb,FILTER))
+            elif X[0]=='Starost':
+                starost_groups = []
+                i = 0
+                j = 20
+                jump = int(X[1])
+                count = 0
+                while j <= 80:
+                    starost_groups.append(f'{i}-{j}')
+                    i = int(j)
+                    j += jump
+                else:
+                    count +=1 
+                    starost_groups.append(f'{i}+')
+                X_groups.append(starost_groups)
+            elif X[0]=='Zaposleni':
+                X_groups.append(RHMH.get_distinct_zaposleni(X[1],FILTER))
+            else:
+                dates = RHMH.get_distinct_date(Graph.DateTypes[X[0]],FILTER)
+                if X[0] in ['Mesec','Dan u Sedmici']:
+                    dates = [Graph.SQL_date_num[X[0]][i] for i in dates]
+                X_groups.append(dates)
+
+        view = [i if i is not None else 0 for i in list(view[0])]
+
+        VIEW = []
+        if len(X_groups)==2:
+            grouping = len(X_groups[1])
+            for i in range(len(X_groups[0])):
+                VIEW.append(view[grouping*i:grouping*(i+1)])
+        else:
+            VIEW = view
+                            
+
+        X2Groups = X_groups[1] if len(X_groups)==2 else None
+        widthinch = Controller.Graph_Canvas.winfo_width()//100-1
+        heightinch = Controller.Graph_Canvas.winfo_height()//100-1
+        TITLE = f'{Y} grupisan po {X1[0]}'
+        if X2:
+            TITLE += f' i {X2[0]}'
+        Graph.initialize(width=widthinch, height=heightinch, X=X_groups[0], Y=VIEW, title=TITLE, X_label=X1[0], Y_label=Y, X2=X2Groups)
+        
+        if len(X_groups)==2:
+            if PLOT == 'bars':
+                bar_width = 0.95/len(X_groups[1])
+                Graph.create_2D_bar(VALUES,bar_width)
+            elif PLOT == 'stacked':
+                Graph.create_2D_stackedbar(VALUES)
+        else:
+            
+            if PLOT == 'bars':
+                Graph.create_1D_bar(COLOR,VALUES)
+            elif PLOT == 'pie':
+                Graph.create_1D_pie()
+
+        
+        if Controller.graph_canvas is not None:
+            Controller.graph_canvas.get_tk_widget().destroy()
+        
+        #Graph.figure.tight_layout()
+        Controller.graph_canvas = FigureCanvasTkAgg(Graph.figure, master=Controller.Graph_Canvas)
+        Controller.graph_canvas.get_tk_widget().config(width=Controller.Graph_Canvas.winfo_width(),
+                                                       height=Controller.Graph_Canvas.winfo_height())
+        Controller.graph_canvas.draw()
+        Controller.graph_canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+       
     @staticmethod
-    def graph_add_button(event):
+    def graph_activating_X2(event):
         widget:tb.Combobox = Controller.Graph_FormVariables['X2-1'][0]
         lastchoice:StringVar = Controller.Graph_FormVariables['X1-1'][1].get()
         Values = list(Graph.X_options.keys())
@@ -388,11 +449,7 @@ class SelectDB(Controller):
                 Values.remove(lastchoice)
 
         elif lastchoice in dijagnoza:
-            if lastchoice == 'MKB Grupe':
-                removelist = ['MKB Grupe','Trauma']
-            else:
-                removelist = dijagnoza
-            for val in removelist:
+            for val in dijagnoza:
                 Values.remove(val)
         else:
             Values.remove(lastchoice)
@@ -401,11 +458,11 @@ class SelectDB(Controller):
         width = width-4 if width>20 else 3 if width<3 else width-1
         widget.configure(values=Values, width=width)
         widget.grid()
-        SelectDB.removing_graph_afterchoice()
+        SelectDB.graph_remove_afterchoice()
         event.widget.grid_remove()
 
     @staticmethod
-    def removing_graph_afterchoice():
+    def graph_remove_afterchoice():
         for k,v in Controller.Graph_FormVariables['afterchoice'].items():
             if k=='radio':
                 for widget in v['widgets'].values():
@@ -418,7 +475,7 @@ class SelectDB(Controller):
                     widget.grid_remove()
 
     @staticmethod
-    def Graph_afterchoice(double:bool):
+    def graph_activate_afterchoice(double:bool):
         if double is True:
             show = ('bars','stacked')
             hide = ('color')
@@ -433,7 +490,7 @@ class SelectDB(Controller):
                         if not widget.winfo_ismapped():
                             widget.grid()
                         if txt =='bars':
-                            choice:StringVar = v['choice']
+                            choice:StringVar = v['choice'] # vraca uvek bars da ne bude hidden opcija podesena
                             choice.set(txt)
                     else:
                         if widget.winfo_ismapped():
@@ -448,7 +505,7 @@ class SelectDB(Controller):
                         widget.grid_remove()
 
     @staticmethod
-    def Graph_Options(event,option:str):
+    def graph_choice_analyze(event,option:str):
         widget:tb.Combobox = event.widget
         execute_button:ctk.CTkButton = Controller.Buttons['SHOW Graph']
         add_button:tb.Label = Controller.Graph_FormVariables['Add']
@@ -463,10 +520,10 @@ class SelectDB(Controller):
             execute_button.configure(state=NORMAL)
             FINAL = True
             if 'X1' in option:
-                SelectDB.Graph_afterchoice(double=False)
+                SelectDB.graph_activate_afterchoice(double=False)
                 add_button.grid()
             else:
-                SelectDB.Graph_afterchoice(double=True)
+                SelectDB.graph_activate_afterchoice(double=True)
 
         def removing_widgets(widgets_to_remove):
             widget:tb.Combobox
@@ -479,7 +536,7 @@ class SelectDB(Controller):
                 stringvar.set('')
 
             if FINAL is False:
-                SelectDB.removing_graph_afterchoice()
+                SelectDB.graph_remove_afterchoice()
 
         if option == 'Y':
             Values.append(list(Graph.X_options.keys()))
@@ -494,26 +551,13 @@ class SelectDB(Controller):
                 Next_Names = [option.replace('-1','-2')]
                 Values.append([str(i) for i in range(5,31,5)])
             elif choice == 'MKB Pojedinačno':
-                check = True
-                if option == 'X2-1':
-                    first_stringvars:StringVar = Controller.Graph_FormVariables['X1-1'][1]
-                    check = not (first_stringvars.get() in ['Trauma', 'MKB Grupe','MKB Pojedinačno'])
-                if check:
-                    Next_Names = [option.replace('-1','-2')]
-                    Values.append(RHMH.get_distinct_mkb())
-                    Next_Names.append(option.replace('-1','-3'))
-                    Values.append(RHMH.dg_kategorija)
-                else:
-                    Next_Names = [option.replace('-1','-2')]
-                    Values.append(RHMH.get_distinct_mkb())
+                Next_Names = [option.replace('-1','-2')]
+                Values.append(RHMH.get_distinct_mkb())
+                Next_Names.append(option.replace('-1','-3'))
+                Values.append(RHMH.dg_kategorija)
             elif choice in ['MKB Grupe', 'Trauma']:
-                check = True
-                if option == 'X2-1':
-                    first_stringvars:StringVar = Controller.Graph_FormVariables['X1-1'][1]
-                    check = not (first_stringvars.get() in ['Trauma', 'MKB Grupe','MKB Pojedinačno'])
-                if check:
-                    Next_Names = [option.replace('-1','-2')]
-                    Values.append(RHMH.dg_kategorija)
+                Next_Names = [option.replace('-1','-2')]
+                Values.append(RHMH.dg_kategorija)
             elif choice == 'Zaposleni':
                 Next_Names = [option.replace('-1','-2')]
                 Values.append(RHMH.dr_funkcija)
@@ -536,7 +580,6 @@ class SelectDB(Controller):
             if combo2.get():
                 finishing_setup(option)
 
-        
         try:
             widgetnames = ['Y','X1-1','X1-2','X1-3','X2-1','X2-2','X2-3']
             removing_widgets(widgetnames[widgetnames.index(Next_Names[-1])+1:])
@@ -646,7 +689,7 @@ class SelectDB(Controller):
         focus = Controller.NoteBook.index(Controller.NoteBook.select())
         TAB = Controller.NoteBook.tab(focus,'text')
 
-        def searching_dict_create() -> set:
+        def searching_dict_create() -> dict:
             def saving_location(SIGN):
                 if not SIGN in searching[option]:
                     searching[option][SIGN] = set()
@@ -695,9 +738,13 @@ class SelectDB(Controller):
                     searchlocation.add( result )
             return searching
 
+        searching = searching_dict_create()
+        if not searching:
+            return
+        
         if TAB == 'Pacijenti':
+            print(searching)
             columns = SelectDB.selected_columns(Controller.Pacijenti_ColumnVars.items() , Controller.Table_Pacijenti , columnvar=True)
-            searching = searching_dict_create()
             view = RHMH.execute_join_select('pacijent',*(columns),**searching)
 
             for item in Controller.Table_Pacijenti.get_children():
@@ -706,7 +753,6 @@ class SelectDB(Controller):
                 SelectDB.fill_TablePacijenti(view)
 
         elif TAB == 'Slike':
-            searching = searching_dict_create()
             view = RHMH.execute_select('slike',*(Controller.TableSlike_Columns[1:]),**searching)
   
             for item in Controller.Table_Slike.get_children():
@@ -715,7 +761,6 @@ class SelectDB(Controller):
                 SelectDB.fill_TableSlike(view)
 
         elif TAB == 'Katalog':
-            searching = searching_dict_create()
             view = RHMH.execute_select('mkb10',*(Controller.TableMKB_Columns[1:]),**searching)
 
             for item in Controller.Table_MKB.get_children():
@@ -724,7 +769,6 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_MKB)
 
         elif TAB == 'Logs':
-            searching = searching_dict_create()
             view = RHMH.execute_select('logs',*(Controller.TableLogs_Columns[1:]),**searching)
  
             for item in Controller.Table_Logs.get_children():
@@ -733,7 +777,6 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Logs)
 
         elif TAB == 'Session':
-            searching = searching_dict_create()
             view = RHMH.execute_select('session',*(Controller.TableSession_Columns[1:]),**searching)
 
             for item in Controller.Table_Session.get_children():
@@ -802,14 +845,20 @@ class SelectDB(Controller):
             return
 
     @staticmethod
-    def fill_PatientForm(event):
+    def fill_PatientForm(event=None):
         SelectDB.Clear_Form()
-        try:
-            # DAJ RED GDE JE FOKUS i daj prvi VALUE i oduzmi 1 i pogleda ko je na toj poziciji u ID listi
-            Controller.PatientFocus_ID = Controller.Table_Pacijenti.item(Controller.Table_Pacijenti.focus())['values'][1] 
+        if event:
+            try:
+                # DAJ RED GDE JE FOKUS i daj prvi VALUE i oduzmi 1 i pogleda ko je na toj poziciji u ID listi
+                Controller.PatientFocus_ID = Controller.Table_Pacijenti.item(Controller.Table_Pacijenti.focus())['values'][1] 
+                patient = RHMH.get_patient_data(Controller.PatientFocus_ID)
+            except IndexError:
+                return
+        else:
+            ID = Controller.Slike_FormVariables['ID'].cget('text')
+            Controller.PatientFocus_ID = int(ID.split('/')[0])
             patient = RHMH.get_patient_data(Controller.PatientFocus_ID)
-        except IndexError:
-            return
+    
         for col,val in patient.items():
             for table in Controller.Patient_FormVariables.keys():
                 try:
@@ -819,7 +868,11 @@ class SelectDB(Controller):
                     continue
             else:
                 continue
-            if isinstance(val,str) and ',' in val:
+            if col=='Ime':
+                Ime = val
+            elif col=='Prezime':
+                Prezime = val
+            elif isinstance(val,str) and ',' in val:
                 val = val.split(',')
                 fix = []
                 for v in val:
@@ -835,6 +888,10 @@ class SelectDB(Controller):
             pass
         Controller.PatientInfo.config(text=TEXT)
         Controller.FormTitle[0].configure(bootstyle='success')
+
+        if event:
+            Controller.Slike_FormVariables['ID'].configure(text=f'{Controller.PatientFocus_ID}/')
+            Controller.Slike_FormVariables['Pacijent'].set(f'{Ime} {Prezime}')
   
     @staticmethod
     def fill_LogsForm(event):
@@ -959,7 +1016,11 @@ class SelectDB(Controller):
         if BLOB is False:
             if ID is False:
                 try:
-                    ID = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1]
+                    ID,id_pacijent,Pacijent,Opis = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1:5]
+                    Controller.Slike_FormVariables['ID'].configure(text=f'{id_pacijent}/{ID}')
+                    Controller.Slike_FormVariables['Opis'].set(Opis)
+                    Controller.Slike_FormVariables['Pacijent'].set(Pacijent)
+                    print(Controller.Slike_FormVariables['ID'].cget('text'))
                 except IndexError:
                     return
             media_type,google_ID = RHMH.execute_selectquery(f'SELECT Format,image_data from slike WHERE id_slike={ID}')[0]

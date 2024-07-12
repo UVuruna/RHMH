@@ -86,6 +86,16 @@ class ManageDB(Controller):
     @Controller.block_manageDB()
     @staticmethod
     def Add_Image():
+        ime = Controller.Slike_FormVariables['Pacijent'].get()
+        opis = Controller.Slike_FormVariables['Opis'].get()
+        id_pacijent = Controller.Slike_FormVariables['ID'].cget('text')
+        id_pacijent = id_pacijent.split('/')[0]
+        print(id_pacijent)
+        print(ime)
+        print(opis)
+        if not (ime and opis):
+            Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Add Image',message='Please fill required Fields')
+            return
         def open_file_dialog():
             file_types = [  ('PNG files', '*.png'),
                             ('JPG files', '*.jpg'),
@@ -102,9 +112,52 @@ class ManageDB(Controller):
             return file_path
         
         file_path = open_file_dialog()
-        print(file_path)
-        SelectDB.refresh_tables(['Slike']) # plus vratiti panel sa tabelom i slikom
-        print(UserSession)
+        if file_path:
+            def show_messagebox_success():
+                Messagebox.show_info(parent=Controller.MessageBoxParent,title='Add Image',message='Add Image successfull\nImage added in Database and Google Drive')
+            def show_messagebox_fail():
+                Messagebox.show_info(parent=Controller.MessageBoxParent,
+                        title=f'Add Image failed', message=f'Image added in Database\nFailed to Add Image to Google Drive\nConnection problem')
+                
+            def execute_adding_media():
+                file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+
+                if file_path.lower().endswith(('.mp4', '.mov')):
+                    media = VideoFileClip(file_path)
+                    duration = media.duration
+                    width = media.size[0]
+                    height = media.size[1]
+                    
+                elif file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.heif', '.heic')):
+                    media = Image.open(file_path)
+                    width, height = media.size                    
+
+                mime = file_path.split('.')[-1]
+                FORMAT = MIME[mime.upper()]
+                dicty = {'id_pacijent':id_pacijent,
+                            'Naziv': '0_xxx_xxx.xx',
+                            'Opis':opis,
+                            'Format': FORMAT,
+                            'Veličina': file_size_mb,
+                            'width': width,
+                            'height': height,
+                            'pixels': width*height,
+                            'image_data': 'temp'}
+
+                id_slike = RHMH.execute_Insert('slike',**dicty)
+                Naziv = f'{id_slike}_{ime}_{opis}.{mime.lower()}'
+                
+                BLOB = Media.image_to_blob(file_path)
+                try:
+                    GOOGLE_ID = GoogleDrive.upload_NewFile_asBLOB(file_name=Naziv,GoogleDrive_folder=GD_Slike_folder, blob_data=BLOB, mime_type=FORMAT)
+                    RHMH.execute_Update('slike',('id_slike',id_slike),**{'Naziv':Naziv,'image_data':GOOGLE_ID})
+                    SelectDB.fill_PatientForm()
+                    Controller.ROOT.after(WAIT,show_messagebox_success)
+                except Exception:
+                    Controller.ROOT.after(WAIT,show_messagebox_fail)
+
+            threading.Thread(target=execute_adding_media).start()
+
 
     @Controller.block_manageDB()
     @staticmethod
@@ -277,7 +330,21 @@ class ManageDB(Controller):
     @Controller.block_manageDB()
     @staticmethod
     def Edit_Image():
-        pass
+        opis = Controller.Slike_FormVariables['Opis'].get()
+        id_slike = Controller.Slike_FormVariables['ID'].cget('text')
+        id_slike = id_slike.split('/')[1]
+
+        if not id_slike or not opis:
+            if not id_slike:
+                report = 'Please select Image'
+            elif not opis:
+                report = 'Please fill required Fields'
+            Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Edit Image Failed',message=report)
+            return
+
+        RHMH.execute_Update('slike',('id_slike',id_slike),**{'Opis':opis})
+        report = f'Editing successfull.\nImage id: {id_slike}\nNew Opis: {opis}'
+        Messagebox.show_info(parent=Controller.MessageBoxParent,title='Edit Image',message=report)
 
     @Controller.block_manageDB()
     @staticmethod
@@ -387,17 +454,24 @@ class ManageDB(Controller):
         confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete\n{selected_image_description}?', alert=True)
         if confirm == 'Yes':
-            GoogleID = RHMH.execute_selectquery(f'SELECT image_data from slike WHERE id_slike = {ID}')[0][0]
-            RHMH.execute_Delete('slike',[('id_slike',ID)])
-            print('DELETING ',GoogleID)
+            def show_messagebox_success():
+                Messagebox.show_info(parent=Controller.MessageBoxParent,
+                        title=f'Deleting successfull', message=f'Deleted {selected_image_description}\nfrom Database and Google Drive')
+            def show_messagebox_fail():
+                Messagebox.show_info(parent=Controller.MessageBoxParent,
+                        title=f'Deleting failed', message=f'Deleted {selected_image_description}\nfrom Database\nFailed to delete from Google Drive\nConnection problem')
 
+            def execute_delete_image():   
+                GoogleID = RHMH.execute_selectquery(f'SELECT image_data from slike WHERE id_slike = {ID}')[0][0]
+                RHMH.execute_Delete('slike',[('id_slike',ID)])
+                print('DELETING ',GoogleID)
+                try:
+                    GoogleDrive.delete_file(GoogleID)
+                    Controller.ROOT.after(WAIT,show_messagebox_success)
+                except Exception:
+                    Controller.ROOT.after(WAIT,show_messagebox_fail)
 
-            #GoogleDrive.delete_file(GoogleID)
-
-
-            Messagebox.show_info(parent=Controller.MessageBoxParent,
-                    title=f'Deleting successfull', message=f'Deleted {selected_image_description}\nfrom Database and Google Drive')
-            SelectDB.refresh_tables(table_names=['Slike'])
+            threading.Thread(target=execute_delete_image).start()
 
     @Controller.block_manageDB()
     @staticmethod

@@ -78,6 +78,7 @@ class Controller:
     Table_Slike:       tb.ttk.Treeview  = None
     TableSlike_Columns: tuple           = None
     Slike_HideTable:    Frame           = None
+    Slike_FormVariables               = dict()
 
     Table_MKB:         tb.ttk.Treeview  = None
     TableMKB_Columns:  tuple            = None
@@ -86,6 +87,7 @@ class Controller:
     Katalog_FormVariables               = dict()
 
     Graph_Canvas: Frame = None
+    graph_canvas: FigureCanvasTkAgg = None
     Graph_FormVariables = dict()
 
     Table_Logs:        tb.ttk.Treeview  = None
@@ -145,6 +147,7 @@ class Controller:
     @staticmethod
     def starting_application():
         try:
+            GoogleDrive.setup_connection()
             if Controller.Connected == False:
                 email = GoogleDrive.get_UserEmail()
                 GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
@@ -159,6 +162,11 @@ class Controller:
         except Exception as e:
             width = Controller.Top_Frame.winfo_width()
             Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
+
+    @staticmethod
+    def uploading_to_GoogleDrive() -> None:
+        GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
+        Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload successfull')
 
     @staticmethod
     def lose_focus(event):

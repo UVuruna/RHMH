@@ -64,9 +64,7 @@ class Database:
         returnquery = ''
 
         if column in self.dg_kategorija:
-            self.lock.release()
             kategorija = self.execute_selectquery(f'SELECT id_kategorija from kategorija WHERE Kategorija = "{column}"')[0][0]
-            self.lock.acquire()
             for sign,value in values.items():
                 if sign == 'EQUAL':
                     if len(value)>1:
@@ -80,9 +78,7 @@ class Database:
                         returnquery += f'( `MKB - šifra` {sign} "%{val}%" AND dijagnoza.id_kategorija = {kategorija} ) {operator} '
 
         elif column in self.dr_funkcija:
-            self.lock.release()
             funkcija = self.execute_selectquery(f'SELECT id_funkcija from funkcija WHERE Funkcija = "{column}"')[0][0]
-            self.lock.acquire()
             for sign,value in values.items():
                 if sign == 'EQUAL':
                     if len(value)>1:
@@ -117,13 +113,16 @@ class Database:
         returnquery = returnquery.rstrip(' AND ')
         return returnquery
          
-    def execute_selectquery(self,query):
+    def execute_selectquery(self,query,columns=False):
         with self.lock:
             try:
                 self.connect()
                 self.LoggingQuery = self.format_sql(query)
                 self.cursor.execute(query)
                 view = self.cursor.fetchall()
+                if columns is True:
+                    column_names = [description[0] for description in self.cursor.description]
+                    return view,column_names
                 return view
             finally:
                 self.close_connection()
@@ -151,6 +150,7 @@ class Database:
 
             self.LoggingQuery = self.format_sql(query)
             self.LastQuery[table] = query
+            print(self.LoggingQuery)
 
             self.connect()
             self.cursor.execute(query)
@@ -401,22 +401,30 @@ class Database:
                 self.close_connection()
                 #'''
 
-    def get_distinct_mkb(self,mkb=''):
+    def get_distinct_mkb(self,mkb=None,IDS=None):
+        mkb = '' if not mkb else mkb
         with self.lock:
             try:
                 self.connect()
                 query = f'SELECT DISTINCT SUBSTR(mkb10.`MKB - šifra`,1,{len(mkb)+1}) FROM dijagnoza JOIN mkb10 ON dijagnoza.id_dijagnoza = mkb10.id_dijagnoza'
                 if mkb:
                     query += f' WHERE `MKB - šifra` LIKE "{mkb}%"'
+                    if IDS:
+                        query += f' AND pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
+                else:
+                    if IDS:
+                        query += f' WHERE pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
+                    
                 query += ' GROUP BY `MKB - šifra`'
                 self.LoggingQuery = self.format_sql(query)
+
                 self.cursor.execute(query)
                 result = self.cursor.fetchall()
                 return [i[0] for i in result]
             finally:
                 self.close_connection()
     
-    def get_distinct_zaposleni(self,funkcija=None):
+    def get_distinct_zaposleni(self,funkcija=None,IDS=None):
         with self.lock:
             try:
                 self.connect()
@@ -425,11 +433,50 @@ class Database:
                 if funkcija:
                     query += 'JOIN funkcija ON operacija.id_funkcija = funkcija.id_funkcija '
                     query += f'WHERE funkcija.Funkcija = "{funkcija}" '
+                    if IDS:
+                        query += f' AND pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
+                else:
+                    if IDS:
+                        query += f' WHERE pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
                 query += 'GROUP BY Zaposleni'
                 self.LoggingQuery = self.format_sql(query)
+
                 self.cursor.execute(query)
                 result = self.cursor.fetchall()
                 return [i[0] for i in result]
+            finally:
+                self.close_connection()
+
+    def get_distinct_date(self,datetype,IDS=None):
+        with self.lock:
+            try:
+                self.connect()
+                query = f'SELECT DISTINCT strftime("{datetype}", `Datum Prijema`) FROM pacijent '
+                query += 'WHERE `Datum Prijema` IS NOT NULL'
+                if IDS:
+                    query += f' AND pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
+                self.LoggingQuery = self.format_sql(query)
+
+                self.cursor.execute(query)
+                result = self.cursor.fetchall()
+                result = [i[0] for i in result]
+                result.sort()
+                return result
+            finally:
+                self.close_connection()
+
+    def get_distinct(self,table,*args):
+        with self.lock:
+            try:
+                self.connect()
+                query = f'SELECT DISTINCT {', '.join([*args])} FROM {table}'
+                self.LoggingQuery = self.format_sql(query)
+
+                self.cursor.execute(query)
+                result = self.cursor.fetchall()
+                result = [' '.join(i) for i in result]
+                result.sort()
+                return result
             finally:
                 self.close_connection()
 
@@ -445,7 +492,7 @@ RHMH = Database(RHMH_dict['path'])
 SLIKE = Database('_internal/SLIKE.db')
 
 if __name__=='__main__':
-    RHMH = Database('RHMH.db')
+    RHMH = Database('_internal/RHMH.db')
     RHMH.start_RHMH_db()
     print(RHMH.pacijent)
     print(RHMH.slike)
@@ -463,3 +510,7 @@ if __name__=='__main__':
 
     table = RHMH.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')
     print(table)
+
+    print(RHMH.get_distinct('slike',*('Opis',)))
+
+    print(RHMH.execute_select('slike','*'))

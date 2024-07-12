@@ -310,19 +310,40 @@ class MainPanel:
 
         Controller.Slike_HideTable = tableparent_frame # Ovo je da moze da se radi hide table frejma
 
-        def ButtonsSlike_Create(parent, row, column, columnspan):
-            button_frame = Frame(parent, bd=2, relief=RAISED)
-            button_frame.grid(row=row, column=column, columnspan=columnspan, sticky=EW)
+        def ButtonsSlike_Create(parent, row, column):
+            button_frame = Frame(parent)
+            button_frame.grid(row=row, column=column, sticky=EW)
             button_frame.grid_columnconfigure(0, weight=1)
+
+            ID = tb.Label(button_frame, bootstyle=color_labeltext, text='', font=font_medium('normal'))
+            ID.grid(row=0, column=0, padx=padding_6, sticky=W)
+            Controller.Slike_FormVariables['ID'] = ID
 
             for i,butt in enumerate(Image_buttons):
                 button = ctk.CTkButton(button_frame, text=butt[0], width=buttonX, height=buttonY, corner_radius=10,
                                 font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                                 command=button_cmd[i])
-                button.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=E)
+                button.grid(row=0, column=i+1, padx=padding_6, pady=padding_6, sticky=E)
                 if butt[1]:
                     button.configure(fg_color=ThemeColors[butt[1]])
                 Controller.Buttons[butt[0].replace('\n',' ')] = button
+
+        def InputSlike_Create(parent, row, column):
+            input_frame = Frame(parent)
+            input_frame.grid(row=row, column=column, sticky=EW)
+            input_frame.grid_columnconfigure(1, weight=1)
+
+            for i,(txt,widget) in enumerate(zip(['Pacijent','Opis'],[tb.Entry,tb.Combobox])):
+                Controller.Slike_FormVariables[txt] = StringVar()
+                lbl = tb.Label(input_frame, anchor=CENTER, bootstyle=color_labeltext, text=txt, font=font_default)
+                lbl.grid(row=0, column=i*2, padx=padding_6, pady=padding_6, sticky=E)
+                ent = widget(input_frame, width=search_bigX, font=font_default, textvariable=Controller.Slike_FormVariables[txt])
+                ent.grid(row=0, column=i*2+1, padx=padding_6, pady=padding_6, sticky=EW)
+                if txt=='Opis':
+                    ent.configure(values=RHMH.get_distinct('slike',*('Opis',)))
+                else:
+                    ent.configure(state='readonly')
+                
 
         def TableSlike_Create(parent, row, column):
             nonlocal table
@@ -349,7 +370,12 @@ class MainPanel:
             pass
 
         # Table+ManageDB Left Side
-        ButtonsSlike_Create(parent=tableparent_frame, row=0, column=0, columnspan=2)
+        Slike_TopFrame = Frame(tableparent_frame, bd=2, relief=RAISED)
+        Slike_TopFrame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
+        Slike_TopFrame.grid_columnconfigure(0,weight=1)
+        ButtonsSlike_Create(parent=Slike_TopFrame, row=0, column=0)
+        InputSlike_Create(parent=Slike_TopFrame, row=1, column=0)
+
         TableSlike_Create(parent=tableparent_frame, row=1, column=0)
 
         # CANVAS Right Side
@@ -561,7 +587,7 @@ class MainPanel:
         Controller.Graph_FormVariables['Y'] = (combo,StringVar())
         combo.configure(textvariable=Controller.Graph_FormVariables['Y'][1])
         combo.grid(row=0, column=1, rowspan=2, padx=padding_3, pady=padding_3)
-        combo.bind("<<ComboboxSelected>>", lambda event, opt='Y': SelectDB.Graph_Options(event,opt))
+        combo.bind("<<ComboboxSelected>>", lambda event, opt='Y': SelectDB.graph_choice_analyze(event,opt))
 
         def create_X_combo(row,col):
             for i in range(col,col+3):
@@ -571,14 +597,14 @@ class MainPanel:
                 combo.configure(textvariable=Controller.Graph_FormVariables[name][1])
 
                 combo.grid(row=row, column=i, padx=padding_3, pady=padding_3,sticky=EW)
-                combo.bind("<<ComboboxSelected>>", lambda event, opt=name: SelectDB.Graph_Options(event,opt))
+                combo.bind("<<ComboboxSelected>>", lambda event, opt=name: SelectDB.graph_choice_analyze(event,opt))
                 combo.grid_remove()
     
         def add_button(col):
             color_add, darker_add = Media.label_ImageLoad(IMAGES['Add'])
             add = tb.Label(optionsframe, image=color_add)
             add.grid(row=0, column=col, sticky=W)
-            add.bind('<ButtonRelease-1>', SelectDB.graph_add_button)
+            add.bind('<ButtonRelease-1>', SelectDB.graph_activating_X2)
             add.bind('<Enter>', lambda event,img=darker_add: Media.hover_label_button(event,img))
             add.bind('<Leave>', lambda event,img=color_add: Media.hover_label_button(event,img))
             Controller.Graph_FormVariables['Add'] = add
