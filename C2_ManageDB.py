@@ -94,6 +94,8 @@ class ManageDB(Controller):
         def message_success():
             report = 'Add Image successfull\nImage added to Database and Google Drive'
             Messagebox.show_info(parent=Controller.MessageBoxParent,title='Add Image',message=report)
+            SelectDB.refresh_tables(['Slike'])
+            SelectDB.fill_PatientForm()
         def message_fail():
             report = 'Image Data added to Database\nFailed to Add Image to Google Drive\nConnection problem'
             Messagebox.show_warning(parent=Controller.MessageBoxParent,
@@ -157,7 +159,6 @@ class ManageDB(Controller):
                 try:
                     GOOGLE_ID = GoogleDrive.upload_NewFile_asBLOB(file_name=Naziv,GoogleDrive_folder=GD_Slike_folder, blob_data=BLOB, mime_type=FORMAT)
                     RHMH.execute_Update('slike',('id_slike',id_slike),**{'Naziv':Naziv,'image_data':GOOGLE_ID})
-                    SelectDB.fill_PatientForm()
                     Controller.ROOT.after(WAIT,message_success)
                 except Exception:
                     Controller.ROOT.after(WAIT,message_fail)
@@ -180,7 +181,7 @@ class ManageDB(Controller):
             Messagebox.show_info(parent=Controller.MessageBoxParent,
                     title=f'New MKB added', message=report[:-1], alert=True)
             
-            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
+            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
             ManageDB.LoggingData(query_type='Add MKB',loggingdata=report[:-1])
             SelectDB.refresh_tables(['Katalog'])
         else:
@@ -198,7 +199,7 @@ class ManageDB(Controller):
             Messagebox.show_info(parent=Controller.MessageBoxParent,
                     title=f'New Employee added', message=report, alert=True)
             
-            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
+            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
             ManageDB.LoggingData(query_type='Add Employee',loggingdata=report)
             SelectDB.refresh_tables(['Katalog'])
         else:
@@ -351,6 +352,8 @@ class ManageDB(Controller):
         RHMH.execute_Update('slike',('id_slike',id_slike),**{'Opis':opis})
         report = f'Editing successfull.\nImage id: {id_slike}\nNew Opis: {opis}'
         Messagebox.show_info(parent=Controller.MessageBoxParent,title='Edit Image',message=report)
+        SelectDB.refresh_tables(['Slike'])
+        SelectDB.fill_PatientForm()
 
     @Controller.block_manageDB()
     @staticmethod
@@ -381,7 +384,7 @@ class ManageDB(Controller):
                             Messagebox.show_info(parent=Controller.MessageBoxParent,
                                     title=f'Updating successfull', message=report[:-1])
                             
-                            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
+                            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
                             ManageDB.LoggingData(query_type='Update MKB',loggingdata=report[:-1])
                             SelectDB.refresh_tables(table_names=['Katalog'])
                         return
@@ -414,7 +417,7 @@ class ManageDB(Controller):
                             Messagebox.show_info(parent=Controller.MessageBoxParent,
                                     title=f'Updating successfull', message=report[:-1])
                             
-                            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
+                            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
                             ManageDB.LoggingData(query_type='Update Employee',loggingdata=report[:-1])
                             SelectDB.refresh_tables(table_names=['Katalog'])
                         return
@@ -460,12 +463,16 @@ class ManageDB(Controller):
         confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
                 title=f'Deleting...', message=f'Are you sure you want to delete\n{selected_image_description}?', alert=True)
         if confirm == 'Yes':
-            def show_messagebox_success():
+            def message_success():
                 Messagebox.show_info(parent=Controller.MessageBoxParent,
                         title=f'Deleting successfull', message=f'Deleted {selected_image_description}\nfrom Database and Google Drive')
-            def show_messagebox_fail():
+                SelectDB.refresh_tables(['Slike'])
+                SelectDB.fill_PatientForm()
+            def message_fail():
                 Messagebox.show_info(parent=Controller.MessageBoxParent,
                         title=f'Deleting failed', message=f'Deleted {selected_image_description}\nfrom Database\nFailed to delete from Google Drive\nConnection problem')
+                SelectDB.refresh_tables(['Slike'])
+                SelectDB.fill_PatientForm()
 
             def execute_delete_image():   
                 GoogleID = RHMH.execute_selectquery(f'SELECT image_data from slike WHERE id_slike = {ID}')[0][0]
@@ -473,9 +480,9 @@ class ManageDB(Controller):
                 print('DELETING ',GoogleID)
                 try:
                     GoogleDrive.delete_file(GoogleID)
-                    Controller.ROOT.after(WAIT,show_messagebox_success)
+                    Controller.ROOT.after(WAIT,message_success)
                 except Exception:
-                    Controller.ROOT.after(WAIT,show_messagebox_fail)
+                    Controller.ROOT.after(WAIT,message_fail)
 
             threading.Thread(target=execute_delete_image).start()
 
@@ -494,7 +501,7 @@ class ManageDB(Controller):
             logging = f' - MKB:\n{mkb}\n'
             logging += f'\n - Opis:\n{opis}'
 
-            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
+            Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
             ManageDB.LoggingData(query_type='Delete MKB',loggingdata=logging)
             SelectDB.refresh_tables(table_names=['Katalog'])
     
@@ -509,7 +516,7 @@ class ManageDB(Controller):
             Messagebox.show_info(parent=Controller.MessageBoxParent,
                     title=f'Deleting successfull', message=f'Deleted {name}')
             
-            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
+            Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
             ManageDB.LoggingData(query_type='Delete Employee',loggingdata=f' - Ime:\n{name}')
             SelectDB.refresh_tables(table_names=['Katalog'])
 
@@ -712,6 +719,7 @@ class ManageDB(Controller):
     @staticmethod
     def validate_zaposleni_Text(event) -> bool:
         widget:Text = event.widget
+        parent:Frame = widget.master
         value = widget.get('1.0', END)
         if ',' in value:
             zaposleni = value.split(',')
@@ -719,8 +727,14 @@ class ManageDB(Controller):
                 fix = i.strip()
                 if fix not in Controller.Zaposleni_validation_LIST:
                     Controller.Valid_Alternative = False
+                    parent.config(highlightbackground=ThemeColors['danger'], highlightcolor=ThemeColors['danger'])
+            else:
+                parent.config(highlightbackground=ThemeColors['selectbg'], highlightcolor=ThemeColors['primary'])
         elif value.strip() and not (value.strip() in Controller.Zaposleni_validation_LIST):
             Controller.Valid_Alternative = False
+            parent.config(highlightbackground=ThemeColors['danger'], highlightcolor=ThemeColors['danger'])
+        else:
+            parent.config(highlightbackground=ThemeColors['selectbg'], highlightcolor=ThemeColors['primary'])
 
     @staticmethod
     def export_table(method:callable):

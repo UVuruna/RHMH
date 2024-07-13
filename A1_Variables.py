@@ -1,69 +1,59 @@
 import time
 TIME_START = time.time_ns()
+from datetime import datetime, date
 
 from tkinter import *
+from tkinter import simpledialog,messagebox
+from tkinter.font import nametofont
+from tkinter import filedialog
+import ttkbootstrap as tb
+from ttkbootstrap import widgets
+from ttkbootstrap.dialogs.dialogs import Messagebox
+from ttkbootstrap.style import Colors
+import customtkinter as ctk
 
-# Decorators
-import cpuinfo
-import psutil
-from datetime import datetime, date
+import sqlite3
+import sqlparse
+
+import os
+import threading
+import queue
+import shutil
+import json
+import inspect
 import functools
 import traceback
-
-# GoogleDrive
-import httplib2
 import io
-import os
+import re
+import subprocess
+
+import psutil
+import GPUtil
+import cpuinfo
+
 #import ffmpeg
+import httplib2
 import pickle
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
 
-# Media
-import GPUtil
-from GPUtil import GPU
-
-from PIL import Image, ImageTk
-import cv2
-import pillow_heif
-import subprocess
 import easyocr
+import pandas as pd
 import numpy as np
-
-# Graph
 from matplotlib.patches import Rectangle
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.font_manager import FontProperties, findSystemFonts
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import numpy as np
 
-# SQLite
+from PIL import Image, ImageTk
+import pillow_heif
+import cv2
 from moviepy.editor import VideoFileClip
-import sqlite3
-import sqlparse
-from tkinter import simpledialog,messagebox
-import ttkbootstrap as tb
 
-# DBMS
-import pandas as pd
-from tkinter import filedialog
-from ttkbootstrap import widgets
-from ttkbootstrap.dialogs.dialogs import Messagebox
-import customtkinter as ctk
-import queue
-import shutil
-
-# Viewer
-import json
-import inspect
-from tkinter.font import nametofont
-import threading
-from ttkbootstrap.style import Colors
 print(f"IMPORTINT time: {(time.time_ns()-TIME_START)/10**9:,.2f} s")
 
 directory = os.path.dirname(os.path.abspath(__file__))

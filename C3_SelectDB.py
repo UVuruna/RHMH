@@ -55,18 +55,14 @@ class SelectDB(Controller):
             for table_widget,db_name in zip(TABLE,tables_db_names[table]):
                 table_widget:tb.ttk.Treeview
                 lastquery = RHMH.LastQuery[db_name]
+                print(lastquery)
                 if lastquery:
                     view = RHMH.execute_selectquery(lastquery)
-
                     for item in table_widget.get_children():
                         table_widget.delete(item)
+
                     if view and len(view)!=0:
-                        if table in ['Pacijenti','Slike']:
-                            print('refreshing')
-                            tables_fill_methods[table](view)
-                        else:
-                            tables_fill_methods[table](view,table_widget)
-        print('done')
+                        tables_fill_methods[table](view,table_widget)
 
     @staticmethod
     def selectall_tables(event):
@@ -602,7 +598,7 @@ class SelectDB(Controller):
                 next_widget.grid()
 
     @staticmethod
-    def fill_TablePacijenti(view):
+    def fill_TablePacijenti(view,table=None):
         Controller.MainTable_IDS.clear()
         for i, row in enumerate(view):
             # FROM RHMH Date Format TO Table Date Format
@@ -620,7 +616,7 @@ class SelectDB(Controller):
             table.insert('', END, values=formatted_row)
 
     @staticmethod
-    def fill_TableSlike(view):
+    def fill_TableSlike(view,table=None):
         check = lambda x: True
         if Controller.Buttons['Filter Main Table'][1].get():
             check = lambda col: col in Controller.MainTable_IDS
@@ -648,7 +644,7 @@ class SelectDB(Controller):
                 SelectDB.fill_TablePacijenti(view)
 
         elif TAB == 'Slike':
-            view = RHMH.execute_select('slike',*(Controller.TableSlike_Columns[1:]))
+            view = RHMH.execute_select(True,'slike',*(Controller.TableSlike_Columns[1:]))
 
             for item in Controller.Table_Slike.get_children():
                 Controller.Table_Slike.delete(item)
@@ -656,14 +652,14 @@ class SelectDB(Controller):
                 SelectDB.fill_TableSlike(view)
 
         elif TAB == 'Katalog':
-            view = RHMH.execute_select('mkb10',*(Controller.TableMKB_Columns[1:]))
+            view = RHMH.execute_select(True,'mkb10',*(Controller.TableMKB_Columns[1:]))
    
             for item in Controller.Table_MKB.get_children():
                 Controller.Table_MKB.delete(item)
             if view and len(view)!=0:
                 SelectDB.fill_Tables_Other(view,Controller.Table_MKB)
 
-            view = RHMH.execute_select('zaposleni',*(Controller.TableZaposleni_Columns[1:]))
+            view = RHMH.execute_select(True,'zaposleni',*(Controller.TableZaposleni_Columns[1:]))
    
             for item in Controller.Table_Zaposleni.get_children():
                 Controller.Table_Zaposleni.delete(item)
@@ -671,7 +667,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Zaposleni)
 
         elif TAB == 'Logs':
-            view = RHMH.execute_select('logs',*(Controller.TableLogs_Columns[1:]))
+            view = RHMH.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]))
  
             for item in Controller.Table_Logs.get_children():
                 Controller.Table_Logs.delete(item)
@@ -679,7 +675,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Logs)
         
         elif TAB == 'Session':
-            view = RHMH.execute_select('session',*(Controller.TableSession_Columns[1:]))
+            view = RHMH.execute_select(True,'session',*(Controller.TableSession_Columns[1:]))
 
             for item in Controller.Table_Session.get_children():
                 Controller.Table_Session.delete(item)
@@ -755,7 +751,7 @@ class SelectDB(Controller):
                 SelectDB.fill_TablePacijenti(view)
 
         elif TAB == 'Slike':
-            view = RHMH.execute_select('slike',*(Controller.TableSlike_Columns[1:]),**searching)
+            view = RHMH.execute_select(True,'slike',*(Controller.TableSlike_Columns[1:]),**searching)
   
             for item in Controller.Table_Slike.get_children():
                 Controller.Table_Slike.delete(item)
@@ -763,7 +759,7 @@ class SelectDB(Controller):
                 SelectDB.fill_TableSlike(view)
 
         elif TAB == 'Katalog':
-            view = RHMH.execute_select('mkb10',*(Controller.TableMKB_Columns[1:]),**searching)
+            view = RHMH.execute_select(True,'mkb10',*(Controller.TableMKB_Columns[1:]),**searching)
 
             for item in Controller.Table_MKB.get_children():
                 Controller.Table_MKB.delete(item)
@@ -771,7 +767,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_MKB)
 
         elif TAB == 'Logs':
-            view = RHMH.execute_select('logs',*(Controller.TableLogs_Columns[1:]),**searching)
+            view = RHMH.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]),**searching)
  
             for item in Controller.Table_Logs.get_children():
                 Controller.Table_Logs.delete(item)
@@ -779,7 +775,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Logs)
 
         elif TAB == 'Session':
-            view = RHMH.execute_select('session',*(Controller.TableSession_Columns[1:]),**searching)
+            view = RHMH.execute_select(True,'session',*(Controller.TableSession_Columns[1:]),**searching)
 
             for item in Controller.Table_Session.get_children():
                 Controller.Table_Session.delete(item)

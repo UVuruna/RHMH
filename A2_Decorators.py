@@ -84,10 +84,10 @@ class PC:
     def get_cpu_info():
         cpu = cpuinfo.get_cpu_info() # OVO JE SPORO JAKO oko 1.5 sec ali thread ce resiti stvar
         cpu_info = {
-            "Processor Name": cpu['brand_raw'],
-            "Physical Cores": psutil.cpu_count(logical=False),
-            "Total Cores": psutil.cpu_count(logical=True),
-            "Frequency": f"{psutil.cpu_freq().max:.0f} Mhz",
+            'Processor Name': cpu['brand_raw'],
+            'Physical Cores': psutil.cpu_count(logical=False),
+            'Total Cores': psutil.cpu_count(logical=True),
+            'Frequency': f'{psutil.cpu_freq().max:.0f} Mhz',
             }
         return cpu_info
 
@@ -98,12 +98,11 @@ class PC:
         if os.name == 'nt':
             gpus = GPUtil.getGPUs()
             if not gpus:
-                return "No GPU found."
-            gpu:GPU
+                return 'No GPU found.'
             for gpu in gpus:
                 gpu_info = {
-                "GPU Name": gpu.name,
-                "VRAM": f'{gpu.memoryTotal:,.0f} MB'
+                'GPU Name': gpu.name,
+                'VRAM': f'{gpu.memoryTotal:,.0f} MB'
                 }
             return gpu_info
         
@@ -114,18 +113,18 @@ class PC:
             
             if match:
                 gpu_name = match.group(1).strip()
-                vram = match.group(2).strip()*1024 + " MB"
+                vram = f'{int(match.group(2).strip())*1024:,.0f} MB'
                 gpu_info = {
-                    "GPU Name": gpu_name,
-                    "VRAM": vram}
+                    'GPU Name': gpu_name,
+                    'VRAM': vram}
             else:
-                return "No GPU found."
+                return 'No GPU found.'
 
     @staticmethod
     def get_ram_info():
         svmem = psutil.virtual_memory()
         ram_info = {
-            "Total RAM": f"{svmem.total / (1024 ** 3):.2f} GB"
+            'Total RAM': f'{svmem.total / (1024 ** 2):,.0f} MB'
             }
         return ram_info
 

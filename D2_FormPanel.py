@@ -229,12 +229,18 @@ class FormPanel:
                     Controller.Validation_Widgets[form_id].append(ent)
             elif data[1] == 'Text':
                 height = 3 if txt=='Dg Latinski' else 2
-                ent = tb.Text(parent, width=data[2], height=height, font=font_default)
-                Controller.Patient_FormVariables[table][txt] = ent
+                frame = Frame(parent, highlightbackground=ThemeColors['selectbg'], highlightcolor=ThemeColors['primary'], highlightthickness=1)
+                frame.grid(row=i+n, column=2, columnspan=2, padx=padding_3_12, pady=padding_3, sticky='nsw')
+
+                ent = tb.Text(frame, width=data[2], height=height, font=font_default)
+                ent.pack(fill=BOTH, expand=True)
+
                 if txt in RHMH.dr_funkcija:
                     ent.bind('<FocusIn>', ManageDB.validate_zaposleni_Text)
                     ent.bind('<FocusOut>', ManageDB.validate_zaposleni_Text)
                     Controller.Validation_Widgets[form_id].append(ent)
+                Controller.Patient_FormVariables[table][txt] = ent
+                ent = None
             elif data[1] == 'DateEntry':
                 ent = widgets.DateEntry(parent, width=data[2], dateformat='%d-%b-%Y', firstweekday=0)
                 ent.entry.delete(0, END)

@@ -1,6 +1,7 @@
 __pycache__/
 _internal/
 .vscode/
+required_programs/
 
 www_test.py
 www_test2.py

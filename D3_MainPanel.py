@@ -441,7 +441,7 @@ class MainPanel:
         COLUMN += 1 # Right Part -- (1,-1) je za row,col za frejm ispod tabele
         tableZapo = Create_One_Side( zaposleniside['bindmethods'],
                                     *[Katalog_Entry['zaposleni'],zaposleniside['buttons']])
-        Controller.Table_Names[tabname] = (tableMKB,tableZapo)
+        Controller.Table_Names[tabname] = [tableMKB,tableZapo]
         return tableMKB,tableZapo
 
     @staticmethod

@@ -127,8 +127,9 @@ class Database:
             finally:
                 self.close_connection()
 
-    def execute_select(self, table, *args, **kwargs):
+    def execute_select(self, log:bool, table:str, *args, **kwargs):
         try:
+            print(self.LastQuery[table])
             self.lock.acquire()
             select_values = ','.join(f'`{a}`' if ' ' in a else a for a in args)
             where_pairs = ''
@@ -149,8 +150,8 @@ class Database:
                 self.PatientQuery = query
 
             self.LoggingQuery = self.format_sql(query)
-            self.LastQuery[table] = query
-            print(self.LoggingQuery)
+            if log is True:
+                self.LastQuery[table] = query
 
             self.connect()
             self.cursor.execute(query)

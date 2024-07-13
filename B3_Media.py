@@ -5,6 +5,8 @@ pillow_heif.register_heif_opener()
 class Media:
     Downloading = False
     ReaderSetting = easyocr.Reader(['rs_latin','en'])
+    if os.name == 'posix' and os.uname().sysname == 'Darwin':  # macOS
+        os.environ['PYTORCH_MPS_HIGH_WATERMARK_RATIO'] = '0.8'
 
     OperacionaChoice = {
         'Datum Operacije': None,
@@ -39,14 +41,12 @@ class Media:
 
     @staticmethod
     def get_gpu_vram():
-        gpus = GPUtil.getGPUs()
-        if not gpus:
+        try:
+            return int((UserSession['PC']['GPU']['VRAM'].replace(',','')).rstrip(' MB'))
+        except KeyError:
+            return int((UserSession['PC']['RAM'].replace(',','')).rstrip(' MB'))
+        except Exception:
             return 4096
-        gpu_total_memory = 0
-        gpu:GPU
-        for gpu in gpus:
-            gpu_total_memory += gpu.memoryTotal
-        return int(gpu_total_memory)
 
     @staticmethod
     def is_date(date_string):
@@ -520,31 +520,4 @@ class Media:
             #'''
 
 if __name__=='__main__':
-    import torch
-    import psutil
-    print('CUDA Available:', torch.cuda.is_available())
-    print('CUDA Version:', torch.version.cuda)
-    print('CUDA VRAM:',torch.cuda.mem_get_info()[1])
-    print('PyTorch Version:', torch.__version__)
-    print('Device Name:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No CUDA Device')
-    free_memory = psutil.virtual_memory().available // 1024 ** 2
-    print(free_memory)
-
-    root = Tk()
-    style = tb.Style(theme=THEME)
-
-    # CUVA u dicty BOJE iz TEME
-    for color_label in Colors.label_iter():
-        color = style.colors.get(color_label)
-        ThemeColors[color_label] = color
-
-    Media.initialize()
-    Media.ImageReader_SettingUp(root)
-    OUTPUT = {}
-    for col,var in Media.OperacionaChoice.items():
-        var:IntVar
-        if var.get() == True:
-            OUTPUT[col] = None if col in ['Datum Operacije','Dg Latinski'] else list()
-    print(Media.OperacionaChoice)
-    print(OUTPUT)
-    root.mainloop()
+    pass

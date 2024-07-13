@@ -22,18 +22,21 @@ class GUI:
         RHMH.start_RHMH_db()
         threading.Thread(target=GUI.get_PC_info).start()
         
-        Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select('mkb10',*('MKB - šifra',))]
-        Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select('zaposleni',*('Zaposleni',))]
+        Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
+        Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
         
         Controller.ROOT = GUI.root
         TopPanel.initialize(GUI.root)
         FormPanel.initialize(GUI.root)
         MainPanel.initialize(GUI.root)
-        Media.initialize()
         GUI.Buttons_SpamStopper()
 
         
         GUI.menu = GUI.RootMenu_Create()
+        if os.name == 'posix' and os.uname().sysname == 'Darwin':  # macOS
+            GUI.root.bind('<Button-2>', GUI.do_popup)
+        else:
+            GUI.root.bind('<Button-3>', GUI.do_popup)
         GUI.root.bind('<Button-3>', GUI.do_popup)
         GUI.root.bind('<Control-a>', SelectDB.selectall_tables)
         GUI.root.bind('<Command-a>', SelectDB.selectall_tables)
@@ -58,6 +61,7 @@ class GUI:
         UserSession['PC']['CPU'] = cpu
         UserSession['PC']['GPU'] = gpu
         UserSession['PC']['RAM'] = ram
+        Media.initialize()
 
     @staticmethod
     def Buttons_SpamStopper() -> None:
@@ -81,7 +85,7 @@ class GUI:
             threading.Thread(target=Controller.uploading_to_GoogleDrive).start()
             GUI.root.destroy()
         if response == 'Exit':
-            print_dict(UserSession)
+            #print_dict(UserSession)
             GUI.root.destroy()
 
     @staticmethod
