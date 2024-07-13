@@ -3,7 +3,7 @@ from A1_Variables import *
 pillow_heif.register_heif_opener()
 
 class Media:
-
+    Downloading = False
     ReaderSetting = easyocr.Reader(['rs_latin','en'])
 
     OperacionaChoice = {
@@ -110,7 +110,10 @@ class Media:
         top.title(f'{title}...')
         top.grid_columnconfigure(0, weight=1)
         top.resizable(False,False)
-        top.attributes('-toolwindow', True)
+        if os.name == 'nt':  # Windows
+            top.attributes('-toolwindow', True)
+        else:  # macOS/Linux
+            top.attributes('-type', 'dialog')
         
         tb.Label(top, text=f'{title} selected Images', anchor=CENTER, justify=CENTER, font=font_medium()).grid(
             row=0, column=0, columnspan=2, pady=24, sticky=NSEW)
@@ -140,7 +143,10 @@ class Media:
         top.title('Scroll Window')
         top.grid_columnconfigure(0, weight=1)
         top.resizable(False,False)
-        top.attributes('-toolwindow', True)
+        if os.name == 'nt':  # Windows
+            top.attributes('-toolwindow', True)
+        else:  # macOS/Linux
+            top.attributes('-type', 'dialog')
 
         titletxt = ' - Choose your settings for new AI Reading of document.\n'+\
                     ' - You can save your settings as default values for future readings.'
@@ -403,8 +409,11 @@ class Media:
     def play_video(event,video_data):
         if os.name == 'nt':  # For Windows
             os.startfile(os.path.abspath(video_data))
-        else:
-            subprocess.call(('xdg-open', os.path.abspath(video_data)))
+        elif os.name == 'posix':  # For macOS and Linux
+            if os.uname().sysname == 'Darwin':  # macOS
+                subprocess.call(['open', os.path.abspath(video_data)])
+            else:  # Linux
+                subprocess.call(['xdg-open', os.path.abspath(video_data)])
 
     @staticmethod
     def open_image(event,image_data):
@@ -421,8 +430,11 @@ class Media:
 
         if os.name == 'nt':  # For Windows
             os.startfile(os.path.abspath(image_file))
-        else:
-            subprocess.call(('xdg-open', os.path.abspath(image_file)))
+        elif os.name == 'posix':  # For macOS and Linux
+            if os.uname().sysname == 'Darwin':  # macOS
+                subprocess.call(['open', os.path.abspath(image_file)])
+            else:  # Linux
+                subprocess.call(['xdg-open', os.path.abspath(image_file)])
 
     @staticmethod
     def make_cropped_part():

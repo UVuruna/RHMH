@@ -26,11 +26,7 @@ class TopPanel:
 
         Controller.Reconnect_Button = ctk.CTkButton(root, text='Connect', width=buttonX,height=buttonY//2, corner_radius=12, font=font_medium(),
                                     fg_color=ThemeColors['warning'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                                    command=TopPanel.reconecting)
-
-    @staticmethod    
-    def reconecting():
-        Controller.starting_application()
+                                    command=Controller.starting_application)
 
     @staticmethod
     def adjust_title_window(event):

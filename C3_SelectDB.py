@@ -400,12 +400,14 @@ class SelectDB(Controller):
                             
 
         X2Groups = X_groups[1] if len(X_groups)==2 else None
-        widthinch = Controller.Graph_Canvas.winfo_width()//100-1
-        heightinch = Controller.Graph_Canvas.winfo_height()//100-1
+        widthinch = Controller.Graph_Canvas.winfo_width()/100
+        heightinch = Controller.Graph_Canvas.winfo_height()/100
+
         TITLE = f'{Y} grupisan po {X1[0]}'
         if X2:
             TITLE += f' i {X2[0]}'
-        Graph.initialize(width=widthinch, height=heightinch, X=X_groups[0], Y=VIEW, title=TITLE, X_label=X1[0], Y_label=Y, X2=X2Groups)
+        Graph.initialize(width=widthinch, height=heightinch,
+                         X=X_groups[0], Y=VIEW, title=TITLE, X_label=X1[0], Y_label=Y, X2=X2Groups)
         
         if len(X_groups)==2:
             if PLOT == 'bars':
@@ -429,9 +431,9 @@ class SelectDB(Controller):
         Controller.graph_canvas.get_tk_widget().config(width=Controller.Graph_Canvas.winfo_width(),
                                                        height=Controller.Graph_Canvas.winfo_height())
         Controller.graph_canvas.draw()
+        Controller.graph_canvas.get_tk_widget().bind('<Double-1>',Graph.save_and_open_graph_figure)
         Controller.graph_canvas.get_tk_widget().pack(fill=BOTH, expand=True)
 
-       
     @staticmethod
     def graph_activating_X2(event):
         widget:tb.Combobox = Controller.Graph_FormVariables['X2-1'][0]
@@ -576,7 +578,7 @@ class SelectDB(Controller):
                 finishing_setup(option)
             
         elif option in ['X1-3','X2-3']:
-            combo2:tb.Combobox = Controller.Graph_FormVariables['X1-2'][1]
+            combo2:tb.Combobox = Controller.Graph_FormVariables[f'{option[:2]}-2'][1]
             if combo2.get():
                 finishing_setup(option)
 
@@ -1005,6 +1007,9 @@ class SelectDB(Controller):
 
     @staticmethod
     def Show_Image(event=None,ID=False,BLOB=False):
+        print('usao u show image')
+        if Media.Downloading is True:
+            return
         if event:
             shift_pressed = event.state & 0x1
             ctrl_pressed = event.state & 0x4
@@ -1020,10 +1025,13 @@ class SelectDB(Controller):
                     Controller.Slike_FormVariables['ID'].configure(text=f'{id_pacijent}/{ID}')
                     Controller.Slike_FormVariables['Opis'].set(Opis)
                     Controller.Slike_FormVariables['Pacijent'].set(Pacijent)
-                    print(Controller.Slike_FormVariables['ID'].cget('text'))
+
+                    media_type,google_ID = RHMH.execute_selectquery(f'SELECT Format,image_data from slike WHERE id_slike={ID}')[0]
                 except IndexError:
                     return
-            media_type,google_ID = RHMH.execute_selectquery(f'SELECT Format,image_data from slike WHERE id_slike={ID}')[0]
+            else:
+                media_type,google_ID = RHMH.execute_selectquery(f'SELECT Format,image_data from slike WHERE id_slike={ID}')[0]
+            
 
         events = ['<Button-1>','<Double-1>','<MouseWheel>','<Button-4>','<Button-5>','<ButtonPress-1','<B1-Motion>']
         for event in events:
@@ -1082,18 +1090,19 @@ class SelectDB(Controller):
 
         if blob_data is False:
             queue_get_blob = queue.Queue()
-            def get_image_fromGD(GoogleID,queue):
-                image_blob = GoogleDrive.download_BLOB(GoogleID)
-                queue.put(image_blob)
-            thread = threading.Thread(target=get_image_fromGD,args=(ID,queue_get_blob))
+            thread = threading.Thread(target=Controller.get_image_fromGD,args=(ID,queue_get_blob))
             thread.start()
             
             def check_queue():
                 try:
                     Media.Blob_Data = queue_get_blob.get_nowait()
                     showing_media()
+                    Media.Downloading = False
                 except queue.Empty:
-                    Controller.ROOT.after(50,check_queue)
+                    Controller.ROOT.after(50,check_queue) 
+                except Exception:
+                    Media.Downloading = False
+                    Controller.ROOT.after(WAIT,Controller.message_download_fail)
             check_queue()
         else:
             Media.Blob_Data = blob_data

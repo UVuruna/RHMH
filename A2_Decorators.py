@@ -93,17 +93,33 @@ class PC:
 
     @staticmethod
     def get_gpu_info():
-        gpus = GPUtil.getGPUs()
-        if not gpus:
-            return "No GPU found."
         gpu_info = dict()
-        gpu:GPU
-        for gpu in gpus:
-            gpu_info[gpu.id] = {
-            "GPU Name": gpu.name,
-            "VRAM": f'{gpu.memoryTotal:,.0f} MB'
-            }
-        return gpu_info
+
+        if os.name == 'nt':
+            gpus = GPUtil.getGPUs()
+            if not gpus:
+                return "No GPU found."
+            gpu:GPU
+            for gpu in gpus:
+                gpu_info = {
+                "GPU Name": gpu.name,
+                "VRAM": f'{gpu.memoryTotal:,.0f} MB'
+                }
+            return gpu_info
+        
+        elif os.name == 'posix':  # macOS
+            gpu_info_str = subprocess.check_output(['system_profiler', 'SPDisplaysDataType'], text=True)
+            pattern = re.compile(r'Chipset Model:\s+(.*?)\n.*?VRAM \(Total\):\s+(\d+)\s+GB', re.DOTALL)
+            match = pattern.search(gpu_info_str)
+            
+            if match:
+                gpu_name = match.group(1).strip()
+                vram = match.group(2).strip()*1024 + " MB"
+                gpu_info = {
+                    "GPU Name": gpu_name,
+                    "VRAM": vram}
+            else:
+                return "No GPU found."
 
     @staticmethod
     def get_ram_info():

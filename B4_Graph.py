@@ -11,16 +11,17 @@ class Graph:
         }
 
     Y_options = {
-        'Broj Pacijenata'                     :  1 ,
-        'Broj dana Hospitalizovan'            : '(julianday(`Datum Otpusta`) - julianday(`Datum Prijema`))' ,
-        'Broj dana od Prijema do Operacije'   : '(julianday(`Datum Operacije`) - julianday(`Datum Prijema`))'  ,
-        'Broj dana od Operacije do Otpusta'   : '(julianday(`Datum Otpusta`) - julianday(`Datum Operacije`))' }
+        'Broj Pacijenata'                     : ( 1, 'Datum Prijema') ,
+        'Broj Operacija'                      : ( 1, 'Datum Operacije') ,
+        'Broj dana Hospitalizovan'            : ('(julianday(`Datum Otpusta`) - julianday(`Datum Prijema`))', 'Datum Prijema') ,
+        'Broj dana od Prijema do Operacije'   : ('(julianday(`Datum Operacije`) - julianday(`Datum Prijema`))', 'Datum Prijema')  ,
+        'Broj dana od Operacije do Otpusta'   : ('(julianday(`Datum Otpusta`) - julianday(`Datum Operacije`))', 'Datum Operacije') }
 
     X_options = {
-        'Godina' :          'strftime("%Y", `Datum Prijema`) as Godina, ' ,
-        'Mesec' :           'strftime("%m", `Datum Prijema`) as Mesec, ' ,
-        'Dan u Sedmici' :   'strftime("%w", `Datum Prijema`) as DanuSedmici, ' ,
-        'Dan' :             'strftime("%d", `Datum Prijema`) as Dan, ' ,
+        'Godina' :          '' ,
+        'Mesec' :           '' ,
+        'Dan u Sedmici' :   '' ,
+        'Dan' :             '' ,
         'Trauma' : [ ['Trauma','Ostalo'], ['`MKB - šifra` LIKE "S%"' , '`MKB - šifra` NOT LIKE "S%"'] ] ,
         'Pol' :    [ ['Muško','Žensko'],  ['Pol = "Muško"' , 'Pol = "Žensko"'] ] ,
         'MKB Grupe' :       '' ,
@@ -84,6 +85,16 @@ class Graph:
         Graph.plot.tick_params(axis='y', colors=ThemeColors[color_titletext], labelsize=F_SIZE)
 
     @staticmethod
+    def save_and_open_graph_figure(event):
+        image_location = '_internal/temporary/temp_image.png'
+        Graph.figure.savefig(image_location)
+        
+        if os.name == 'nt':  # For Windows
+            os.startfile(os.path.abspath(image_location))
+        else:
+            subprocess.call(('xdg-open', os.path.abspath(image_location)))
+
+    @staticmethod
     def create_1D_bar( colors=0, values=0 ) -> None:
         if colors == 1:
             num_bars = len(Graph.X)
@@ -99,7 +110,6 @@ class Graph:
                 Graph.plot.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 2), 
                         ha='center', va='bottom', fontsize=F_SIZE, color=ThemeColors[color_titletext])
 
-    
     @staticmethod
     def create_1D_pie() -> None:
         colors = cm.viridis(np.linspace(0, 1, len(Graph.X)))
@@ -181,11 +191,11 @@ class Graph:
         return groups
 
     @staticmethod
-    def Graph_DistinctDate(datetype,IDS=None) -> str:
+    def Graph_DistinctDate(datetype, column, IDS=None) -> str:
         dates = RHMH.get_distinct_date(datetype,IDS)
         groups = []
         for d in dates:
-            groups.append(f'strftime("{datetype}", `Datum Prijema`) = "{d}"')
+            groups.append(f'strftime("{datetype}", `{column}`) = "{d}"')
         return groups
 
     @staticmethod
@@ -203,7 +213,8 @@ class Graph:
 
     @staticmethod
     def Graph_makeQuery(Y,X1,X2,Filter):
-        def get_Xgroups(X):
+
+        def get_Xgroups(X,datewhere):
             jointable = None
             where = None
             if 'MKB' in X[0]:
@@ -226,18 +237,18 @@ class Graph:
                     where = f'Kategorija = "{X[-1]}"'
                     jointable = 'mkb'
             else:
-                select = Graph.Graph_DistinctDate(Graph.DateTypes[X[0]], IDS=Filter)
+                select = Graph.Graph_DistinctDate(Graph.DateTypes[X[0]], datewhere, IDS=Filter)
 
             return (select,where,jointable)
     
-        y = Graph.Y_options[Y]
+        y,datewhere = Graph.Y_options[Y]
         where = set()
         if y!=1:
             for i in y.split('`'):
                 if 'Datum' in i:
                     where.add(i)
         else:
-            where.add('Datum Prijema')
+            where.add(datewhere)
 
         SELECT = 'SELECT '
         JOIN = []
@@ -249,7 +260,7 @@ class Graph:
         complexgroup = []
         for X in [X1,X2]:
             if X: # zbog X2
-                select, where, join = get_Xgroups(X)
+                select, where, join = get_Xgroups(X,datewhere)
                 complexgroup.append(select)
                 WHERE += f'{where} AND ' if where else ''
                 if join:
@@ -291,6 +302,7 @@ class Graph:
             QUERY += f'GROUP BY {GROUP.rstrip(', ')} '
             QUERY += f'ORDER BY {GROUP.rstrip(', ')} '
 
+        print(RHMH.format_sql(QUERY))
         return QUERY
 
 if __name__=='__main__':

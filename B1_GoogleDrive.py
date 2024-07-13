@@ -105,14 +105,17 @@ class GoogleDrive:
     
     @staticmethod
     def download_BLOB(file_id):
-        request = GoogleDrive.connection.files().get_media(fileId=file_id)
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fh, request)
-        done = False
-        while not done:
-            status, done = downloader.next_chunk()
-        fh.seek(0)
-        return fh.getvalue()
+        try:
+            request = GoogleDrive.connection.files().get_media(fileId=file_id)
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                status, done = downloader.next_chunk()
+            fh.seek(0)
+            return fh.getvalue()
+        except RuntimeError:
+            raise
    
     @staticmethod
     def upload_NewFile_asFile(file_name, GoogleDrive_folder, file_path, mime_type):

@@ -144,8 +144,29 @@ class Controller:
             return wrapper
         return decorator
 
+    def message_download_fail():
+        Messagebox.show_error(parent=Controller.MessageBoxParent,title='Downloading failed',message='Can`t connect to Google Drive')
+
+    @staticmethod
+    def get_image_fromGD(GoogleID,queue):
+        try:
+            Media.Downloading = True
+            image_blob = GoogleDrive.download_BLOB(GoogleID)
+            queue.put(image_blob)
+        except Exception as e:
+            print(e)
+            print('usao except runtime error')
+            Media.Downloading = False
+            Controller.ROOT.after(WAIT,Controller.message_download_fail)
+
     @staticmethod
     def starting_application():
+        def message_success():
+            report = 'Connection successfull\nOnline mode'
+            Messagebox.show_info(parent=Controller.MessageBoxParent,title='Connect',message=report)
+        def message_fail():
+                report = 'Connection failed\nOffline mode'
+                Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Connect',message=report)
         try:
             GoogleDrive.setup_connection()
             if Controller.Connected == False:
@@ -159,14 +180,19 @@ class Controller:
                     Controller.ROOT.update()
                 if email:
                     UserSession['User'] = email
+                Controller.ROOT.after(WAIT,message_success) # Message
         except Exception as e:
+            Controller.ROOT.after(WAIT,message_fail) # Message
             width = Controller.Top_Frame.winfo_width()
             Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
-
+            
     @staticmethod
     def uploading_to_GoogleDrive() -> None:
+        def message_success():
+            Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database successfull')
+
         GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
-        Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload successfull')
+        Controller.ROOT.after(WAIT,message_success)  # Message
 
     @staticmethod
     def lose_focus(event):

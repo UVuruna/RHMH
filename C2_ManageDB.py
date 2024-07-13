@@ -10,9 +10,17 @@ class ManageDB(Controller):
     @Controller.block_manageDB()
     @staticmethod
     def Add_Patient():
-        if not (Controller.Valid_Default and Controller.Valid_Alternative):
+
+        def message_success():
+            SelectDB.refresh_tables(table_names=['Pacijenti','Slike'])
+            Messagebox.show_info(parent=Controller.MessageBoxParent,
+                    title=f'New Patient added', message=f'{ime}\n\n{report[:-1]}')
+        def message_fail():
             Messagebox.show_warning(parent=Controller.MessageBoxParent,
                     title=f'Inserting failed!', message='Wrong data in Patient Form')
+
+        if not (Controller.Valid_Default and Controller.Valid_Alternative):
+            Controller.ROOT.after(WAIT,message_fail)
             return
         reportDict = {}
         for table in Controller.Patient_FormVariables.keys():
@@ -77,24 +85,27 @@ class ManageDB(Controller):
             report += f' - {col}: {val}\n'
             logging += f'\n - {col}:\n{VAL}\n'
 
-        Messagebox.show_info(parent=Controller.MessageBoxParent,
-                title=f'New Patient added', message=f'{ime}\n\n{report[:-1]}')
-        
         ManageDB.LoggingData(query_type='Add Patient',loggingdata=f'{ime}\n\n{logging[:-1]}')
-        SelectDB.refresh_tables(table_names=['Pacijenti','Slike'])
+        Controller.ROOT.after(WAIT,message_success)
 
     @Controller.block_manageDB()
     @staticmethod
     def Add_Image():
+        def message_success():
+            report = 'Add Image successfull\nImage added to Database and Google Drive'
+            Messagebox.show_info(parent=Controller.MessageBoxParent,title='Add Image',message=report)
+        def message_fail():
+            report = 'Image Data added to Database\nFailed to Add Image to Google Drive\nConnection problem'
+            Messagebox.show_warning(parent=Controller.MessageBoxParent,
+                    title=f'Add Image failed', message=report)
+                
         ime = Controller.Slike_FormVariables['Pacijent'].get()
         opis = Controller.Slike_FormVariables['Opis'].get()
         id_pacijent = Controller.Slike_FormVariables['ID'].cget('text')
         id_pacijent = id_pacijent.split('/')[0]
-        print(id_pacijent)
-        print(ime)
-        print(opis)
+
         if not (ime and opis):
-            Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Add Image',message='Please fill required Fields')
+            Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Add Image Failed',message='Please fill required Fields')
             return
         def open_file_dialog():
             file_types = [  ('PNG files', '*.png'),
@@ -113,12 +124,7 @@ class ManageDB(Controller):
         
         file_path = open_file_dialog()
         if file_path:
-            def show_messagebox_success():
-                Messagebox.show_info(parent=Controller.MessageBoxParent,title='Add Image',message='Add Image successfull\nImage added in Database and Google Drive')
-            def show_messagebox_fail():
-                Messagebox.show_info(parent=Controller.MessageBoxParent,
-                        title=f'Add Image failed', message=f'Image added in Database\nFailed to Add Image to Google Drive\nConnection problem')
-                
+
             def execute_adding_media():
                 file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
 
@@ -152,9 +158,9 @@ class ManageDB(Controller):
                     GOOGLE_ID = GoogleDrive.upload_NewFile_asBLOB(file_name=Naziv,GoogleDrive_folder=GD_Slike_folder, blob_data=BLOB, mime_type=FORMAT)
                     RHMH.execute_Update('slike',('id_slike',id_slike),**{'Naziv':Naziv,'image_data':GOOGLE_ID})
                     SelectDB.fill_PatientForm()
-                    Controller.ROOT.after(WAIT,show_messagebox_success)
+                    Controller.ROOT.after(WAIT,message_success)
                 except Exception:
-                    Controller.ROOT.after(WAIT,show_messagebox_fail)
+                    Controller.ROOT.after(WAIT,message_fail)
 
             threading.Thread(target=execute_adding_media).start()
 
@@ -606,10 +612,7 @@ class ManageDB(Controller):
             GoogleID = RHMH.execute_selectquery(f'SELECT image_data FROM slike WHERE id_slike = {slika[0]}')[0][0]
 
             queue_get_blob = queue.Queue()
-            def get_image_fromGD(GoogleID,queue):
-                image_blob = GoogleDrive.download_BLOB(GoogleID)
-                queue.put(image_blob)
-            thread = threading.Thread(target=get_image_fromGD,args=(GoogleID,queue_get_blob))
+            thread = threading.Thread(target=Controller.get_image_fromGD,args=(GoogleID,queue_get_blob))
             thread.start()
 
             response = Media.ImageReader_SettingUp(Controller.MessageBoxParent)
@@ -617,6 +620,7 @@ class ManageDB(Controller):
                 return
 
             thread.join()
+            Media.Downloading = False
             image_blob = queue_get_blob.get()
 
             queue_analyzed_data = queue.Queue()
