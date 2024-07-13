@@ -55,7 +55,6 @@ class SelectDB(Controller):
             for table_widget,db_name in zip(TABLE,tables_db_names[table]):
                 table_widget:tb.ttk.Treeview
                 lastquery = RHMH.LastQuery[db_name]
-                print(lastquery)
                 if lastquery:
                     view = RHMH.execute_selectquery(lastquery)
                     for item in table_widget.get_children():
@@ -211,7 +210,6 @@ class SelectDB(Controller):
             table.heading(col, text=TXT, anchor=W, command=lambda c=col: sort_treeview(c, False))
             table.column(col, stretch=False)
             if 'id_' in col:
-                print(col)
                 table.column(col, width=0)
             elif i==0: # counting column
                 table.column(col, width=int(F_SIZE*4), minwidth=F_SIZE*2)
@@ -741,7 +739,6 @@ class SelectDB(Controller):
             return
         
         if TAB == 'Pacijenti':
-            print(searching)
             columns = SelectDB.selected_columns(Controller.Pacijenti_ColumnVars.items() , Controller.Table_Pacijenti , columnvar=True)
             view = RHMH.execute_join_select('pacijent',*(columns),**searching)
 
@@ -880,7 +877,6 @@ class SelectDB(Controller):
             SelectDB.set_widget_value(widget,val)
         TEXT = f'{patient['Ime']} {patient['Prezime']}'
         try:
-            # FROM RHMH Date Formate TO Patient print Date Format
             TEXT += f'\n({datetime.strptime(patient['Datum Prijema'],'%Y-%m-%d').strftime('%d-%b-%y')})'
         except KeyError:
             pass
@@ -1003,7 +999,6 @@ class SelectDB(Controller):
 
     @staticmethod
     def Show_Image(event=None,ID=False,BLOB=False):
-        print('usao u show image')
         if Media.Downloading is True:
             return
         if event:
@@ -1056,6 +1051,20 @@ class SelectDB(Controller):
 
     @staticmethod
     def Show_Image_execute(ID=None,MediaType=None,blob_data=False):
+
+        def check_queue():
+            try:
+                Media.Blob_Data, error = queue_get_blob.get_nowait()
+                if error:
+                    raise error
+                Media.Downloading = False
+                showing_media()
+            except queue.Empty:
+                Controller.ROOT.after(50,check_queue)
+            except Exception:
+                Media.Blob_Data = Media.image_to_blob('_internal/Slike/muvs.png')
+                Controller.ROOT.after(WAIT*2,showing_media)
+
         def showing_media():   
             width = Media.Slike_Viewer.winfo_width()
             height = Media.Slike_Viewer.winfo_height()
@@ -1088,18 +1097,8 @@ class SelectDB(Controller):
             queue_get_blob = queue.Queue()
             thread = threading.Thread(target=Controller.get_image_fromGD,args=(ID,queue_get_blob))
             thread.start()
-            
-            def check_queue():
-                try:
-                    Media.Blob_Data = queue_get_blob.get_nowait()
-                    showing_media()
-                    Media.Downloading = False
-                except queue.Empty:
-                    Controller.ROOT.after(50,check_queue) 
-                except Exception:
-                    Media.Downloading = False
-                    Controller.ROOT.after(WAIT,Controller.message_download_fail)
             check_queue()
+            
         else:
             Media.Blob_Data = blob_data
             showing_media()

@@ -129,7 +129,6 @@ class Database:
 
     def execute_select(self, log:bool, table:str, *args, **kwargs):
         try:
-            print(self.LastQuery[table])
             self.lock.acquire()
             select_values = ','.join(f'`{a}`' if ' ' in a else a for a in args)
             where_pairs = ''

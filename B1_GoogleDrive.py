@@ -25,23 +25,19 @@ class GoogleDrive:
         if os.path.exists(token_path):
             with open(token_path, 'rb') as token:
                 creds = pickle.load(token)
-        # Ako nema kredencijala ili su nevažeći, korisnik mora da se autentifikuje
+
         if not creds or not creds.valid:
-            print('Refreshing credentials...')
             if creds and creds.expired and creds.refresh_token:
                 try:
                     creds.refresh(Request())
                 except Exception as e:
-                    print(f'Error refreshing credentials: {e}')
-                    # Briše token ako osvežavanje nije uspelo
                     if os.path.exists(token_path):
                         os.remove(token_path)
                     creds = None
             if not creds:
-                print('Running authentication flow...')
                 flow = InstalledAppFlow.from_client_secrets_file(creds_path, GoogleDrive.SCOPES)
                 creds = flow.run_local_server(port=0)
-            # Čuva kredencijale za sledeću upotrebu
+
             with open(token_path, 'wb') as token:
                 pickle.dump(creds, token)
         return creds

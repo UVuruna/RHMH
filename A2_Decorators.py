@@ -117,6 +117,7 @@ class PC:
                 gpu_info = {
                     'GPU Name': gpu_name,
                     'VRAM': vram}
+                return gpu_info
             else:
                 return 'No GPU found.'
 

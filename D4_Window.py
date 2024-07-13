@@ -45,7 +45,12 @@ class GUI:
         
         
         GUI.root.title(app_name)
-        GUI.root.iconbitmap(IMAGES['icon'])
+        if os.name == 'nt':  # Windows
+            root.iconbitmap(IMAGES['icon'][0])
+        elif os.name == 'posix':  # macOS i Linux
+            # macOS i Linux koriste iconphoto i PhotoImage
+            icon = PhotoImage(file=IMAGES['icon'][1])
+            root.iconphoto(True, icon)
         GUI.root.grid_rowconfigure(1, weight=1)
         GUI.root.grid_columnconfigure(1, weight=1)
 

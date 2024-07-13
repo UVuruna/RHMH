@@ -148,16 +148,21 @@ class Controller:
         Messagebox.show_error(parent=Controller.MessageBoxParent,title='Downloading failed',message='Can`t connect to Google Drive')
 
     @staticmethod
-    def get_image_fromGD(GoogleID,queue):
+    def get_image_fromGD(GoogleID,queue=None):
         try:
             Media.Downloading = True
-            image_blob = GoogleDrive.download_BLOB(GoogleID)
-            queue.put(image_blob)
+            Media.Blob_Data = GoogleDrive.download_BLOB(GoogleID)
+            if queue:
+                queue.put((Media.Blob_Data,None))
         except Exception as e:
-            print(e)
-            print('usao except runtime error')
             Media.Downloading = False
+            if Media.TopLevel:
+                Media.TopLevel.destroy()
             Controller.ROOT.after(WAIT,Controller.message_download_fail)
+            if queue:
+                queue.put((None, e))
+            else:
+                raise
 
     @staticmethod
     def starting_application():

@@ -130,7 +130,8 @@ MainTablePacijenti = {
 }
 
 SIGNS = ['EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN']
-IMAGES = {  'icon' :    os.path.join(directory,'_internal/Slike/RHMH.ico') ,
+IMAGES = {  'icon' :    [os.path.join(directory,'_internal/Slike/RHMH.ico'),
+                            os.path.join(directory,'_internal/Slike/RHMH.png')] ,
             'Title':  [ os.path.join(directory,'_internal/Slike/GodHand_Transparent_smallest.png') ,
                             ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
             'Swap':   [ (os.path.join(directory,'_internal/Slike/dark_swap.png'),33,33) ,

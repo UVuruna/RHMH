@@ -457,7 +457,6 @@ class ManageDB(Controller):
     @staticmethod
     def Delete_Image():
         selected_image:list = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1:7]
-        print(selected_image)
         ID, id_pacijent, PatientName, Opis, Format, Velicina = selected_image
         selected_image_description = f'{ID}: {PatientName} - {Opis} : ({Format} - {Velicina})'
         confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
@@ -477,7 +476,6 @@ class ManageDB(Controller):
             def execute_delete_image():   
                 GoogleID = RHMH.execute_selectquery(f'SELECT image_data from slike WHERE id_slike = {ID}')[0][0]
                 RHMH.execute_Delete('slike',[('id_slike',ID)])
-                print('DELETING ',GoogleID)
                 try:
                     GoogleDrive.delete_file(GoogleID)
                     Controller.ROOT.after(WAIT,message_success)
@@ -560,11 +558,12 @@ class ManageDB(Controller):
                     if i>5:
                         text_widget.yview_scroll(1,'units')
                     destination_path = os.path.join(save_directory, imageName)
-                    media_data = GoogleDrive.download_BLOB(GoogleID)
-                    media_file = destination_path
-                    with open(media_file, 'wb') as f:
-                        f.write(media_data)
                     try:
+                        media_data = GoogleDrive.download_BLOB(GoogleID)
+                        media_file = destination_path
+                        with open(media_file, 'wb') as f:
+                            f.write(media_data)
+                    
                         progress += (imageSize[i]/totalMB) * 100
                         if i!=(len(imageSize)-1):
                             floodgauge['mask'] = f'Downloading... {progress:.1f}%'
@@ -576,6 +575,8 @@ class ManageDB(Controller):
                         text_widget.tag_add('success', f'{i+1}.0', f'{i+1}.end')
                         Controller.MessageBoxParent.update_idletasks()
                     except Exception:
+                        if Media.TopLevel:
+                            Media.TopLevel.destroy()
                         return # Ovo je da se prekine download na close 
             thread = threading.Thread(target=download)
             thread.start()
@@ -607,6 +608,13 @@ class ManageDB(Controller):
 
     @staticmethod
     def Fill_FromImage(firsttry=True):
+        def execute_fullscreen():
+                SelectDB.Show_Image_FullScreen(BLOB=Media.Blob_Data)
+
+        def image_reader_with_queue(image, queue):
+            data = Media.Operaciona_Reader(image)
+            queue.put(data)
+
         try:
             slika = Controller.Patient_FormVariables['slike']['Slike'].item(
                     Controller.Patient_FormVariables['slike']['Slike'].focus()
@@ -618,35 +626,38 @@ class ManageDB(Controller):
         if 'Operaciona' in slika[1]:
             GoogleID = RHMH.execute_selectquery(f'SELECT image_data FROM slike WHERE id_slike = {slika[0]}')[0][0]
 
-            queue_get_blob = queue.Queue()
-            thread = threading.Thread(target=Controller.get_image_fromGD,args=(GoogleID,queue_get_blob))
-            thread.start()
+            try:
+                if firsttry is True:
+                    thread = threading.Thread(target=Controller.get_image_fromGD,args=(GoogleID,))
+                    thread.start()
 
-            response = Media.ImageReader_SettingUp(Controller.MessageBoxParent)
-            if response != 'Run':
-                return
+                response = Media.ImageReader_SettingUp(Controller.MessageBoxParent)
+                if response != 'Run':
+                    Media.Downloading = False
+                    return
 
-            thread.join()
-            Media.Downloading = False
-            image_blob = queue_get_blob.get()
+                if firsttry is True:
+                    thread.join()
+                    Media.Downloading = False
+                    thread1 = threading.Thread(target=execute_fullscreen)
+                    thread1.start()
 
-            queue_analyzed_data = queue.Queue()
-            def execute_fullscreen():
-                SelectDB.Show_Image_FullScreen(BLOB=image_blob)
-            def image_reader_with_queue(image, queue):
-                data = Media.Operaciona_Reader(image)
-                queue.put(data)
+                queue_analyzed_data = queue.Queue()
+                thread2 = threading.Thread(target=image_reader_with_queue, args=(Media.Blob_Data,queue_analyzed_data))
+                thread2.start()
+                ManageDB.Image_Read(queue_analyzed_data)
 
-            if firsttry is True:
+            except Exception:
+                Media.Blob_Data = Media.image_to_blob('_internal/Slike/muvs.png')
                 thread1 = threading.Thread(target=execute_fullscreen)
-                thread1.start()
-            thread2 = threading.Thread(target=image_reader_with_queue, args=(image_blob,queue_analyzed_data))
-            thread2.start()
-            ManageDB.Image_Read(queue_analyzed_data)
+                Controller.ROOT.after(WAIT*2,thread1.start)
+                return
         else:
             report = 'Image description ("Opis")\nhave to be "Operaciona Lista" or "Otupusna lista"'
             Messagebox.show_error(parent=Controller.MessageBoxParent,
                     title=f'Fill From Image', message=report)
+            
+    
 
     @staticmethod
     def Validation_Method(event=None,form=None):
@@ -665,9 +676,7 @@ class ManageDB(Controller):
         elif form is None or form == 'Alternative':
             Controller.Valid_Alternative = True
 
-        
         form = ['Default','Alternative'] if form is None else [form]
-        print(form)
         for FORM in form:
             for widget in Controller.Validation_Widgets[FORM]:
                 widget:Widget

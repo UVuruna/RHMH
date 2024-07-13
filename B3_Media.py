@@ -3,6 +3,7 @@ from A1_Variables import *
 pillow_heif.register_heif_opener()
 
 class Media:
+    TopLevel = None
     Downloading = False
     ReaderSetting = easyocr.Reader(['rs_latin','en'])
     if os.name == 'posix' and os.uname().sysname == 'Darwin':  # macOS
@@ -106,22 +107,22 @@ class Media:
 
     @staticmethod
     def ProgressBar_DownloadingImages(parent:Frame, title:str, titletxt:list, width:int):
-        top = Toplevel(parent)
-        top.title(f'{title}...')
-        top.grid_columnconfigure(0, weight=1)
-        top.resizable(False,False)
+        Media.TopLevel = Toplevel(parent)
+        Media.TopLevel.title(f'{title}...')
+        Media.TopLevel.grid_columnconfigure(0, weight=1)
+        Media.TopLevel.resizable(False,False)
         if os.name == 'nt':  # Windows
-            top.attributes('-toolwindow', True)
+            Media.TopLevel.attributes('-toolwindow', True)
         else:  # macOS/Linux
-            top.attributes('-type', 'dialog')
+            Media.TopLevel.attributes('-type', 'dialog')
         
-        tb.Label(top, text=f'{title} selected Images', anchor=CENTER, justify=CENTER, font=font_medium()).grid(
+        tb.Label(Media.TopLevel, text=f'{title} selected Images', anchor=CENTER, justify=CENTER, font=font_medium()).grid(
             row=0, column=0, columnspan=2, pady=24, sticky=NSEW)
 
-        text_widget = tb.Text(top, wrap=NONE, height=10, width=width, font=font_default)
+        text_widget = tb.Text(Media.TopLevel, wrap=NONE, height=10, width=width, font=font_default)
         text_widget.grid(row=1, column=0, sticky=NSEW)
 
-        scrollbar = tb.Scrollbar(top, orient=VERTICAL, command=text_widget.yview)
+        scrollbar = tb.Scrollbar(Media.TopLevel, orient=VERTICAL, command=text_widget.yview)
         scrollbar.grid(row=1, column=1, sticky=NS)
         text_widget.configure(yscrollcommand=scrollbar.set)
 
@@ -132,27 +133,27 @@ class Media:
 
         text_widget.configure(state=DISABLED)
        
-        bar = tb.Floodgauge(top, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_big())
+        bar = tb.Floodgauge(Media.TopLevel, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_big())
         bar.grid(row=2, column=0, columnspan=2, padx=24, pady=24, sticky=EW)
 
         return text_widget,bar
 
     @staticmethod
     def ImageReader_SettingUp(parent:Frame):
-        top = Toplevel(parent)
-        top.title('Scroll Window')
-        top.grid_columnconfigure(0, weight=1)
-        top.resizable(False,False)
+        Media.TopLevel = Toplevel(parent)
+        Media.TopLevel.title('Scroll Window')
+        Media.TopLevel.grid_columnconfigure(0, weight=1)
+        Media.TopLevel.resizable(False,False)
         if os.name == 'nt':  # Windows
-            top.attributes('-toolwindow', True)
+            Media.TopLevel.attributes('-toolwindow', True)
         else:  # macOS/Linux
-            top.attributes('-type', 'dialog')
+            Media.TopLevel.attributes('-type', 'dialog')
 
         titletxt = ' - Choose your settings for new AI Reading of document.\n'+\
                     ' - You can save your settings as default values for future readings.'
-        title = tb.Label(top, text=titletxt, anchor=W, wraplength=310)
+        title = tb.Label(Media.TopLevel, text=titletxt, anchor=W, wraplength=310)
         title.grid(row=0, column=0, padx=10, pady=(24,0)) 
-        titleframe = Frame(top)
+        titleframe = Frame(Media.TopLevel)
         titleframe.grid(row=1, column=0, padx=10, sticky=W)
         titlelabels = [ (' Slower ','High Zoom and Less Ram','danger'),
                         (' Faster ','Low Zoom and More Ram','success'),
@@ -161,10 +162,10 @@ class Media:
             tb.Label(titleframe, anchor=W, justify=CENTER, text=txt1, bootstyle=bt, wraplength=310).grid(row=i, column=0, padx=0)
             tb.Label(titleframe, anchor=W, justify=LEFT, text=txt2, wraplength=310).grid(row=i, column=1, padx=0)
 
-        label = tb.Label(top, text=f'Image Reader Type', anchor=CENTER, justify=CENTER)
+        label = tb.Label(Media.TopLevel, text=f'Image Reader Type', anchor=CENTER, justify=CENTER)
         label.grid(row=2, column=0, padx=12, pady=(24,6)) 
         values = ['AI-Line Reader', 'AI-Paragraph Reader']
-        combobox = tb.Combobox(top, values=values, state='readonly')
+        combobox = tb.Combobox(Media.TopLevel, values=values, state='readonly')
         combobox.set(values[0])
         combobox.grid(row=3, column=0, padx=12, pady=6)
 
@@ -188,10 +189,10 @@ class Media:
 
             return scale
         
-        zoom = create_scale(top,4,(0.7,2.3),'Image Zoom',Media.Image_Reader_Zoom)
-        ram = create_scale(top,6,(1,Media.GPU_VRAM_MB),'Ram Usage',Media.Image_Reader_RAM)
+        zoom = create_scale(Media.TopLevel,4,(0.7,2.3),'Image Zoom',Media.Image_Reader_Zoom)
+        ram = create_scale(Media.TopLevel,6,(1,Media.GPU_VRAM_MB),'Ram Usage',Media.Image_Reader_RAM)
 
-        checkbutton_frame = Frame(top)
+        checkbutton_frame = Frame(Media.TopLevel)
         checkbutton_frame.grid(row=8, column=0, padx=12, pady=padding_6, sticky=NSEW)
         checkbutton_frame.grid_columnconfigure(1,weight=1)
    
@@ -218,16 +219,16 @@ class Media:
             Media.Image_Reader_Zoom = round(zoom.get(),2)
             Media.Reader_Type = combobox.get()
             result['action'] = 'Run'
-            top.destroy()
+            Media.TopLevel.destroy()
 
         def savedefault_command():
             Media.Image_Reader_RAM = int(ram.get())
             Media.Image_Reader_Zoom = round(zoom.get(),2)
             Media.Reader_Type = combobox.get()
             result['action'] = 'Save'
-            top.destroy()
+            Media.TopLevel.destroy()
 
-        button_frame = Frame(top)
+        button_frame = Frame(Media.TopLevel)
         button_frame.grid(row=9, column=0, padx=12, pady=(24, 6), sticky=E)
 
         ctk.CTkButton(button_frame, text='SAVE\nDEFAULT', width=buttonX-2, height=buttonY, corner_radius=12, font=font_medium(),
@@ -238,7 +239,7 @@ class Media:
                     fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                     command=run_command).grid(row=0, column=1, padx=padding_6[0], pady=padding_6[1])
 
-        parent.wait_window(top)
+        parent.wait_window(Media.TopLevel)
         return result['action']
 
     @staticmethod
@@ -254,8 +255,6 @@ class Media:
 
     @staticmethod
     def Operaciona_LineReader(image):
-        print(f'Zoom {Media.Image_Reader_Zoom}')
-        print(f'RAM {Media.Image_Reader_RAM}')
         result = Media.ReaderSetting.readtext(image, detail=0, mag_ratio=Media.Image_Reader_Zoom, batch_size=Media.Image_Reader_RAM)
 
         def extend_variable(i, variable, searchlist, image_text):
@@ -265,7 +264,6 @@ class Media:
                 j += 1
             return variable
 
-        # Initialize variables
         OUTPUT = {}
         var:IntVar
         for col,var in Media.OperacionaChoice.items():
@@ -280,7 +278,6 @@ class Media:
                             'Gostuju': ('Gostujući Specijalizant',['Gostujući specijalizant','Gostujuci specijalizant'])}
         prosao_datum = False
         for i, detection in enumerate(result):
-            print(i,'NEW: ',detection)
             if 'Datum Operacije' in OUTPUT:
                 if prosao_datum is False and detection in ['PACIJENT','OPERACIONA LISTA','godište']:
                     prosao_datum = True
@@ -327,7 +324,7 @@ class Media:
                             doctors = doctors.split()
                             for i,doc in enumerate(doctors):
                                 if doc in ['Dr','dr']:
-                                    DOCTORS.append(' '.join(doctors[i:i+3]))
+                                    DOCTORS.append(' '.join(doctors[i:i+3]).replace('Dr','dr'))
                             OUTPUT[doctorType] += DOCTORS
                         else:
                             if doctors:
@@ -336,9 +333,9 @@ class Media:
                                         if word in ['lekar', 'na', 'specijalizaciji','stažu']:
                                             break
                                     else:
-                                        OUTPUT[doctorType].append(doctors)
+                                        OUTPUT[doctorType].append(doctors.replace('Dr','dr'))
                                 elif not OUTPUT[doctorType]:
-                                    OUTPUT[doctorType] = [doctors]
+                                    OUTPUT[doctorType] = [doctors.replace('Dr','dr')]
         return OUTPUT
 
     @staticmethod
@@ -425,7 +422,6 @@ class Media:
             f.write(image_data)
 
         if not os.path.exists(image_file):
-            print(f'Error: {image_file} does not exist after writing.')
             return
 
         if os.name == 'nt':  # For Windows
