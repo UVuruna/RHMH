@@ -392,7 +392,7 @@ class SelectDB(Controller):
         if Controller.graph_canvas is not None:
             Controller.graph_canvas.get_tk_widget().destroy()
         
-        #Graph.figure.tight_layout()
+        Graph.figure.subplots_adjust(left=0.06,right=0.96,bottom=0.18,top=0.90)
         Controller.graph_canvas = FigureCanvasTkAgg(Graph.figure, master=Controller.Graph_Canvas)
         Controller.graph_canvas.get_tk_widget().config(width=Controller.Graph_Canvas.winfo_width(),
                                                        height=Controller.Graph_Canvas.winfo_height())
@@ -973,7 +973,8 @@ class SelectDB(Controller):
         if event:
             shift_pressed = event.state & 0x1
             ctrl_pressed = event.state & 0x4
-            if shift_pressed or ctrl_pressed:
+            cmd_pressed = event.state & 0x8
+            if shift_pressed or ctrl_pressed or cmd_pressed:
                 return
         Media.Slike_Viewer.delete('all')
         Media.Image_Active = None

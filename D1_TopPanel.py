@@ -13,8 +13,11 @@ class TopPanel:
 
     @staticmethod
     def initialize(root:Tk) -> None:
-
-        image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = IMAGES['Title']
+        
+        try:
+            image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = TITLE_IMAGE
+        except Exception:
+            image = TITLE_IMAGE
 
         TopPanel.title_image = Image.open(image)
 
@@ -38,10 +41,12 @@ class TopPanel:
         Controller.Top_Frame.image = tk_image 
         Controller.Top_Frame.delete('all')
         Controller.Top_Frame.create_image(0, 0, anchor=NW, image=tk_image)
-        Controller.Top_Frame.create_text( new_width * TopPanel.txt_X,
-                                    new_height * TopPanel.txt_Y,
-                                    text = TopPanel.title_txt,
-                                    anchor = NW, font = font_verybig(), fill = ThemeColors[color_titletext] )
+        
+        if TopPanel.title_txt:
+            Controller.Top_Frame.create_text( new_width * TopPanel.txt_X,
+                                        new_height * TopPanel.txt_Y,
+                                        text = TopPanel.title_txt,
+                                        anchor = NW, font = font_verybig(), fill = ThemeColors[color_titletext] )
         
         if Controller.Connected is False:
             Controller.Reconnect_window = Controller.Top_Frame.create_window(

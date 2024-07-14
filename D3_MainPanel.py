@@ -711,21 +711,44 @@ class MainPanel:
         settings = ['Theme','Language','Title','Font','Showed Columns','Font Size']
         settings += ['Theme1','Language1','Title1','Font1','Showed Columns1','Font Size1']
 
-        notebook_frame.grid_rowconfigure([i for i in range(len(settings)//2)], weight=1)
-        notebook_frame.grid_columnconfigure(0,weight=3)
-        notebook_frame.grid_columnconfigure(1,weight=1)
+        #notebook_frame.grid_rowconfigure([i for i in range(len(settings)//2)], weight=1)
+        notebook_frame.grid_columnconfigure(0,weight=1)
+        #notebook_frame.grid_columnconfigure(1,weight=1)
 
-        correction = False
-        for i,txt in enumerate(settings):
-            frame = Frame(notebook_frame, bd=2, relief=RAISED)
-            frame.grid(row=(i-correction)//2, column=correction, sticky=NSEW)
-            correction = not correction
-            info = frame.grid_info()
-            print(info['row'], info['column'])
-            print(correction)
-            Controller.Settings_FormVariables[txt] = frame
+        frame = Frame(notebook_frame, bd=2, relief=RAISED)
+        frame.grid(row=0, column=0, sticky=NSEW)
+        Theme_Names = ['Fruit','Moon','Sunrise','Night','Flower','Sunset','Sea']
+        frame.grid_columnconfigure([i for i in range(len(Theme_Names))], weight=1)
 
-        print(Controller.Settings_FormVariables)    
+        theme_images = Media.label_ImageLoad(IMAGES['Themes'])
+        Controller.Settings_FormVariables['Theme'] = StringVar(value='Moon')
+        for i,(nam,img) in enumerate(zip(Theme_Names,theme_images)):
+            Media.ThemeIcons.append(img)
+            label = tb.Label(frame, image=Media.ThemeIcons[i])
+            label.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=NSEW)
+
+            radio = tb.Radiobutton(frame, text=nam, variable=Controller.Settings_FormVariables['Theme'], value=nam)
+            radio.grid(row=1, column=i, padx=padding_6, pady=padding_6, sticky=EW)
+
+        '''
+        frame = Frame(notebook_frame, bd=2, relief=RAISED)
+        frame.grid(row=1, column=0, sticky=NSEW)
+        Image_Names = ['God','Eye','Monkey','RHMH']
+        frame.grid_columnconfigure([i for i in range(len(Image_Names))], weight=1)
+
+        images = [v[0] for v in IMAGES['Title'].values()]
+        pil_images = Media.label_ImageLoad(images)
+        for img in pil_images:
+            Media.TitleImages.append(Media.resize_image(img,max_height=200,max_width=300))
+
+        Controller.Settings_FormVariables['Title Image'] = StringVar(value='God')
+        for i,(nam,img) in enumerate(zip(Image_Names,Media.TitleImages)):
+            label = tb.Label(frame, image=img)
+            label.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=NSEW)
+
+            radio = tb.Radiobutton(frame, text=nam, variable=Controller.Settings_FormVariables['Theme'], value=nam)
+            radio.grid(row=1, column=i, padx=padding_6, pady=padding_6, sticky=EW)
+        #'''
 
         return notebook_frame
     

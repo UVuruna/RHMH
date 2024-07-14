@@ -3,6 +3,8 @@ from A1_Variables import *
 pillow_heif.register_heif_opener()
 
 class Media:
+    TitleImages = []
+    ThemeIcons = []
     TopLevel = None
     Downloading = False
     ReaderSetting = easyocr.Reader(['rs_latin','en'])
@@ -112,6 +114,7 @@ class Media:
 
     @staticmethod
     def ProgressBar_DownloadingImages(parent:Frame, title:str, titletxt:list, width:int):
+        print("USAO U TOP LEVEL")
         Media.TopLevel = Toplevel(parent)
         Media.TopLevel.title(f'{title}...')
         Media.TopLevel.grid_columnconfigure(0, weight=1)
@@ -140,7 +143,7 @@ class Media:
        
         bar = tb.Floodgauge(Media.TopLevel, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_big())
         bar.grid(row=2, column=0, columnspan=2, padx=24, pady=24, sticky=EW)
-
+        print("napravio TOP LEVEL")
         return text_widget,bar
 
     @staticmethod

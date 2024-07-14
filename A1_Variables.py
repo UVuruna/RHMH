@@ -26,7 +26,7 @@ import traceback
 import io
 import re
 import subprocess
-
+import torch
 import psutil
 import GPUtil
 import cpuinfo
@@ -58,6 +58,50 @@ print(f"IMPORTINT time: {(time.time_ns()-TIME_START)/10**9:,.2f} s")
 
 directory = os.path.dirname(os.path.abspath(__file__))
 
+IMAGES = {
+       'icon' :    [os.path.join(directory,'Slike/RHMH.ico'),
+                     os.path.join(directory,'Slike/RHMH.png')] ,
+       'Title':  {
+              'God':[ os.path.join(directory,'Slike/GodHand.png') ,
+                     ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
+              'Eye':[ os.path.join(directory,'Slike/GodHand_Eye.png') ,
+                     ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
+              'Monkey':[ os.path.join(directory,'Slike/GodHand_Monkey.png') ,
+                     ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
+              'RHMH':[ os.path.join(directory,'Slike/God_RHMH.png') ]
+                     } ,
+       'Swap':   [ (os.path.join(directory,'Slike/dark_swap.png'),33,33) ,
+                     (os.path.join(directory,'Slike/color_swap.png'),33,33)  ] ,
+       'Hide':   [ (os.path.join(directory,'Slike/dark_hide.png'),48,33) ,
+                     (os.path.join(directory,'Slike/color_hide.png'),48,33)  ] ,
+       'Add':    [ (os.path.join(directory,'Slike/color_add.png'),28,28) ,
+                     (os.path.join(directory,'Slike/dark_add.png'),28,28)    ] ,
+       'Remove': [ (os.path.join(directory,'Slike/color_remove.png'),28,28) ,
+                     (os.path.join(directory,'Slike/dark_remove.png'),28,28) ] ,
+       'Left':    [ (os.path.join(directory,'Slike/color_left.png'),48,33) ,
+                     (os.path.join(directory,'Slike/dark_left.png'),48,33)    ] ,
+       'Right': [ (os.path.join(directory,'Slike/color_right.png'),48,33) ,
+                     (os.path.join(directory,'Slike/dark_right.png'),48,33) ] ,
+       'Play Video': os.path.join(directory,'Slike/play_button.png') ,
+       'Loading':    os.path.join(directory,'Slike/loading_circle.png') ,
+       'Password':  [ (os.path.join(directory,'Slike/eye.png'),270,270) ] , 
+       'MUVS':      [ (os.path.join(directory,'Slike/muvs.png'),280,280) ],
+       'Signs':  [ (os.path.join(directory,'Slike/sign_equal.png'),42,28),
+                            (os.path.join(directory,'Slike/sign_like.png'),42,28),
+                                   (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
+                                          (os.path.join(directory,'Slike/sign_between.png'),42,28)   ],
+       'Themes': [ (os.path.join(directory,'Slike/theme_fruit.png'),240,130),
+                     (os.path.join(directory,'Slike/theme_moon.png'),240,130),
+                            (os.path.join(directory,'Slike/theme_sunrise.png'),240,130),
+                            (os.path.join(directory,'Slike/theme_night.png'),240,130),
+                                   (os.path.join(directory,'Slike/theme_flower.png'),240,130),
+                                   (os.path.join(directory,'Slike/theme_sunset.png'),240,130),
+                                          (os.path.join(directory,'Slike/theme_sea.png'),240,130) ]   }
+
+TITLE_IMAGE = IMAGES['Title']['God']
+themes_list = ['moon','fruit','night','flower','sunset','sea','sunrise']
+THEME = themes_list[0]
+
 UserSession = {'Email':'offline_admin@gmail.com','PC':{}}
 WAIT = 10 # ms
 BUTTON_LOCK = 500 # ms
@@ -70,8 +114,8 @@ form_name = 'Pacijent'
 title_height = 180
 
 ThemeColors = {}
-themes_list = ['moon','fruit','night','flower','sunset','sea','sunrise']
-THEME = themes_list[0]
+
+
 FONT = 'Arial'
 F_SIZE = 11
 
@@ -221,31 +265,8 @@ SessionTable = {
 
 SIGNS = [
     'EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN']
-IMAGES = {
-       'icon' :    [os.path.join(directory,'Slike/RHMH.ico'),
-                     os.path.join(directory,'Slike/RHMH.png')] ,
-       'Title':  [ os.path.join(directory,'Slike/GodHand_Transparent_smallest.png') ,
-                     ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
-       'Swap':   [ (os.path.join(directory,'Slike/dark_swap.png'),33,33) ,
-                     (os.path.join(directory,'Slike/color_swap.png'),33,33)  ] ,
-       'Hide':   [ (os.path.join(directory,'Slike/dark_hide.png'),48,33) ,
-                     (os.path.join(directory,'Slike/color_hide.png'),48,33)  ] ,
-       'Add':    [ (os.path.join(directory,'Slike/color_add.png'),28,28) ,
-                     (os.path.join(directory,'Slike/dark_add.png'),28,28)    ] ,
-       'Remove': [ (os.path.join(directory,'Slike/color_remove.png'),28,28) ,
-                     (os.path.join(directory,'Slike/dark_remove.png'),28,28) ] ,
-       'Left':    [ (os.path.join(directory,'Slike/color_left.png'),48,33) ,
-                     (os.path.join(directory,'Slike/dark_left.png'),48,33)    ] ,
-       'Right': [ (os.path.join(directory,'Slike/color_right.png'),48,33) ,
-                     (os.path.join(directory,'Slike/dark_right.png'),48,33) ] ,
-       'Play Video': os.path.join(directory,'Slike/play_button.png') ,
-       'Loading':    os.path.join(directory,'Slike/loading_circle.png') ,
-       'Password':  [ (os.path.join(directory,'Slike/eye.png'),270,270) ] , 
-       'MUVS':      [ (os.path.join(directory,'Slike/muvs.png'),280,280) ],
-       'Signs':  [ (os.path.join(directory,'Slike/sign_equal.png'),42,28),
-                            (os.path.join(directory,'Slike/sign_like.png'),42,28),
-                                   (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
-                                          (os.path.join(directory,'Slike/sign_between.png'),42,28)   ]   }
+
+       
 
 Image_buttons = [   ('ADD\nImage',None),
                     ('EDIT\nImage',None),
@@ -295,3 +316,5 @@ MIME = {'PNG' : 'image/png',
         'HEIC' : 'image/heic',
         'MP4': 'video/mp4',
         'MOV': 'video/quicktime'}
+
+
