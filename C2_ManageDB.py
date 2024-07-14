@@ -648,7 +648,7 @@ class ManageDB(Controller):
                 ManageDB.Image_Read(queue_analyzed_data)
 
             except Exception:
-                Media.Blob_Data = Media.image_to_blob('_internal/Slike/muvs.png')
+                Media.Blob_Data = Media.image_to_blob('Slike/muvs.png')
                 thread1 = threading.Thread(target=execute_fullscreen)
                 Controller.ROOT.after(WAIT*2,thread1.start)
                 return

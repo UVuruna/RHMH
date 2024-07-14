@@ -69,6 +69,8 @@ class Controller:
         # NOTEBOOK
     NoteBook:          tb.Notebook      = None
 
+    SEARCH:dict = None
+
     Table_Pacijenti:   tb.ttk.Treeview  = None
     Pacijenti_ColumnVars                = dict()
     FilterOptions                       = dict()

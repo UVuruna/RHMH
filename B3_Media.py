@@ -376,9 +376,9 @@ class Media:
 
     @staticmethod
     def create_video_thumbnail(video_data):
-        if not os.path.exists('_internal/temporary'):
-            os.makedirs('_internal/temporary')
-        video_file = '_internal/temporary/temp_video.mp4'
+        if not os.path.exists('temporary'):
+            os.makedirs('temporary')
+        video_file = 'temporary/temp_video.mp4'
         with open(video_file, 'wb') as f:
             f.write(video_data)
 
@@ -415,9 +415,9 @@ class Media:
     @staticmethod
     def open_image(event,image_data):
         # Save video data to a temporary file
-        if not os.path.exists('_internal/temporary'):
-            os.makedirs('_internal/temporary')
-        image_file = '_internal/temporary/temp_image.png'
+        if not os.path.exists('temporary'):
+            os.makedirs('temporary')
+        image_file = 'temporary/temp_image.png'
         with open(image_file, 'wb') as f:
             f.write(image_data)
 

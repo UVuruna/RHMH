@@ -213,19 +213,22 @@ class SelectDB(Controller):
                 table.column(col, width=0)
             elif i==0: # counting column
                 table.column(col, width=int(F_SIZE*4), minwidth=F_SIZE*2)
+            elif col in ['Pol','Godište','Starost','Uputna dijagnoza']:
+                table.column(col, width=int(F_SIZE*6), minwidth=F_SIZE*3, anchor=CENTER)
             elif col in ['Pol','Godište','Starost','Veličina', 'width', 'height', 'pixels']:
                 table.column(col, width=int(F_SIZE*7), minwidth=F_SIZE*3, anchor=E)
-            elif col in ['Modifying','Download','Upload'] or 'Datum' in col or 'Efficency' in col:
-                table.column(col, width=F_SIZE*9, minwidth=F_SIZE*4)
+            elif 'Datum' in col:
+                table.column(col, width=F_SIZE*9, minwidth=F_SIZE*4, anchor=E)
             elif col in ['Opis'] or table==Controller.Table_Session :
                 table.column(col, width=F_SIZE*13, minwidth=F_SIZE*6)
-            elif col in ['Dg Latinski','Error'] or (col == 'Zaposleni' and table == Controller.Table_Zaposleni):
+            elif col in ['Dg Latinski','Error','Gostujući Specijalizant','Asistent'] or (col == 'Zaposleni' and table == Controller.Table_Zaposleni):
                 table.column(col, width=F_SIZE*27, minwidth=F_SIZE*13)
             elif col in ['Opis Dijagnoze']:
                 table.column(col, width=F_SIZE*100)
-            elif col in ['Naziv','Gostujući Specijalizant','Asistent'] or table == Controller.Table_Logs:
+            elif table == Controller.Table_Logs or col in RHMH.dr_funkcija+RHMH.dg_kategorija:
                 table.column(col, width=F_SIZE*16, minwidth=F_SIZE*7)
             else:
+                print(col)
                 table.column(col, width=F_SIZE*12, minwidth=F_SIZE*6)
         table['show'] = 'headings'
         return Columns[1:]
@@ -377,7 +380,8 @@ class SelectDB(Controller):
             elif X[0]=='Zaposleni':
                 X_groups.append(RHMH.get_distinct_zaposleni(X[1],FILTER))
             else:
-                dates = RHMH.get_distinct_date(Graph.DateTypes[X[0]],FILTER)
+                y,datewhere = Graph.Y_options[Y]
+                dates = RHMH.get_distinct_date(Graph.DateTypes[X[0]],datewhere,FILTER)
                 if X[0] in ['Mesec','Dan u Sedmici']:
                     dates = [Graph.SQL_date_num[X[0]][i] for i in dates]
                 X_groups.append(dates)
@@ -397,7 +401,8 @@ class SelectDB(Controller):
         widthinch = Controller.Graph_Canvas.winfo_width()/100
         heightinch = Controller.Graph_Canvas.winfo_height()/100
 
-        TITLE = f'{Y} grupisan po {X1[0]}'
+        TITLE = f'{Y}\n'
+        TITLE += f'grupisan po {X1[0]}'
         if X2:
             TITLE += f' i {X2[0]}'
         Graph.initialize(width=widthinch, height=heightinch,
@@ -741,7 +746,8 @@ class SelectDB(Controller):
         if TAB == 'Pacijenti':
             columns = SelectDB.selected_columns(Controller.Pacijenti_ColumnVars.items() , Controller.Table_Pacijenti , columnvar=True)
             view = RHMH.execute_join_select('pacijent',*(columns),**searching)
-
+            Controller.SEARCH = searching
+            print(Controller.SEARCH)
             for item in Controller.Table_Pacijenti.get_children():
                 Controller.Table_Pacijenti.delete(item)
             if view and len(view)!=0:
@@ -1062,7 +1068,7 @@ class SelectDB(Controller):
             except queue.Empty:
                 Controller.ROOT.after(50,check_queue)
             except Exception:
-                Media.Blob_Data = Media.image_to_blob('_internal/Slike/muvs.png')
+                Media.Blob_Data = Media.image_to_blob('Slike/muvs.png')
                 Controller.ROOT.after(WAIT*2,showing_media)
 
         def showing_media():   

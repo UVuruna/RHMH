@@ -77,7 +77,7 @@ class Graph:
             spine.set_edgecolor(ThemeColors[color_titletext])
             spine.set_linewidth(1)   
 
-        Graph.plot.set_title(title, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext], fontweight='bold')
+        Graph.plot.set_title(title, fontname=FONT, fontsize=int(F_SIZE*2), color=ThemeColors[color_titletext], fontweight='bold')
         Graph.plot.set_xlabel(X_label, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext])
         Graph.plot.set_ylabel(Y_label, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext])
 
@@ -86,7 +86,7 @@ class Graph:
 
     @staticmethod
     def save_and_open_graph_figure(event):
-        image_location = '_internal/temporary/temp_image.png'
+        image_location = 'temporary/temp_image.png'
         Graph.figure.savefig(image_location)
         
         if os.name == 'nt':  # For Windows
@@ -192,10 +192,13 @@ class Graph:
 
     @staticmethod
     def Graph_DistinctDate(datetype, column, IDS=None) -> str:
-        dates = RHMH.get_distinct_date(datetype,IDS)
+        print(datetype)
+        print(column)
+        dates = RHMH.get_distinct_date(datetype,column,IDS)
         groups = []
         for d in dates:
             groups.append(f'strftime("{datetype}", `{column}`) = "{d}"')
+        print(groups)
         return groups
 
     @staticmethod

@@ -1,5 +1,9 @@
 __pycache__/
 _internal/
+Slike/
+temporary/
+www_credentials.json
+www_token.pickle
 .vscode/
 required_programs/
 

@@ -62,51 +62,20 @@ class Database:
 
     def creating_where_part(self, column:str, values:dict):
         returnquery = ''
-
-        if column in self.dg_kategorija:
-            kategorija = self.execute_selectquery(f'SELECT id_kategorija from kategorija WHERE Kategorija = "{column}"')[0][0]
-            for sign,value in values.items():
-                if sign == 'EQUAL':
-                    if len(value)>1:
-                        value = [f'"{v}"' for v in value]
-                        returnquery += f'( `MKB - šifra` IN ({', '.join(value)}) AND dijagnoza.id_kategorija = {kategorija} ) OR '
-                    else:
-                        returnquery += f'( `MKB - šifra` = "{list(value)[0]}" AND dijagnoza.id_kategorija = {kategorija} ) OR '
-                elif sign in ['LIKE','NOT LIKE']:
-                    operator = 'OR' if sign=='LIKE' else 'AND'
-                    for val in value:
-                        returnquery += f'( `MKB - šifra` {sign} "%{val}%" AND dijagnoza.id_kategorija = {kategorija} ) {operator} '
-
-        elif column in self.dr_funkcija:
-            funkcija = self.execute_selectquery(f'SELECT id_funkcija from funkcija WHERE Funkcija = "{column}"')[0][0]
-            for sign,value in values.items():
-                if sign == 'EQUAL':
-                    if len(value)>1:
-                        value = [f'"{v}"' for v in value]
-                        returnquery += f'( Zaposleni IN ({', '.join(value)}) AND operacija.id_funkcija = {funkcija} ) OR '
-                    else:
-                        returnquery += f'( Zaposleni = "{list(value)[0]}" AND operacija.id_funkcija = {funkcija} ) OR '
-                elif sign in ['LIKE','NOT LIKE']:
-                    operator = 'OR' if sign=='LIKE' else 'AND'
-                    for val in value:
-                        returnquery += f'( Zaposleni {sign} "%{val}%" AND operacija.id_funkcija = {funkcija} ) {operator} '
-
-        else:
-            column = column if ' ' not in column else f'`{column}`'
-            for sign,value in values.items():
-                if sign == 'EQUAL':
-                    if len(value)>1:
-                        value = [f'"{v}"' for v in value]
-                        returnquery += f'{column} IN ({', '.join(value)}) OR '
-                    else:
-                        returnquery += f'{column} = "{list(value)[0]}" OR '
-                elif sign in ['LIKE','NOT LIKE']:
-                    operator = 'OR' if sign=='LIKE' else 'AND'
-                    for val in value:
-                        returnquery += f'{column} {sign} "%{val}%" {operator} '
-                elif sign == 'BETWEEN':
-                    for val in value:
-                        returnquery += f'( {column} {sign} "{val[0]}" AND "{val[1]}" ) OR '
+        for sign,value in values.items():
+            if sign == 'EQUAL':
+                if len(value)>1:
+                    value = [f'"{v}"' for v in value]
+                    returnquery += f'{column} IN ({', '.join(value)}) OR '
+                else:
+                    returnquery += f'{column} = "{list(value)[0]}" OR '
+            elif sign in ['LIKE','NOT LIKE']:
+                operator = 'OR' if sign=='LIKE' else 'AND'
+                for val in value:
+                    returnquery += f'{column} {sign} "%{val}%" {operator} '
+            elif sign == 'BETWEEN':
+                for val in value:
+                    returnquery += f'( {column} {sign} "{val[0]}" AND "{val[1]}" ) OR '
 
 
         returnquery = returnquery.rstrip(' OR ')
@@ -134,9 +103,9 @@ class Database:
             where_pairs = ''
 
             self.lock.release()
-            for k,values in kwargs.items():
-                values:dict
-                where_pairs += f'( {self.creating_where_part(k,values)} ) AND '
+            for col,values in kwargs.items():
+                col = col if ' ' not in col else f'`{col}`'
+                where_pairs += f'( {self.creating_where_part(col,values)} ) AND '
 
             where_pairs = where_pairs.rstrip(' AND ')
             self.lock.acquire()
@@ -186,14 +155,19 @@ class Database:
 
             self.lock.release()
             where_pairs = ''
-            for k,values in kwargs.items():
-                values:dict
-                if k in self.dg_kategorija:
+            having_pairs=''
+            for col,values in kwargs.items():
+                COL = col if ' ' not in col else f'`{col}`'
+                if col in self.dg_kategorija:
                     joindiagnose = True
-                elif k in self.dr_funkcija:
+                    having_pairs += f'( {self.creating_where_part(COL,values)} ) AND '
+                elif col in self.dr_funkcija:
                     joinoperation = True
-                where_pairs += f'( {self.creating_where_part(k,values)} ) AND '
+                    having_pairs += f'( {self.creating_where_part(COL,values)} ) AND '
+                else:
+                    where_pairs += f'( {self.creating_where_part(COL,values)} ) AND '
 
+            having_pairs = having_pairs.rstrip(' AND ')
             where_pairs = where_pairs.rstrip(' AND ')
             self.lock.acquire()
 
@@ -212,11 +186,14 @@ class Database:
             if where_pairs:
                 query += f'WHERE {where_pairs} '
             query += f'GROUP BY {table}.id_pacijent'
+            if having_pairs:
+                query += f' HAVING {having_pairs}'
 
             if 'FROM pacijent' in query:
                 self.PatientQuery = query
             self.LoggingQuery = self.format_sql(query)
             self.LastQuery[table] = query
+            print(self.LoggingQuery)
 
             self.connect()
             self.cursor.execute(query)
@@ -410,10 +387,10 @@ class Database:
                 if mkb:
                     query += f' WHERE `MKB - šifra` LIKE "{mkb}%"'
                     if IDS:
-                        query += f' AND pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
+                        query += f' AND dijagnoza.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
                 else:
                     if IDS:
-                        query += f' WHERE pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
+                        query += f' WHERE dijagnoza.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
                     
                 query += ' GROUP BY `MKB - šifra`'
                 self.LoggingQuery = self.format_sql(query)
@@ -434,10 +411,10 @@ class Database:
                     query += 'JOIN funkcija ON operacija.id_funkcija = funkcija.id_funkcija '
                     query += f'WHERE funkcija.Funkcija = "{funkcija}" '
                     if IDS:
-                        query += f' AND pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
+                        query += f' AND operacija.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
                 else:
                     if IDS:
-                        query += f' WHERE pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
+                        query += f' WHERE operacija.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
                 query += 'GROUP BY Zaposleni'
                 self.LoggingQuery = self.format_sql(query)
 
@@ -447,12 +424,12 @@ class Database:
             finally:
                 self.close_connection()
 
-    def get_distinct_date(self,datetype,IDS=None):
+    def get_distinct_date(self,datetype,datewhere,IDS=None):
         with self.lock:
             try:
                 self.connect()
-                query = f'SELECT DISTINCT strftime("{datetype}", `Datum Prijema`) FROM pacijent '
-                query += 'WHERE `Datum Prijema` IS NOT NULL'
+                query = f'SELECT DISTINCT strftime("{datetype}", `{datewhere}`) FROM pacijent '
+                query += f'WHERE `{datewhere}` IS NOT NULL'
                 if IDS:
                     query += f' AND pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
                 self.LoggingQuery = self.format_sql(query)
@@ -489,10 +466,10 @@ class Database:
                 self.close_connection()
 
 RHMH = Database(RHMH_dict['path'])
-SLIKE = Database('_internal/SLIKE.db')
+SLIKE = Database('SLIKE.db')
 
 if __name__=='__main__':
-    RHMH = Database('_internal/RHMH.db')
+    RHMH = Database('RHMH.db')
     RHMH.start_RHMH_db()
     print(RHMH.pacijent)
     print(RHMH.slike)

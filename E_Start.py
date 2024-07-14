@@ -1,3 +1,7 @@
+import sys
+if getattr(sys, 'frozen', False):
+    import pyi_splash
+
 from A1_Variables import *
 from A2_Decorators import method_efficency,error_catcher
 from B1_GoogleDrive import GoogleDrive
@@ -12,11 +16,6 @@ from D2_FormPanel import FormPanel
 from D3_MainPanel import MainPanel
 from D4_Window import GUI
 
-
-
-import sys
-if getattr(sys, 'frozen', False):
-    import pyi_splash
 
 def start():
     root = Tk()
