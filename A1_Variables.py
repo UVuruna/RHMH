@@ -58,7 +58,7 @@ print(f"IMPORTINT time: {(time.time_ns()-TIME_START)/10**9:,.2f} s")
 
 directory = os.path.dirname(os.path.abspath(__file__))
 
-UserSession = {'User':'offline_admin@gmail.com','PC':{}}
+UserSession = {'Email':'offline_admin@gmail.com','PC':{}}
 WAIT = 10 # ms
 BUTTON_LOCK = 500 # ms
 
@@ -70,7 +70,8 @@ form_name = 'Pacijent'
 title_height = 180
 
 ThemeColors = {}
-THEME = 'dark_blue'
+themes_list = ['moon','fruit','night','flower','sunset','sea','sunrise']
+THEME = themes_list[0]
 FONT = 'Arial'
 F_SIZE = 11
 
@@ -80,9 +81,10 @@ font_medium = lambda weight='bold': (FONT, int(F_SIZE*1.1), weight)
 font_default = (FONT, F_SIZE)
 
 
-color_labeltext =   'light' if THEME!='light_blue' else 'active'
-color_notebooktab = 'light' if THEME!='light_blue' else 'dark'
-color_titletext = 'light' if THEME!='light_blue' else 'primary'
+color_labeltext =   'light' if THEME not in ['sunrise','fruit','flower','sea'] else 'primary'
+color_notebooktab = 'light' if THEME not in ['sunrise','fruit','flower','sea'] else 'primary'
+color_titletext = 'light' if THEME not in ['sunrise','fruit','flower','sea'] else 'primary'
+color_highlight = 'selectbg' if THEME not in ['sunrise','fruit','flower','sea'] else 'border' 
 
 style_scrollbar = 'primary'
 style_checkbutton = 'primary'
@@ -105,77 +107,145 @@ search_bigX = 18
 search_smallX = 10
 
 MainTablePacijenti = {
-    'ID': {'checkbutton':None , 'table':'ID' , 'group':None,
-           'column_width':F_SIZE*2, 'column_anchor':W},
-    'id_pacijent': {'checkbutton':None , 'table':'id_pacijent' , 'group':None,
-           'column_width':0, 'column_anchor':W},
+       'ID': {'checkbutton':None , 'group':None,
+              'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W},
+       'id_pacijent': {'checkbutton':None , 'group':None,
+              'table':'id_pacijent' , 'column_width':0, 'column_anchor':W},
 
-    'Ime': {'checkbutton':None , 'table':'Ime' , 'group':None,
-           'column_width':F_SIZE*8, 'column_anchor':W},
-    'Prezime': {'checkbutton':None , 'table':'Prezime' , 'group':None,
-           'column_width':F_SIZE*13, 'column_anchor':W},
-    'Starost': {'checkbutton':'Starost' , 'table':'Starost' , 'group':'Pacijent',
-           'column_width':F_SIZE*4, 'column_anchor':E},
-    'Godište': {'checkbutton':'Godište' , 'table':'Godište' , 'group':'Pacijent',
-           'column_width':F_SIZE*4, 'column_anchor':E},
-    'Pol': {'checkbutton':'Pol' , 'table':'Pol' , 'group':'Pacijent',
-           'column_width':F_SIZE*7, 'column_anchor':CENTER},
+       'Ime': {'checkbutton':None , 'group':None,
+              'table':'\nIme' , 'column_width':F_SIZE*8, 'column_anchor':W},
+       'Prezime': {'checkbutton':None , 'group':None,
+              'table':'\nPrezime' , 'column_width':F_SIZE*13, 'column_anchor':W},
+       'Starost': {'checkbutton':'Starost' , 'group':'Pacijent',
+              'table':'\nStarost' , 'column_width':F_SIZE*6, 'column_anchor':CENTER},
+       'Godište': {'checkbutton':'Godište' , 'group':'Pacijent',
+              'table':'\nGodište' , 'column_width':F_SIZE*6, 'column_anchor':CENTER},
+       'Pol': {'checkbutton':'Pol' , 'group':'Pacijent',
+              'table':'\nPol' , 'column_width':F_SIZE*7, 'column_anchor':CENTER},
 
-    'Datum Prijema': {'checkbutton':'Prijem' , 'table':' Datum\nPrijema' , 'group':'Datum',
-           'column_width':F_SIZE*9, 'column_anchor':CENTER},
-    'Datum Operacije': {'checkbutton':'Operacija' , 'table':'  Datum\nOperacije' , 'group':'Datum',
-           'column_width':F_SIZE*9, 'column_anchor':CENTER},
-    'Datum Otpusta': {'checkbutton':'Otpust' , 'table':' Datum\nOtpusta' , 'group':'Datum',
-           'column_width':F_SIZE*9, 'column_anchor':CENTER},
+       'Datum Prijema': {'checkbutton':'Prijem' , 'group':'Datum',
+              'table':' Datum\nPrijema' , 'column_width':F_SIZE*9, 'column_anchor':CENTER},
+       'Datum Operacije': {'checkbutton':'Operacija' , 'group':'Datum',
+              'table':'  Datum\nOperacije' , 'column_width':F_SIZE*9, 'column_anchor':CENTER},
+       'Datum Otpusta': {'checkbutton':'Otpust' , 'group':'Datum',
+              'table':' Datum\nOtpusta' , 'column_width':F_SIZE*9, 'column_anchor':CENTER},
 
-    'Uputna dijagnoza': {'checkbutton':'Uputna dijagnoza' , 'table':' Uputna\ndijagnoza' , 'group':None,
-           'column_width':F_SIZE*7, 'column_anchor':CENTER},
-    'Osnovni Uzrok Hospitalizacije': {'checkbutton':'Uzrok Hospitalizacije' , 'table':'     Uzrok\nHospitalizacije' , 'group':None,
-           'column_width':F_SIZE*8, 'column_anchor':CENTER},
-    'Glavna Operativna dijagnoza': {'checkbutton':'Glavna Operativna' , 'table':'  Glavna\nOperativna' , 'group':None,
-           'column_width':F_SIZE*16, 'column_anchor':W},
-    'Sporedna Operativna dijagnoza': {'checkbutton':'Sporedna Operativna' , 'table':' Sporedna\nOperativna' , 'group':None,
-           'column_width':F_SIZE*16, 'column_anchor':W},
-    'Prateća dijagnoza': {'checkbutton':'Prateća dijagnoza' , 'table':' Prateća\ndijagnoza' , 'group':None,
-           'column_width':F_SIZE*16, 'column_anchor':W},
-    'Dg Latinski': {'checkbutton':'Dijagnoza Latinski' , 'table':'   Dg\nLatinski' , 'group':None,
-           'column_width':F_SIZE*27, 'column_anchor':W},
+       'Uputna dijagnoza': {'checkbutton':'Uputna dijagnoza' , 'group':None,
+              'table':'  Uputna\nDijagnoza' , 'column_width':F_SIZE*7, 'column_anchor':CENTER},
+       'Osnovni Uzrok Hospitalizacije': {'checkbutton':'Uzrok Hospitalizacije' , 'group':None,
+              'table':'Osnovni Uzrok\nHospitalizacije' , 'column_width':F_SIZE*10, 'column_anchor':CENTER},
+       'Glavna Operativna dijagnoza': {'checkbutton':'Glavna Operativna' , 'group':None,
+              'table':'      Glavna\nOperativna Dijagnoza' , 'column_width':F_SIZE*18, 'column_anchor':W},
+       'Sporedna Operativna dijagnoza': {'checkbutton':'Sporedna Operativna' , 'group':None,
+              'table':'     Sporedna\nOperativna Dijagnoza' , 'column_width':F_SIZE*18, 'column_anchor':W},
+       'Prateća dijagnoza': {'checkbutton':'Prateća dijagnoza' , 'group':None,
+              'table':' Prateća\nDijagnoza' , 'column_width':F_SIZE*18, 'column_anchor':W},
+       'Dg Latinski': {'checkbutton':'Dijagnoza Latinski' , 'group':None,
+              'table':'   Dg\nLatinski' , 'column_width':F_SIZE*27, 'column_anchor':W},
     
-    'Operator': {'checkbutton':'Operator' , 'table':'ID' , 'group':False,
-           'column_width':F_SIZE*18, 'column_anchor':W},
-    'Asistent': {'checkbutton':'Asistent' , 'table':'ID' , 'group':False,
-           'column_width':F_SIZE*28, 'column_anchor':W},
-    'Anesteziolog': {'checkbutton':'Anesteziolog' , 'table':'ID' , 'group':False,
-           'column_width':F_SIZE*18, 'column_anchor':W},
-    'Anestetičar': {'checkbutton':'Anestetičar' , 'table':'ID' , 'group':False,
-           'column_width':F_SIZE*16, 'column_anchor':W},
-    'Gostujući Specijalizant': {'checkbutton':'Specijalizant' , 'table':'  Gostujući\nSpecijalizant' , 'group':False,
-           'column_width':F_SIZE*28, 'column_anchor':W},
-    'Instrumentarka': {'checkbutton':'Instrumentarka' , 'table':'Instrumentarka' , 'group':False,
-           'column_width':F_SIZE*16, 'column_anchor':W},
-}
+       'Operator': {'checkbutton':'Operator' , 'group':False,
+              'table': '\nOperator' , 'column_width':F_SIZE*20, 'column_anchor':W},
+       'Asistent': {'checkbutton':'Asistent' , 'group':False,
+              'table': '\nAsistent' , 'column_width':F_SIZE*28, 'column_anchor':W},
+       'Anesteziolog': {'checkbutton':'Anesteziolog' , 'group':False,
+              'table': '\nAnesteziolog' , 'column_width':F_SIZE*20, 'column_anchor':W},
+       'Anestetičar': {'checkbutton':'Anestetičar' , 'group':False,
+              'table': '\nAnestetičar' , 'column_width':F_SIZE*16, 'column_anchor':W},
+       'Gostujući Specijalizant': {'checkbutton':'Specijalizant' , 'group':False,
+              'table': '\nGostujući Specijalizant' , 'column_width':F_SIZE*28, 'column_anchor':W},
+       'Instrumentarka': {'checkbutton':'Instrumentarka' , 'group':False,
+              'table': '\nInstrumentarka' , 'column_width':F_SIZE*16, 'column_anchor':W},
+       }
 
-SIGNS = ['EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN']
-IMAGES = {  'icon' :    [os.path.join(directory,'Slike/RHMH.ico'),
-                            os.path.join(directory,'Slike/RHMH.png')] ,
-            'Title':  [ os.path.join(directory,'Slike/GodHand_Transparent_smallest.png') ,
-                            ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
-            'Swap':   [ (os.path.join(directory,'Slike/dark_swap.png'),33,33) ,
-                            (os.path.join(directory,'Slike/color_swap.png'),33,33)  ] ,
-            'Hide':   [ (os.path.join(directory,'Slike/dark_hide.png'),48,33) ,
-                            (os.path.join(directory,'Slike/color_hide.png'),48,33)  ] ,
-            'Add':    [ (os.path.join(directory,'Slike/color_add.png'),28,28) ,
-                            (os.path.join(directory,'Slike/dark_add.png'),28,28)    ] ,
-            'Remove': [ (os.path.join(directory,'Slike/color_remove.png'),28,28) ,
-                            (os.path.join(directory,'Slike/dark_remove.png'),28,28) ] ,
-            'Play Video': os.path.join(directory,'Slike/play_button.png') ,
-            'Loading':    os.path.join(directory,'Slike/loading_circle.png') ,
-            'Password':  [ (os.path.join(directory,'Slike/eye.png'),270,270) ] , 
-            'MUVS':      [ (os.path.join(directory,'Slike/muvs.png'),280,280) ],
-            'Signs':  [ (os.path.join(directory,'Slike/sign_equal.png'),42,28),
+SlikeTable = {
+       'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
+       'id_slike': { 'table':'id_slike' , 'column_width':0, 'column_anchor':W },
+       'id_pacijent': { 'table':'id_pacijent' , 'column_width':0, 'column_anchor':W },
+
+       'Naziv': { 'table':'\nPacijent' , 'column_width':F_SIZE*24, 'column_anchor':W },
+       'Opis': { 'table':'\nOpis' , 'column_width':F_SIZE*13, 'column_anchor':W },
+       'Format': { 'table':'\nFormat' , 'column_width':F_SIZE*8, 'column_anchor':W },
+       'Veličina': { 'table':'\nVeličina' , 'column_width':F_SIZE*8, 'column_anchor':E },
+       'width': { 'table':'\nwidth' , 'column_width':F_SIZE*6, 'column_anchor':CENTER },
+       'height': { 'table':'\nheight' , 'column_width':F_SIZE*6, 'column_anchor':CENTER },
+       'pixels': { 'table':'\npixels' , 'column_width':F_SIZE*8, 'column_anchor':E },
+       'image_data': { 'table':'image_data' , 'column_width':0, 'column_anchor':E}
+       }
+
+MKBTable = {
+       'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
+       'id_dijagnoza': { 'table':'id_dijagnoza' , 'column_width':0, 'column_anchor':W} ,
+
+       'MKB - šifra': { 'table':'\nMKB - šifra' , 'column_width':F_SIZE*7, 'column_anchor':W },
+       'Opis Dijagnoze': { 'table':'\nOpis Dijagnoze' , 'column_width':F_SIZE*48, 'column_anchor':W },
+       }
+
+ZaposleniTable = {
+       'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
+       'id_zaposleni': { 'table':'id_zaposleni' , 'column_width':0, 'column_anchor':W} ,
+
+       'Zaposleni': { 'table':'\nZaposleni' , 'column_width':F_SIZE*27, 'column_anchor':W }
+       }
+
+LogsTable = {
+       'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
+
+       'ID Time': { 'table':'\nID Time' , 'column_width':F_SIZE*16, 'column_anchor':W },
+       'Email': { 'table':'\nEmail' , 'column_width':F_SIZE*16, 'column_anchor':W },
+       'Query': { 'table':'\nQuery' , 'column_width':F_SIZE*16, 'column_anchor':W },
+       'Error': { 'table':'\nError' , 'column_width':F_SIZE*27, 'column_anchor':W },
+       'Full Query': { 'table':'Full Query' , 'column_width':0, 'column_anchor':W },
+       'Full Error': { 'table':'Full Error' , 'column_width':0, 'column_anchor':W }
+       }
+
+SessionTable = {
+       'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
+
+       'Email': { 'table':'\nEmail' , 'column_width':0, 'column_anchor':W} ,
+       'Logged IN': { 'table':'\nLogged IN' , 'column_width':F_SIZE*16, 'column_anchor':W },
+       'Logged OUT': { 'table':'\nLogged OUT' , 'column_width':F_SIZE*16, 'column_anchor':W },
+       'Session': { 'table':'\nSession' , 'column_width':F_SIZE*16, 'column_anchor':W },
+       'PC': { 'table':'PC' , 'column_width':0, 'column_anchor':W },
+       'GUI': { 'table':'GUI' , 'column_width':0, 'column_anchor':W },
+       'GoogleDrive': { 'table':'GoogleDrive' , 'column_width':0, 'column_anchor':W },
+       'Database': { 'table':'Database' , 'column_width':0, 'column_anchor':W },
+       'AI': { 'table':'AI' , 'column_width':0, 'column_anchor':W },
+       'Media': { 'table':'Media' , 'column_width':0, 'column_anchor':W },
+       'Graph': { 'table':'Graph' , 'column_width':0, 'column_anchor':W },
+       'Controller': { 'table':'Controller' , 'column_width':0, 'column_anchor':W },
+       'ManageDB': { 'table':'ManageDB' , 'column_width':0, 'column_anchor':W },
+       'SelectDB': { 'table':'SelectDB' , 'column_width':0, 'column_anchor':W },
+       
+       }
+
+
+SIGNS = [
+    'EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN']
+IMAGES = {
+       'icon' :    [os.path.join(directory,'Slike/RHMH.ico'),
+                     os.path.join(directory,'Slike/RHMH.png')] ,
+       'Title':  [ os.path.join(directory,'Slike/GodHand_Transparent_smallest.png') ,
+                     ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
+       'Swap':   [ (os.path.join(directory,'Slike/dark_swap.png'),33,33) ,
+                     (os.path.join(directory,'Slike/color_swap.png'),33,33)  ] ,
+       'Hide':   [ (os.path.join(directory,'Slike/dark_hide.png'),48,33) ,
+                     (os.path.join(directory,'Slike/color_hide.png'),48,33)  ] ,
+       'Add':    [ (os.path.join(directory,'Slike/color_add.png'),28,28) ,
+                     (os.path.join(directory,'Slike/dark_add.png'),28,28)    ] ,
+       'Remove': [ (os.path.join(directory,'Slike/color_remove.png'),28,28) ,
+                     (os.path.join(directory,'Slike/dark_remove.png'),28,28) ] ,
+       'Left':    [ (os.path.join(directory,'Slike/color_left.png'),48,33) ,
+                     (os.path.join(directory,'Slike/dark_left.png'),48,33)    ] ,
+       'Right': [ (os.path.join(directory,'Slike/color_right.png'),48,33) ,
+                     (os.path.join(directory,'Slike/dark_right.png'),48,33) ] ,
+       'Play Video': os.path.join(directory,'Slike/play_button.png') ,
+       'Loading':    os.path.join(directory,'Slike/loading_circle.png') ,
+       'Password':  [ (os.path.join(directory,'Slike/eye.png'),270,270) ] , 
+       'MUVS':      [ (os.path.join(directory,'Slike/muvs.png'),280,280) ],
+       'Signs':  [ (os.path.join(directory,'Slike/sign_equal.png'),42,28),
                             (os.path.join(directory,'Slike/sign_like.png'),42,28),
-                                (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
-                                    (os.path.join(directory,'Slike/sign_between.png'),42,28)   ]   }
+                                   (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
+                                          (os.path.join(directory,'Slike/sign_between.png'),42,28)   ]   }
 
 Image_buttons = [   ('ADD\nImage',None),
                     ('EDIT\nImage',None),
@@ -190,7 +260,7 @@ Katalog_Entry = {   'mkb10':{   'MKB - šifra':( 'MKB Šifra', 10, (0,0,  1,1) )
                                             ( 'UPDATE\nmkb', None ),
                                             ( 'DELETE\nmkb', 'warning' ) ]   },
                     'zaposleni':{   'Combobox':( 'Funkcija', 22, (0,0,  1,1) ),
-                                    'Zaposleni':( 'Ime', 10, (1,0,  1,1) ),
+                                    'Zaposleni':( 'Zaposleni', 10, (1,0,  1,1) ),
                                     'Buttons':[ (2,0,  1,1),
                                                 ( 'ADD\nEmployee', 'info'),
                                                 ( 'UPDATE\nEmployee', 'info'),
@@ -210,8 +280,12 @@ Slike_Editor = {
 GD_Slike_folder = ['1e-KyYcDIt_V2Gn79blz0gESZLpeV4xVn']
 GD_RHMH_folder = ['1ybEVItyB75BParYUN2-ab_oVe2tBj1NW']
 RHMH_dict = {
-    'path':'RHMH.db',
+    'path':os.path.join(directory,'RHMH.db'),
     'id':'1vLJxgeqXMXfqGE_PTrtywdL69TPZDjhw',
+    'mime':'application/x-sqlite3'}
+LOGS_dict = {
+    'path':os.path.join(directory,'LOGS.db'),
+    'id':'1uvz-BN2DI4_7xcs7-dwJmfz-Z7jrpMU2',
     'mime':'application/x-sqlite3'}
 
 MIME = {'PNG' : 'image/png',

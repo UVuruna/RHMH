@@ -2,7 +2,7 @@ from A1_Variables import *
 from B1_GoogleDrive import GoogleDrive
 from B3_Media import Media
 from B4_Graph import Graph
-from B2_SQLite import RHMH
+from B2_SQLite import RHMH,LOGS,Database
 from C1_Controller import Controller
 
 
@@ -54,7 +54,7 @@ class SelectDB(Controller):
                 TABLE = Controller.Table_Names[table]
             for table_widget,db_name in zip(TABLE,tables_db_names[table]):
                 table_widget:tb.ttk.Treeview
-                lastquery = RHMH.LastQuery[db_name]
+                lastquery = Database.LastQuery[db_name]
                 if lastquery:
                     view = RHMH.execute_selectquery(lastquery)
                     for item in table_widget.get_children():
@@ -189,47 +189,14 @@ class SelectDB(Controller):
 
         table.configure(columns=Columns)
         for i,col in enumerate(Columns):
-            TXT = f'\n{col}'
-            if col in RHMH.pacijent+RHMH.dg_kategorija+RHMH.dr_funkcija:
-                FIX = col.split()
-                if len(FIX)==2:
-                    TXT = '\n'.join(FIX)
-                elif len(FIX)==3:
-                    if 'dijagnoza' in col:
-                        TXT = '\n'.join(FIX[:-1])
-                    else:
-                        TXT = f'{FIX[0]} {FIX[1]}\n{FIX[2]}'
-            elif col in RHMH.session:
-                if 'efficency' in col:
-                    TXT = col.replace(' ','\n')
-            elif table==Controller.Table_Zaposleni and col=='Zaposleni':
-                TXT = f'\nIme'
-            elif col=='Naziv':
-                TXT = f'\nPacijent'
-
-            table.heading(col, text=TXT, anchor=W, command=lambda c=col: sort_treeview(c, False))
-            table.column(col, stretch=False)
-            if 'id_' in col:
-                table.column(col, width=0)
-            elif i==0: # counting column
-                table.column(col, width=int(F_SIZE*4), minwidth=F_SIZE*2)
-            elif col in ['Pol','Godište','Starost','Uputna dijagnoza']:
-                table.column(col, width=int(F_SIZE*6), minwidth=F_SIZE*3, anchor=CENTER)
-            elif col in ['Pol','Godište','Starost','Veličina', 'width', 'height', 'pixels']:
-                table.column(col, width=int(F_SIZE*7), minwidth=F_SIZE*3, anchor=E)
-            elif 'Datum' in col:
-                table.column(col, width=F_SIZE*9, minwidth=F_SIZE*4, anchor=E)
-            elif col in ['Opis'] or table==Controller.Table_Session :
-                table.column(col, width=F_SIZE*13, minwidth=F_SIZE*6)
-            elif col in ['Dg Latinski','Error','Gostujući Specijalizant','Asistent'] or (col == 'Zaposleni' and table == Controller.Table_Zaposleni):
-                table.column(col, width=F_SIZE*27, minwidth=F_SIZE*13)
-            elif col in ['Opis Dijagnoze']:
-                table.column(col, width=F_SIZE*100)
-            elif table == Controller.Table_Logs or col in RHMH.dr_funkcija+RHMH.dg_kategorija:
-                table.column(col, width=F_SIZE*16, minwidth=F_SIZE*7)
-            else:
-                print(col)
-                table.column(col, width=F_SIZE*12, minwidth=F_SIZE*6)
+            for dicty in [MainTablePacijenti,SlikeTable,MKBTable,ZaposleniTable,LogsTable,SessionTable]:
+                if col in dicty:
+                    TXT = dicty[col]['table']
+                    WIDTH = dicty[col]['column_width']
+                    ANCHOR = dicty[col]['column_anchor']
+                    break
+            table.heading(col, text=TXT, anchor=CENTER, command=lambda c=col: sort_treeview(c, False))
+            table.column(col, width=WIDTH, stretch=False, anchor=ANCHOR)
         table['show'] = 'headings'
         return Columns[1:]
     
@@ -276,7 +243,7 @@ class SelectDB(Controller):
 
                 if widget_type==f'combo_{n}':
                     widget:tb.Combobox
-                    values = RHMH.email if search_option=='Email' else \
+                    values = LOGS.email if search_option=='Email' else \
                                 RHMH.pol if search_option=='Pol' else \
                                     RHMH.opis_slike if search_option=='Opis' else \
                                         RHMH.format_slike if search_option=='Format' else None
@@ -604,7 +571,6 @@ class SelectDB(Controller):
     def fill_TablePacijenti(view,table=None):
         Controller.MainTable_IDS.clear()
         for i, row in enumerate(view):
-            # FROM RHMH Date Format TO Table Date Format
             formatted_row = [i+1] + [datetime.strptime(cell,'%Y-%m-%d').strftime('%d-%b-%y') if SelectDB.is_DB_date(cell) \
                                         else ' , '.join(cell.split(',')) if isinstance(cell,str) and ',' in cell \
                                             else '' if str(cell)=='None' \
@@ -670,7 +636,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Zaposleni)
 
         elif TAB == 'Logs':
-            view = RHMH.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]))
+            view = LOGS.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]))
  
             for item in Controller.Table_Logs.get_children():
                 Controller.Table_Logs.delete(item)
@@ -678,7 +644,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Logs)
         
         elif TAB == 'Session':
-            view = RHMH.execute_select(True,'session',*(Controller.TableSession_Columns[1:]))
+            view = LOGS.execute_select(True,'session',*(Controller.TableSession_Columns[1:]))
 
             for item in Controller.Table_Session.get_children():
                 Controller.Table_Session.delete(item)
@@ -715,9 +681,8 @@ class SelectDB(Controller):
                 sign = Controller.get_widget_value(Controller.SearchBar_widgets[f'search_sign_{n}']) # SIGN
                 searchlocation:set = saving_location(sign) # DICT lokacija gde ce ubacivati vrednost
 
-                if sign == 'BETWEEN': # Dodaje TUPLE (x,y)
+                if sign == 'BETWEEN':
                     if 'Datum' in option or option=='ID Time':
-                        # FROM Form Date Formate TO RHMH Date Format
                         fromdate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date1_{n}'])
                         todate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date2_{n}'])
                         try:
@@ -770,7 +735,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_MKB)
 
         elif TAB == 'Logs':
-            view = RHMH.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]),**searching)
+            view = LOGS.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]),**searching)
  
             for item in Controller.Table_Logs.get_children():
                 Controller.Table_Logs.delete(item)
@@ -778,7 +743,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Logs)
 
         elif TAB == 'Session':
-            view = RHMH.execute_select(True,'session',*(Controller.TableSession_Columns[1:]),**searching)
+            view = LOGS.execute_select(True,'session',*(Controller.TableSession_Columns[1:]),**searching)
 
             for item in Controller.Table_Session.get_children():
                 Controller.Table_Session.delete(item)
@@ -850,7 +815,6 @@ class SelectDB(Controller):
         SelectDB.Clear_Form()
         if event:
             try:
-                # DAJ RED GDE JE FOKUS i daj prvi VALUE i oduzmi 1 i pogleda ko je na toj poziciji u ID listi
                 Controller.PatientFocus_ID = Controller.Table_Pacijenti.item(Controller.Table_Pacijenti.focus())['values'][1] 
                 patient = RHMH.get_patient_data(Controller.PatientFocus_ID)
             except IndexError:
@@ -896,10 +860,9 @@ class SelectDB(Controller):
     @staticmethod
     def fill_LogsForm(event):
         try:
-            # DAJ RED GDE JE FOKUS i daj prvi VALUE i oduzmi 1 i pogleda ko je na toj poziciji u ID listi
             time = Controller.Table_Logs.item(Controller.Table_Logs.focus())['values'][1]
             query = f'SELECT `Full Query`,`Full Error` from logs WHERE `ID Time` = "{time}"'
-            FullQuery,FullError = RHMH.execute_selectquery(query)[0]
+            FullQuery,FullError = LOGS.execute_selectquery(query)[0]
             SelectDB.set_widget_value(Controller.Logs_FormVariables['Full Query'],FullQuery)
             SelectDB.set_widget_value(Controller.Logs_FormVariables['Full Error'],FullError)
         except IndexError:

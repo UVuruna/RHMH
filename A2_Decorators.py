@@ -1,5 +1,5 @@
 from A1_Variables import *
-from B2_SQLite import RHMH
+from B2_SQLite import RHMH,LOGS
 
 def spam_stopper(button:ctk.CTkButton,root:Tk):
     def decorator(func):
@@ -54,9 +54,9 @@ def error_catcher():
                 return func(*args, **kwargs)
             except Exception as e:
                 print(e)
-                Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')}' 
+                Time = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")}'
                 fullerror = traceback.format_exc()
-                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
+                LOGS.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
                                         'Query':func.__qualname__, 'Full Query':RHMH.LoggingQuery,
                                         'Error':str(e), 'Full Error': fullerror})
                 raise # Da bi radio try-except unutar metoda

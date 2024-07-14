@@ -1,5 +1,5 @@
 from A1_Variables import *
-from B2_SQLite import RHMH
+from B2_SQLite import RHMH,LOGS
 from B3_Media import Media
 from B4_Graph import Graph
 from C1_Controller import Controller
@@ -77,13 +77,13 @@ class MainPanel:
 
             # NOTEBOOK Tab LOGS -- 4
         Controller.Table_Logs, Controller.FreeQuery_Frame = MainPanel.LogsTab_Create('Logs', SelectDB.fill_LogsForm)
-        Controller.TableLogs_Columns = tuple(['ID']+RHMH.logs)
+        Controller.TableLogs_Columns = tuple(['ID']+LOGS.logs)
         SelectDB.selected_columns(Controller.TableLogs_Columns , Controller.Table_Logs , columnvar=False)
         Controller.NoteBook.hide(4)
 
             # NOTEBOOK Tab SESSION -- 5
         Controller.Table_Session = MainPanel.SessionTab_Create('Session')
-        Controller.TableSession_Columns = tuple(['ID']+RHMH.session)
+        Controller.TableSession_Columns = tuple(['ID']+LOGS.session)
         SelectDB.selected_columns(Controller.TableSession_Columns , Controller.Table_Session , columnvar=False)
         Controller.NoteBook.hide(5)
 
@@ -528,7 +528,8 @@ class MainPanel:
         MainPanel.Log_SideFrame(text_frame)
 
         notebook_frame.grid_rowconfigure(1, weight=1)
-        notebook_frame.grid_columnconfigure(0, weight=1)
+        notebook_frame.grid_columnconfigure(0, weight=2)
+        notebook_frame.grid_columnconfigure(2, weight=1)
         Controller.Table_Names[tabname] = table
         return table,freequery_frame
 
@@ -564,10 +565,45 @@ class MainPanel:
         scroll_x.config(command=table.xview)
         scroll_y.config(command=table.yview)
 
+
+        side_panel = Frame(notebook_frame, bd=2, relief=RAISED)
+        side_panel.grid(row=0, column=2, rowspan=2, sticky=NSEW)
+        MainPanel.Session_SideFrame(side_panel)
+
         notebook_frame.grid_rowconfigure(0, weight=1)
         notebook_frame.grid_columnconfigure(0, weight=1)
+        notebook_frame.grid_columnconfigure(2, weight=4)
         Controller.Table_Names[tabname] = table
         return table
+
+    @staticmethod
+    def Session_SideFrame(parent_frame:Frame):
+
+        def swapping_session_data(event):
+            pass
+
+        lbl1 = tb.Label(parent_frame,text='TESTING', anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, font=font_big('bold'))
+        lbl1.grid(row=0, column=1)
+        text1 = tb.Text(parent_frame, font=font_default)
+        text1.grid(row=1, column=0, columnspan=3, sticky=NSEW)
+        Controller.Logs_FormVariables['Session'] = text1
+
+        color_buttonleft, darker_buttonleft, color_buttonright, darker_buttonright = Media.label_ImageLoad(IMAGES['Left']+IMAGES['Right'])
+
+        buttonleft = tb.Label(parent_frame, image=color_buttonleft)
+        buttonleft.grid(row=0, column=0, sticky=W)
+        buttonleft.bind('<ButtonRelease-1>', swapping_session_data)
+        buttonleft.bind('<Enter>', lambda event,img=darker_buttonleft: Media.hover_label_button(event,img))
+        buttonleft.bind('<Leave>', lambda event,img=color_buttonleft: Media.hover_label_button(event,img))
+
+        buttonright = tb.Label(parent_frame, image=color_buttonright)
+        buttonright.grid(row=0, column=2, sticky=E)
+        buttonright.bind('<ButtonRelease-1>', swapping_session_data)
+        buttonright.bind('<Enter>', lambda event,img=darker_buttonright: Media.hover_label_button(event,img))
+        buttonright.bind('<Leave>', lambda event,img=color_buttonright: Media.hover_label_button(event,img))
+
+        parent_frame.grid_rowconfigure(1,weight=1)
+        parent_frame.grid_columnconfigure(1,weight=1)
 
     @staticmethod
     def GraphTab_Create():
@@ -671,6 +707,25 @@ class MainPanel:
     def SettingsTab_Create():
         notebook_frame = tb.Frame(Controller.NoteBook)
         Controller.NoteBook.add(notebook_frame, text='Settings')
+
+        settings = ['Theme','Language','Title','Font','Showed Columns','Font Size']
+        settings += ['Theme1','Language1','Title1','Font1','Showed Columns1','Font Size1']
+
+        notebook_frame.grid_rowconfigure([i for i in range(len(settings)//2)], weight=1)
+        notebook_frame.grid_columnconfigure(0,weight=3)
+        notebook_frame.grid_columnconfigure(1,weight=1)
+
+        correction = False
+        for i,txt in enumerate(settings):
+            frame = Frame(notebook_frame, bd=2, relief=RAISED)
+            frame.grid(row=(i-correction)//2, column=correction, sticky=NSEW)
+            correction = not correction
+            info = frame.grid_info()
+            print(info['row'], info['column'])
+            print(correction)
+            Controller.Settings_FormVariables[txt] = frame
+
+        print(Controller.Settings_FormVariables)    
 
         return notebook_frame
     

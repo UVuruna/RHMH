@@ -30,7 +30,7 @@ class ManageDB(Controller):
                 for col,widget in Controller.Patient_FormVariables[table].items():
                     value = ManageDB.get_widget_value(widget)
                     if value:
-                        if 'Datum' in col: # FROM Form Date Format TO RHMH Date Format
+                        if 'Datum' in col:
                             value = datetime.strptime(value, '%d-%b-%Y').strftime('%Y-%m-%d')
                             if col=='Datum Prijema':
                                 trenutna_godina = datetime.strptime(value, '%Y-%m-%d').year
@@ -224,7 +224,6 @@ class ManageDB(Controller):
 
             PATIENT = f'{patient['Ime']} {patient['Prezime']}'
             try:
-                # FROM RHMH Date Formate TO Patient Report Date Format
                 datumprijema = f' ({datetime.strptime(str(patient['Datum Prijema']),'%Y-%m-%d').strftime('%d-%b-%y')})'
                 PATIENT += datumprijema
             except KeyError:
@@ -240,7 +239,6 @@ class ManageDB(Controller):
                     try:
                         OLD = str(patient[col])
                         if table=='pacijent' and 'Datum' in col:
-                            # FROM RHMH Date Format TO Form Date Format
                             OLD = datetime.strptime(OLD,'%Y-%m-%d').strftime('%d-%b-%Y')
                     except KeyError:
                         OLD = ''
@@ -263,7 +261,6 @@ class ManageDB(Controller):
                                 insert_Dict[table][col] = INSERT
                         else: # Table pacijent
                             if 'Datum' in col:
-                                # FROM Form Date Format TO RHMH Date Format
                                 NEW = datetime.strptime(NEW,'%d-%b-%Y').strftime('%Y-%m-%d')
                             update_Dict[col] = NEW
 
@@ -738,12 +735,12 @@ class ManageDB(Controller):
                     Controller.Valid_Alternative = False
                     parent.config(highlightbackground=ThemeColors['danger'], highlightcolor=ThemeColors['danger'])
             else:
-                parent.config(highlightbackground=ThemeColors['selectbg'], highlightcolor=ThemeColors['primary'])
+                parent.config(highlightbackground=ThemeColors[color_highlight], highlightcolor=ThemeColors['primary'])
         elif value.strip() and not (value.strip() in Controller.Zaposleni_validation_LIST):
             Controller.Valid_Alternative = False
             parent.config(highlightbackground=ThemeColors['danger'], highlightcolor=ThemeColors['danger'])
         else:
-            parent.config(highlightbackground=ThemeColors['selectbg'], highlightcolor=ThemeColors['primary'])
+            parent.config(highlightbackground=ThemeColors[color_highlight], highlightcolor=ThemeColors['primary'])
 
     @staticmethod
     def export_table(method:callable):

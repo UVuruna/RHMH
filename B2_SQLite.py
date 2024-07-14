@@ -1,17 +1,10 @@
 from A1_Variables import *
 
 class Database:
-    def __init__(self,database) -> None:
-        self.database = database
-        self.connection = None
-        self.cursor = None
-        self.lock = threading.Lock()
+    PatientQuery = str()
+    LoggingQuery:str = None
 
-    def start_RHMH_db(self):
-        self.PatientQuery = str()
-        self.LoggingQuery:str = None
-
-        self.LastQuery = {
+    LastQuery = {
             'pacijent': None,
             'slike': None,
             'mkb10': None,
@@ -19,18 +12,29 @@ class Database:
             'logs': None,
             'session': None
         }
+    
+    def __init__(self,database) -> None:
+        self.database = database
+        self.connection = None
+        self.cursor = None
+        self.lock = threading.Lock()
 
+    def start_LOGS_db(self):
+        self.logs = self.show_columns('logs')[:-2]
+        self.session = self.show_columns('session')
+
+        self.email = [i[0] for i in self.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')]
+
+    def start_RHMH_db(self):
+        
         self.pacijent = self.show_columns('pacijent')
         self.slike = self.show_columns('slike')[:-1]
         self.mkb10 = self.show_columns('mkb10')
         self.zaposleni = self.show_columns('zaposleni')     
-        self.logs = self.show_columns('logs')[:-2]
-        self.session = self.show_columns('session')
 
-        self.email = [i[0] for i in RHMH.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')]
-        self.pol = [i[0] for i in RHMH.execute_selectquery("SELECT DISTINCT Pol from pacijent")]
-        self.opis_slike = [i[0] for i in RHMH.execute_selectquery("SELECT DISTINCT Opis from slike")]
-        self.format_slike = [i[0] for i in RHMH.execute_selectquery("SELECT DISTINCT Format from slike")]
+        self.pol = [i[0] for i in self.execute_selectquery("SELECT DISTINCT Pol from pacijent")]
+        self.opis_slike = [i[0] for i in self.execute_selectquery("SELECT DISTINCT Opis from slike")]
+        self.format_slike = [i[0] for i in self.execute_selectquery("SELECT DISTINCT Format from slike")]
         
         self.dg_kategorija = [i[0] for i in self.execute_selectquery('SELECT Kategorija from kategorija')]
         self.dr_funkcija = [i[0] for i in self.execute_selectquery('SELECT Funkcija from funkcija')]
@@ -115,11 +119,11 @@ class Database:
                 query += f' WHERE {where_pairs}'
             
             if 'FROM pacijent' in query:
-                self.PatientQuery = query
+                Database.PatientQuery = query
 
             self.LoggingQuery = self.format_sql(query)
             if log is True:
-                self.LastQuery[table] = query
+                Database.LastQuery[table] = query
 
             self.connect()
             self.cursor.execute(query)
@@ -190,9 +194,9 @@ class Database:
                 query += f' HAVING {having_pairs}'
 
             if 'FROM pacijent' in query:
-                self.PatientQuery = query
+                Database.PatientQuery = query
             self.LoggingQuery = self.format_sql(query)
-            self.LastQuery[table] = query
+            Database.LastQuery[table] = query
             print(self.LoggingQuery)
 
             self.connect()
@@ -204,7 +208,7 @@ class Database:
             self.lock.release()
  
     def execute_filter_select(self,columns:dict):
-        if not self.PatientQuery or 'FROM pacijent' not in self.PatientQuery:
+        if not Database.PatientQuery or 'FROM pacijent' not in Database.PatientQuery:
             return
         with self.lock:
             try:
@@ -215,17 +219,17 @@ class Database:
                     wherenull += f'pacijent.{txt} {null} AND '
                 wherenull = wherenull.rstrip(' AND ')
 
-                if 'WHERE' in self.PatientQuery:
-                    fix = self.PatientQuery.split('WHERE')
+                if 'WHERE' in Database.PatientQuery:
+                    fix = Database.PatientQuery.split('WHERE')
                     query = fix[0]+f'{wherenull} AND '+fix[1]
-                elif 'GROUP BY' in self.PatientQuery:
-                    fix = self.PatientQuery.split('GROUP BY')
+                elif 'GROUP BY' in Database.PatientQuery:
+                    fix = Database.PatientQuery.split('GROUP BY')
                     query = fix[0]+f'{wherenull} GROUP BY'+fix[1]
                 else:
-                    query = self.PatientQuery+f' {wherenull}'
+                    query = Database.PatientQuery+f' {wherenull}'
 
                 self.LoggingQuery = self.format_sql(query)
-                self.LastQuery['pacijent'] = query
+                Database.LastQuery['pacijent'] = query
 
                 self.connect()
                 self.cursor.execute(query)
@@ -465,29 +469,69 @@ class Database:
             finally:
                 self.close_connection()
 
+    @staticmethod
+    def execute_Insert_Many( from_DB:'Database', to_DB:'Database', table, columns):
+        COLUMNS = []
+        for col in columns:
+            COL = f"`{col}`" if " " in col else col
+            COLUMNS.append(COL)
+
+        from_DB.connect()    
+        from_DB.cursor.execute(f"SELECT {', '.join(COLUMNS)} FROM {table}")
+        rows = from_DB.cursor.fetchall()
+
+        to_DB.connect()
+        placeholders = ', '.join(['?'] * len(COLUMNS))
+        to_DB.cursor.executemany(f"INSERT INTO {table} ({', '.join(COLUMNS)}) VALUES ({placeholders})", rows)
+        to_DB.connection.commit()
+        
+        from_DB.close_connection()
+        to_DB.close_connection()
+
 RHMH = Database(RHMH_dict['path'])
-SLIKE = Database('SLIKE.db')
+LOGS = Database(LOGS_dict['path'])
+SLIKE = Database(os.path.join(directory,'SLIKE.db'))
 
 if __name__=='__main__':
-    RHMH = Database('RHMH.db')
-    RHMH.start_RHMH_db()
-    print(RHMH.pacijent)
-    print(RHMH.slike)
-    print(RHMH.mkb10)
-    print(RHMH.zaposleni)
-    print(RHMH.dg_kategorija)
-    print(RHMH.dr_funkcija)
-    print(RHMH.logs)
-    print(RHMH.session)
 
-    print(RHMH.opis_slike)
-    print(RHMH.format_slike)
-    print(RHMH.pol)
+    '''
+    RHMH.connect()
+    RHMH.cursor.execute('DROP TABLE logs')
+    RHMH.connection.commit()
+    RHMH.close_connection()
+    RHMH.Vaccum_DB()
     
 
-    table = RHMH.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')
-    print(table)
+    print(RHMH.show_columns('logs'))
+    
+    print(LOGS.show_columns('logs'))
+    print(LOGS.show_columns('session'))
+    print(RHMH.show_columns('session'))
 
-    print(RHMH.get_distinct('slike',*('Opis',)))
+    #Database.execute_Insert_Many(RHMH,LOGS,'logs',RHMH.show_columns('logs'))
 
-    print(RHMH.execute_select('slike','*'))
+    print('zavrseno')
+    logs = LOGS.execute_select(False,'logs','*')
+    print(len(logs))
+
+    def list_tables(database: str):
+        # Povezivanje na SQLite bazu podataka
+        connection = sqlite3.connect(database)
+        cursor = connection.cursor()
+
+        # Izvršavanje PRAGMA upita za dobijanje liste tabela
+        cursor.execute("PRAGMA table_list;")
+        tables = cursor.fetchall()
+
+        # Ispisivanje naziva tabela
+        for table in tables:
+            print(table)
+
+        # Zatvaranje konekcije
+        cursor.close()
+        connection.close()
+
+    list_tables('LOGS.db')
+    print('---')
+    list_tables('RHMH.db')
+    #'''

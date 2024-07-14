@@ -1,7 +1,7 @@
 from A1_Variables import *
 from A2_Decorators import spam_stopper,PC,print_dict
 from B1_GoogleDrive import GoogleDrive
-from B2_SQLite import RHMH
+from B2_SQLite import RHMH,LOGS
 from B3_Media import Media
 from C1_Controller import Controller,GodMode
 from C2_ManageDB import ManageDB
@@ -19,6 +19,7 @@ class GUI:
     @staticmethod
     def initialize(root:Tk) -> None:
         GUI.root = root
+        LOGS.start_LOGS_db()
         RHMH.start_RHMH_db()
         threading.Thread(target=GUI.get_PC_info).start()
         
@@ -55,6 +56,7 @@ class GUI:
         GUI.root.grid_columnconfigure(1, weight=1)
 
         threading.Thread(target=Controller.starting_application).start()
+        UserSession['Logged IN'] = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
         GUI.root.geometry(f'{WIDTH}x{HEIGHT}')
         print(f'Ukupno Vreme za pokretanje programa: {(time.time_ns()-TIME_START)/10**9:.2f} s')
 
@@ -104,11 +106,11 @@ class GUI:
 
     @staticmethod
     def show_title_frame() -> None:
-        if not TopPanel.Top_Frame.winfo_ismapped():
-            TopPanel.Top_Frame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
+        if not Controller.Top_Frame.winfo_ismapped():
+            Controller.Top_Frame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
             GUI.title_visible.set(True)
         else:
-            TopPanel.Top_Frame.grid_forget()
+            Controller.Top_Frame.grid_forget()
             GUI.title_visible.set(False) 
 
     @staticmethod

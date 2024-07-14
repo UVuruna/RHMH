@@ -7,7 +7,12 @@ class Media:
     Downloading = False
     ReaderSetting = easyocr.Reader(['rs_latin','en'])
     if os.name == 'posix' and os.uname().sysname == 'Darwin':  # macOS
-        os.environ['PYTORCH_MPS_HIGH_WATERMARK_RATIO'] = '0.8'
+        if torch.backends.mps.is_available():
+            mps_device = torch.device("mps")
+            x = torch.ones(1, device=mps_device)
+            print(x)
+        else:
+            print("MPS device not found.")
 
     OperacionaChoice = {
         'Datum Operacije': None,
@@ -376,9 +381,9 @@ class Media:
 
     @staticmethod
     def create_video_thumbnail(video_data):
-        if not os.path.exists('temporary'):
-            os.makedirs('temporary')
-        video_file = 'temporary/temp_video.mp4'
+        if not os.path.exists(os.path.join(directory,'temporary')):
+            os.makedirs(os.path.join(directory,'temporary'))
+        video_file = os.path.join(directory,'temporary/temp_video.mp4')
         with open(video_file, 'wb') as f:
             f.write(video_data)
 
@@ -415,9 +420,9 @@ class Media:
     @staticmethod
     def open_image(event,image_data):
         # Save video data to a temporary file
-        if not os.path.exists('temporary'):
-            os.makedirs('temporary')
-        image_file = 'temporary/temp_image.png'
+        if not os.path.exists(os.path.join(directory,'temporary')):
+            os.makedirs(os.path.join(directory,'temporary'))
+        image_file = os.path.join(directory,'temporary/temp_image.png')
         with open(image_file, 'wb') as f:
             f.write(image_data)
 

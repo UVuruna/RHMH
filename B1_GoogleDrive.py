@@ -18,8 +18,8 @@ class GoogleDrive:
     @staticmethod
     def authenticate_google_drive():
         creds = None
-        token_path = 'www_token.pickle'
-        creds_path = 'www_credentials.json'
+        token_path = os.path.join(directory,'www_token.pickle')
+        creds_path = os.path.join(directory,'www_credentials.json')
 
         # Proverite da li postoji Token.pickle fajl koji čuva korisničke kredencijale
         if os.path.exists(token_path):
@@ -149,4 +149,6 @@ class GoogleDrive:
 
 if __name__ == '__main__':
     GoogleDrive.setup_connection()
-    GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
+    #GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
+    GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
+    GoogleDrive.upload_UpdateFile(LOGS_dict['id'],LOGS_dict['path'],LOGS_dict['mime'])

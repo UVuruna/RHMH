@@ -24,7 +24,7 @@ class TopPanel:
         Controller.Top_Frame.bind('<Button-1>' , Controller.lose_focus)
         Controller.Top_Frame.bind('<Configure>' , TopPanel.adjust_title_window)
 
-        Controller.Reconnect_Button = ctk.CTkButton(root, text='Connect', width=buttonX,height=buttonY//2, corner_radius=12, font=font_medium(),
+        Controller.Reconnect_Button = ctk.CTkButton(root, text='Connect', width=buttonX, height=buttonY//2, corner_radius=12, font=font_medium(),
                                     fg_color=ThemeColors['warning'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                                     command=Controller.starting_application)
 

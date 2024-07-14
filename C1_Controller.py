@@ -34,7 +34,7 @@ class GodMode(simpledialog.Dialog):
             Controller.Admin = True
             info = 'New tabs:\n\t-Logs'
             title = 'Admin unlocked'
-        elif dialog.password=='C12-Si28-C13-Si28-C12':
+        elif dialog.password in ['C12-Si28-C13-Si28-C12','C12-Li3-C13-Li3-C12']:
             Controller.Admin = True
             Controller.GodMode = True
             Controller.FreeQuery_Frame.grid()
@@ -100,6 +100,7 @@ class Controller:
 
     About_Tab:      Frame = None
     Settings_Tab:   Frame = None
+    Settings_FormVariables = dict()
 
     Table_Names = dict()
     
@@ -179,6 +180,7 @@ class Controller:
             if Controller.Connected == False:
                 email = GoogleDrive.get_UserEmail()
                 GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
+                GoogleDrive.download_DB(LOGS_dict['id'],LOGS_dict['path'])
 
                 Controller.Connected = True
                 if Controller.Reconnect_window:
@@ -197,9 +199,16 @@ class Controller:
     def uploading_to_GoogleDrive() -> None:
         def message_success():
             Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database successfull')
+        def message_fail():
+            Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database failed')
 
-        GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
-        Controller.ROOT.after(WAIT,message_success)  # Message
+        rhmh = GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
+        logs = GoogleDrive.upload_UpdateFile(LOGS_dict['id'],LOGS_dict['path'],LOGS_dict['mime'])
+
+        if rhmh and logs:
+            Controller.ROOT.after(WAIT,message_success)  # Message
+        else:
+            Controller.ROOT.after(WAIT,message_fail)  # Message
 
     @staticmethod
     def lose_focus(event):
@@ -299,7 +308,7 @@ class Controller:
         if result:
             def execute():
                 RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
-                                                'Query':query_type,'Full Query':RHMH.LoggingQuery})
+                                                'Query':query_type,'Full Query':LOGS.LoggingQuery})
             Controller.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
         return result
 
