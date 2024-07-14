@@ -90,7 +90,7 @@ class Database:
         with self.lock:
             try:
                 self.connect()
-                self.LoggingQuery = self.format_sql(query)
+                Database.LoggingQuery = self.format_sql(query)
                 self.cursor.execute(query)
                 view = self.cursor.fetchall()
                 if columns is True:
@@ -121,7 +121,7 @@ class Database:
             if 'FROM pacijent' in query:
                 Database.PatientQuery = query
 
-            self.LoggingQuery = self.format_sql(query)
+            Database.LoggingQuery = self.format_sql(query)
             if log is True:
                 Database.LastQuery[table] = query
 
@@ -195,9 +195,9 @@ class Database:
 
             if 'FROM pacijent' in query:
                 Database.PatientQuery = query
-            self.LoggingQuery = self.format_sql(query)
+            Database.LoggingQuery = self.format_sql(query)
             Database.LastQuery[table] = query
-            print(self.LoggingQuery)
+            print(Database.LoggingQuery)
 
             self.connect()
             self.cursor.execute(query)
@@ -228,7 +228,7 @@ class Database:
                 else:
                     query = Database.PatientQuery+f' {wherenull}'
 
-                self.LoggingQuery = self.format_sql(query)
+                Database.LoggingQuery = self.format_sql(query)
                 Database.LastQuery['pacijent'] = query
 
                 self.connect()
@@ -272,7 +272,7 @@ class Database:
             query = f'SELECT {SELECT} FROM pacijent {JOIN} ' + \
                     f'WHERE pacijent.id_pacijent = {ID} GROUP BY pacijent.id_pacijent'
 
-            self.LoggingQuery = self.format_sql(query)
+            Database.LoggingQuery = self.format_sql(query)
             self.connect()
             self.cursor.execute(query)
             view = self.cursor.fetchall()
@@ -315,7 +315,7 @@ class Database:
                 logginquery = f'UPDATE {table} SET {loggin} WHERE {id[0]} = {id[1]}'
                 query = f'UPDATE {table} SET {settin} WHERE {id[0]} = ?'
 
-                self.LoggingQuery = self.format_sql(logginquery)
+                Database.LoggingQuery = self.format_sql(logginquery)
                 self.cursor.execute(query,value)
                 self.connection.commit()
             finally:
@@ -343,7 +343,7 @@ class Database:
                 query = f'INSERT INTO {table} ({columns}) VALUES ({('?, '*counter).rstrip(', ')})'
                 logginquery = f'INSERT INTO {table} ({columns}) VALUES ({loggin})'
 
-                self.LoggingQuery = self.format_sql(logginquery)
+                Database.LoggingQuery = self.format_sql(logginquery)
                 self.cursor.execute(query,values)
                 self.connection.commit()
                 self.cursor.execute('SELECT last_insert_rowid()')
@@ -362,7 +362,7 @@ class Database:
                 where = where.rstrip(' AND ')
                 query = f'DELETE FROM {table} WHERE {where}'
 
-                self.LoggingQuery = self.format_sql(query)
+                Database.LoggingQuery = self.format_sql(query)
                 self.cursor.execute(query)
                 self.connection.commit()
             finally:
@@ -373,7 +373,7 @@ class Database:
             try:
                 self.connect()
                 query = f'SELECT image_data FROM slike WHERE id_slike = {id}'
-                self.LoggingQuery = self.format_sql(query)
+                Database.LoggingQuery = self.format_sql(query)
                 self.cursor.execute(query)
                 result = self.cursor.fetchone()
                 if result:
@@ -397,7 +397,7 @@ class Database:
                         query += f' WHERE dijagnoza.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
                     
                 query += ' GROUP BY `MKB - šifra`'
-                self.LoggingQuery = self.format_sql(query)
+                Database.LoggingQuery = self.format_sql(query)
 
                 self.cursor.execute(query)
                 result = self.cursor.fetchall()
@@ -420,7 +420,7 @@ class Database:
                     if IDS:
                         query += f' WHERE operacija.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
                 query += 'GROUP BY Zaposleni'
-                self.LoggingQuery = self.format_sql(query)
+                Database.LoggingQuery = self.format_sql(query)
 
                 self.cursor.execute(query)
                 result = self.cursor.fetchall()
@@ -436,7 +436,7 @@ class Database:
                 query += f'WHERE `{datewhere}` IS NOT NULL'
                 if IDS:
                     query += f' AND pacijent.id_pacijent IN ({', '.join([str(i) for i in IDS])}) '
-                self.LoggingQuery = self.format_sql(query)
+                Database.LoggingQuery = self.format_sql(query)
 
                 self.cursor.execute(query)
                 result = self.cursor.fetchall()
@@ -451,7 +451,7 @@ class Database:
             try:
                 self.connect()
                 query = f'SELECT DISTINCT {', '.join([*args])} FROM {table}'
-                self.LoggingQuery = self.format_sql(query)
+                Database.LoggingQuery = self.format_sql(query)
 
                 self.cursor.execute(query)
                 result = self.cursor.fetchall()

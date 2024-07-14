@@ -1,7 +1,7 @@
 from A1_Variables import *
 from B1_GoogleDrive import GoogleDrive
 from B3_Media import Media
-from B2_SQLite import RHMH
+from B2_SQLite import RHMH,LOGS
 
 class GodMode(simpledialog.Dialog):
     def __init__(self, parent, title):
