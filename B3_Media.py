@@ -3,16 +3,25 @@ from A1_Variables import *
 pillow_heif.register_heif_opener()
 
 class Media:
+    TitleImages = []
+    ThemeIcons = []
     TopLevel = None
     Downloading = False
-    ReaderSetting = easyocr.Reader(['rs_latin','en'])
+    
     if os.name == 'posix' and os.uname().sysname == 'Darwin':  # macOS
         if torch.backends.mps.is_available():
-            mps_device = torch.device("mps")
-            x = torch.ones(1, device=mps_device)
-            print(x)
+            device = torch.device("mps")
         else:
-            print("MPS device not found.")
+            device = torch.device("cpu")
+    else:
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+        else:
+            device = torch.device("cpu")
+            
+    torch.set_default_tensor_type(torch.FloatTensor)
+    torch.set_default_device(device)
+    ReaderSetting = easyocr.Reader(['rs_latin','en'], gpu=(device != torch.device("cpu"))) # ovo pravi True/False za device
 
     OperacionaChoice = {
         'Datum Operacije': None,
@@ -140,7 +149,6 @@ class Media:
        
         bar = tb.Floodgauge(Media.TopLevel, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_big())
         bar.grid(row=2, column=0, columnspan=2, padx=24, pady=24, sticky=EW)
-
         return text_widget,bar
 
     @staticmethod

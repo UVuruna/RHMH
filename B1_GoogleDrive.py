@@ -150,5 +150,5 @@ class GoogleDrive:
 if __name__ == '__main__':
     GoogleDrive.setup_connection()
     #GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
-    GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
+    #GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
     GoogleDrive.upload_UpdateFile(LOGS_dict['id'],LOGS_dict['path'],LOGS_dict['mime'])

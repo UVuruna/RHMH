@@ -6,7 +6,8 @@ www_credentials.json
 www_token.pickle
 .vscode/
 required_programs/
-
+output/
+output_old/
 www_test.py
 www_test2.py
 www_test3.py
@@ -20,5 +21,6 @@ OLD/
 RHMH.db
 SLIKE.db
 LOGS.db
-
+A0_Update.py
+install_pyinstaller.json
 

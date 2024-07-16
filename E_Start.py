@@ -44,10 +44,9 @@ def start():
     def Classes_Decorating(CLASS_list:list):
         for CLASS in CLASS_list:
             CLASS:object
-            for i,(name,method) in enumerate(inspect.getmembers(CLASS, predicate=inspect.isfunction)):
+            for name,method in inspect.getmembers(CLASS, predicate=inspect.isfunction):
                 decorated_method = method_efficency()(error_catcher()(method))
                 setattr(CLASS, name, decorated_method)
-            print(f'Decorated --> {CLASS.__qualname__} - {i+1} methods')
 
     Classes_Decorating([GoogleDrive,Database,Media,Graph,Controller,GodMode,ManageDB,SelectDB,TopPanel,FormPanel,MainPanel,GUI])
 

@@ -81,7 +81,7 @@ class Graph:
         Graph.plot.set_xlabel(X_label, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext])
         Graph.plot.set_ylabel(Y_label, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext])
 
-        Graph.plot.tick_params(axis='x', colors=ThemeColors[color_titletext], labelsize=F_SIZE, labelrotation=45)
+        Graph.plot.tick_params(axis='x', colors=ThemeColors[color_titletext], labelsize=F_SIZE, labelrotation=28)
         Graph.plot.tick_params(axis='y', colors=ThemeColors[color_titletext], labelsize=F_SIZE)
 
     @staticmethod
@@ -91,8 +91,11 @@ class Graph:
         
         if os.name == 'nt':  # For Windows
             os.startfile(os.path.abspath(image_location))
-        else:
-            subprocess.call(('xdg-open', os.path.abspath(image_location)))
+        elif os.name == 'posix':  # For macOS and Linux
+            if os.uname().sysname == 'Darwin':  # macOS
+                subprocess.call(['open', os.path.abspath(image_location)])
+            else:  # Linux
+                subprocess.call(['xdg-open', os.path.abspath(image_location)])
 
     @staticmethod
     def create_1D_bar( colors=0, values=0 ) -> None:
@@ -159,7 +162,7 @@ class Graph:
 
         for i in range(num_bars_per_group):
             bar_values = [Graph.Y[j][i] for j in range(num_groups)]
-            Graph.plot.bar(index, bar_values, bar_width, bottom=bottom, label=f'Group {i+1}', color=colors[i])
+            Graph.plot.bar(index, bar_values, bar_width, bottom=bottom, label=Graph.X2[i], color=colors[i])
             bottom += bar_values
 
         if values == 1:
@@ -192,13 +195,10 @@ class Graph:
 
     @staticmethod
     def Graph_DistinctDate(datetype, column, IDS=None) -> str:
-        print(datetype)
-        print(column)
         dates = RHMH.get_distinct_date(datetype,column,IDS)
         groups = []
         for d in dates:
             groups.append(f'strftime("{datetype}", `{column}`) = "{d}"')
-        print(groups)
         return groups
 
     @staticmethod
@@ -305,7 +305,6 @@ class Graph:
             QUERY += f'GROUP BY {GROUP.rstrip(', ')} '
             QUERY += f'ORDER BY {GROUP.rstrip(', ')} '
 
-        print(RHMH.format_sql(QUERY))
         return QUERY
 
 if __name__=='__main__':

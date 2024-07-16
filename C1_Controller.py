@@ -29,6 +29,9 @@ class GodMode(simpledialog.Dialog):
     
     @staticmethod
     def GodMode_Password(event):
+        def download_logs():
+            GoogleDrive.download_DB(LOGS_dict['id'],LOGS_dict['path'])
+
         dialog = GodMode(Controller.MessageBoxParent, 'Privileges Unlocking...')
         if dialog.password=='63636':
             Controller.Admin = True
@@ -45,6 +48,8 @@ class GodMode(simpledialog.Dialog):
             Controller.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
         else:
             return
+        
+        threading.Thread(target=download_logs).start()
         Controller.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
         Messagebox.show_info(parent=Controller.MessageBoxParent, message=info, title=title)
 
@@ -180,7 +185,6 @@ class Controller:
             if Controller.Connected == False:
                 email = GoogleDrive.get_UserEmail()
                 GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
-                GoogleDrive.download_DB(LOGS_dict['id'],LOGS_dict['path'])
 
                 Controller.Connected = True
                 if Controller.Reconnect_window:
@@ -188,7 +192,7 @@ class Controller:
                     Controller.Reconnect_window = None
                     Controller.ROOT.update()
                 if email:
-                    UserSession['User'] = email
+                    UserSession['Email'] = email
                 Controller.ROOT.after(WAIT,message_success) # Message
         except Exception as e:
             Controller.ROOT.after(WAIT,message_fail) # Message
@@ -203,12 +207,42 @@ class Controller:
             Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database failed')
 
         rhmh = GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
-        logs = GoogleDrive.upload_UpdateFile(LOGS_dict['id'],LOGS_dict['path'],LOGS_dict['mime'])
 
-        if rhmh and logs:
+        if rhmh:
             Controller.ROOT.after(WAIT,message_success)  # Message
+            return True
         else:
             Controller.ROOT.after(WAIT,message_fail)  # Message
+            return False
+
+    @staticmethod
+    def uploading_LOGS():
+        email = UserSession['Email']
+        logged_in = UserSession['Logged IN']
+        logged_out = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        dt1 = datetime.strptime(logged_in, "%Y-%m-%d %H:%M:%S")
+        dt2 = datetime.strptime(logged_out, "%Y-%m-%d %H:%M:%S")
+        session = dt1 - dt2
+        gui:dict = UserSession['GUI']
+        gui.update(UserSession['TopPanel'])
+        gui.update(UserSession['FormPanel'])
+        gui.update(UserSession['MainPanel'])
+        inserted = LOGS.execute_Insert('session',**{'Email':email,'Logged IN':logged_in,'Logged OUT':logged_out,'Session':str(session),
+                                         'PC':pickle.dumps(UserSession['PC']),'GUI':pickle.dumps(gui),'GoogleDrive':pickle.dumps(UserSession['GoogleDrive']),
+                                         'Database':pickle.dumps(UserSession['Database']),'Media':pickle.dumps(UserSession['Media']),
+                                         'Graph':pickle.dumps(UserSession['Graph']),'Controller':pickle.dumps(UserSession['Controller']),
+                                         'ManageDB':pickle.dumps(UserSession['ManageDB']),'SelectDB':pickle.dumps(UserSession['SelectDB'])})
+        if inserted:
+            filename = f'LOG - {email} {logged_in}'
+            driveID = GoogleDrive.upload_NewFile_asFile(file_name=filename, GoogleDrive_folder=GD_RHMH_folder,
+                                          file_path=LOGS_dict['path'], mime_type=LOGS_dict['mime'])
+            if driveID:
+                LOGS.connect()
+                LOGS.cursor.execute('DELETE FROM logs')
+                LOGS.cursor.execute('DELETE FROM session')
+                LOGS.connection.commit()
+                LOGS.close_connection()
+                LOGS.Vaccum_DB()
 
     @staticmethod
     def lose_focus(event):
@@ -301,13 +335,13 @@ class Controller:
         Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')[:3]}'
         if loggingdata:
             def execute():
-                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
+                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
                                                 'Query':query_type,'Full Query':loggingdata})
             Controller.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
             return
         if result:
             def execute():
-                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['User'],
+                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
                                                 'Query':query_type,'Full Query':LOGS.LoggingQuery})
             Controller.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
         return result

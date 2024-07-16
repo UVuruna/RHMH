@@ -197,7 +197,6 @@ class Database:
                 Database.PatientQuery = query
             Database.LoggingQuery = self.format_sql(query)
             Database.LastQuery[table] = query
-            print(Database.LoggingQuery)
 
             self.connect()
             self.cursor.execute(query)
@@ -493,6 +492,7 @@ LOGS = Database(LOGS_dict['path'])
 SLIKE = Database(os.path.join(directory,'SLIKE.db'))
 
 if __name__=='__main__':
+    LOGS.Vaccum_DB()
 
     '''
     RHMH.connect()

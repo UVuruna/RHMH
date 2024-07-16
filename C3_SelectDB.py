@@ -392,7 +392,7 @@ class SelectDB(Controller):
         if Controller.graph_canvas is not None:
             Controller.graph_canvas.get_tk_widget().destroy()
         
-        #Graph.figure.tight_layout()
+        Graph.figure.subplots_adjust(left=0.06,right=0.96,bottom=0.18,top=0.90)
         Controller.graph_canvas = FigureCanvasTkAgg(Graph.figure, master=Controller.Graph_Canvas)
         Controller.graph_canvas.get_tk_widget().config(width=Controller.Graph_Canvas.winfo_width(),
                                                        height=Controller.Graph_Canvas.winfo_height())
@@ -712,7 +712,6 @@ class SelectDB(Controller):
             columns = SelectDB.selected_columns(Controller.Pacijenti_ColumnVars.items() , Controller.Table_Pacijenti , columnvar=True)
             view = RHMH.execute_join_select('pacijent',*(columns),**searching)
             Controller.SEARCH = searching
-            print(Controller.SEARCH)
             for item in Controller.Table_Pacijenti.get_children():
                 Controller.Table_Pacijenti.delete(item)
             if view and len(view)!=0:
@@ -971,10 +970,18 @@ class SelectDB(Controller):
         if Media.Downloading is True:
             return
         if event:
-            shift_pressed = event.state & 0x1
-            ctrl_pressed = event.state & 0x4
-            if shift_pressed or ctrl_pressed:
+            if os.name == 'nt':  # For Windows
+                shift = event.state & 0x1
+                ctrl = event.state & 0x4
+            elif os.name == 'posix' and os.uname().sysname == 'Darwin':  # macOS
+                shift = event.state & 0x20000
+                ctrl = event.state & 0x40000
+                cmd = event.state & 0x100000
+                if cmd:
+                    return
+            if shift or ctrl:
                 return
+
         Media.Slike_Viewer.delete('all')
         Media.Image_Active = None
 

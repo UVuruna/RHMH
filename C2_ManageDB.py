@@ -527,23 +527,19 @@ class ManageDB(Controller):
         imageSize = []
         width = 0
 
-        def get_db_data():
-            nonlocal width
-            for image in images:
-                ID = Controller.Table_Slike.item(image)['values'][1]
-                imageName,size,GoogleID = RHMH.execute_selectquery(f'SELECT Naziv,Veličina,image_data FROM slike WHERE id_slike = {ID}')[0]
-                imagesID.append(GoogleID)
-                imageNameParts = imageName.split('.')
-                imageSize.append(size)
-                txt = f'{imageNameParts[0]} - {size} MB.{imageNameParts[1]}'
-                if len(txt) > width:
-                    width = len(txt)
-                imagesName.append(txt)
+        for image in images:
+            ID = Controller.Table_Slike.item(image)['values'][1]
+            imageName,size,GoogleID = RHMH.execute_selectquery(f'SELECT Naziv,Veličina,image_data FROM slike WHERE id_slike = {ID}')[0]
+            imagesID.append(GoogleID)
+            imageNameParts = imageName.split('.')
+            imageSize.append(size)
+            txt = f'{imageNameParts[0]} - {size} MB.{imageNameParts[1]}'
+            if len(txt) > width:
+                width = len(txt)
+            imagesName.append(txt)
 
-        thread_db = threading.Thread(target=get_db_data)
-        thread_db.start()
         save_directory = filedialog.askdirectory(title='Izaberite direktorijum za čuvanje slika')
-        thread_db.join()
+
         if save_directory:
             text_widget,floodgauge = Media.ProgressBar_DownloadingImages(Controller.MessageBoxParent,'Downloading',imagesName,width)
             def download():
@@ -571,6 +567,7 @@ class ManageDB(Controller):
                         
                         text_widget.tag_add('success', f'{i+1}.0', f'{i+1}.end')
                         Controller.MessageBoxParent.update_idletasks()
+
                     except Exception:
                         if Media.TopLevel:
                             Media.TopLevel.destroy()
@@ -779,10 +776,6 @@ class ManageDB(Controller):
             RHMH.cursor.execute(query)
             RHMH.connection.commit()
             RHMH.close_connection()
-
-    @staticmethod
-    def Upload_DB():
-        print("Uploading")
 
 if __name__=='__main__':
     pass

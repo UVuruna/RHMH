@@ -44,7 +44,6 @@ class GUI:
         GUI.root.bind('\u004D\u0055\u0056\u0031\u0033', GodMode.GodMode_Password)
         GUI.root.protocol('WM_DELETE_WINDOW',GUI.EXIT)
         
-        
         GUI.root.title(app_name)
         if os.name == 'nt':  # Windows
             root.iconbitmap(IMAGES['icon'][0])
@@ -56,8 +55,9 @@ class GUI:
 
         threading.Thread(target=Controller.starting_application).start()
         UserSession['Logged IN'] = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        starting = (time.time_ns()-TIME_START)/10**9
+        UserSession['GUI']['Start'] = starting
         GUI.root.geometry(f'{WIDTH}x{HEIGHT}')
-        print(f'Ukupno Vreme za pokretanje programa: {(time.time_ns()-TIME_START)/10**9:.2f} s')
 
     @staticmethod
     def get_PC_info() -> None:
@@ -88,10 +88,15 @@ class GUI:
     def EXIT() -> None:
         response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'])
         if response == 'Save':
-            threading.Thread(target=Controller.uploading_to_GoogleDrive).start()
-            GUI.root.destroy()
+            upload = Controller.uploading_to_GoogleDrive()
+            Controller.uploading_LOGS()
+            if upload is True:
+                GUI.root.after(1500,GUI.root.destroy)
+            else:
+                report = 'Uploading Failed\nConnection problems\nTry again or EXIT without Saving'
+                Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Upload',message=report)
         if response == 'Exit':
-            #print_dict(UserSession)
+            Controller.uploading_LOGS()
             GUI.root.destroy()
 
     @staticmethod
