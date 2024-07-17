@@ -8,6 +8,7 @@ from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import Database
 from B3_Media import Media
 from B4_Graph import Graph
+from B5_AI import AI
 from C1_Controller import Controller,GodMode
 from C2_ManageDB import ManageDB
 from C3_SelectDB import SelectDB
@@ -48,7 +49,7 @@ def start():
                 decorated_method = method_efficency()(error_catcher()(method))
                 setattr(CLASS, name, decorated_method)
 
-    Classes_Decorating([GoogleDrive,Database,Media,Graph,Controller,GodMode,ManageDB,SelectDB,TopPanel,FormPanel,MainPanel,GUI])
+    Classes_Decorating([GoogleDrive,Database,Media,Graph,AI,Controller,GodMode,ManageDB,SelectDB,TopPanel,FormPanel,MainPanel,GUI])
 
     GUI.initialize(root) # Load
     if getattr(sys,'frozen',False):

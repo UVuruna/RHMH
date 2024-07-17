@@ -57,48 +57,93 @@ from moviepy.editor import VideoFileClip
 directory = os.path.dirname(os.path.abspath(__file__))
 
 IMAGES = {
-       'icon' :    [os.path.join(directory,'Slike/RHMH.ico'),
+    'icon' :    [os.path.join(directory,'Slike/RHMH.ico'),
                      os.path.join(directory,'Slike/RHMH.png')] ,
-       'Title':  {
-              'God':[ os.path.join(directory,'Slike/GodHand.png') ,
-                     ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
-              'Eye':[ os.path.join(directory,'Slike/GodHand_Eye.png') ,
-                     ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
-              'Monkey':[ os.path.join(directory,'Slike/GodHand_Monkey.png') ,
-                     ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
-              'RHMH':[ os.path.join(directory,'Slike/God_RHMH.png') ]
-                     } ,
-       'Swap':   [ (os.path.join(directory,'Slike/dark_swap.png'),33,33) ,
-                     (os.path.join(directory,'Slike/color_swap.png'),33,33)  ] ,
-       'Hide':   [ (os.path.join(directory,'Slike/dark_hide.png'),48,33) ,
-                     (os.path.join(directory,'Slike/color_hide.png'),48,33)  ] ,
-       'Add':    [ (os.path.join(directory,'Slike/color_add.png'),28,28) ,
-                     (os.path.join(directory,'Slike/dark_add.png'),28,28)    ] ,
-       'Remove': [ (os.path.join(directory,'Slike/color_remove.png'),28,28) ,
-                     (os.path.join(directory,'Slike/dark_remove.png'),28,28) ] ,
-       'Left':    [ (os.path.join(directory,'Slike/color_left.png'),48,33) ,
-                     (os.path.join(directory,'Slike/dark_left.png'),48,33)    ] ,
-       'Right': [ (os.path.join(directory,'Slike/color_right.png'),48,33) ,
-                     (os.path.join(directory,'Slike/dark_right.png'),48,33) ] ,
+    'Title': {
+       'Creation':[
+               os.path.join(directory,'Slike/GodHand.png') ,
+               ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
+       'Eye':[
+           os.path.join(directory,'Slike/GodHand_Eye.png') ,
+           ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
+       'Evolution':[
+           os.path.join(directory,'Slike/GodHand_Monkey.png') ,
+           ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
+       'Egypt': [
+           os.path.join(directory,'Slike/God_Egypt.png')
+           ] ,
+       'RHMH':(
+           os.path.join(directory,'Slike/God_Moon.png'),
+           os.path.join(directory,'Slike/God_Fruit.png'),
+           os.path.join(directory,'Slike/God_Sea.png'),     
+           os.path.join(directory,'Slike/God_Sunrise.png'),
+           os.path.join(directory,'Slike/God_Night.png'),
+           os.path.join(directory,'Slike/God_Flower.png'),
+           os.path.join(directory,'Slike/God_Sunset.png')
+            )
+       } ,
+       'Swap': [
+           (os.path.join(directory,'Slike/dark_swap.png'),33,33) ,
+           (os.path.join(directory,'Slike/color_swap.png'),33,33)
+       ] ,
+       'Hide': [
+           (os.path.join(directory,'Slike/dark_hide.png'),48,33) ,
+           (os.path.join(directory,'Slike/color_hide.png'),48,33)
+       ] ,
+       'Add': [
+           (os.path.join(directory,'Slike/color_add.png'),28,28) ,
+           (os.path.join(directory,'Slike/dark_add.png'),28,28)
+       ] ,
+       'Remove': [
+           (os.path.join(directory,'Slike/color_remove.png'),28,28) ,
+           (os.path.join(directory,'Slike/dark_remove.png'),28,28)
+       ] ,
+       'Left': [
+           (os.path.join(directory,'Slike/color_left.png'),48,33) ,
+           (os.path.join(directory,'Slike/dark_left.png'),48,33)
+       ] ,
+       'Right': [
+           (os.path.join(directory,'Slike/color_right.png'),48,33) ,
+           (os.path.join(directory,'Slike/dark_right.png'),48,33)
+       ] ,
        'Play Video': os.path.join(directory,'Slike/play_button.png') ,
        'Loading':    os.path.join(directory,'Slike/loading_circle.png') ,
        'Password':  [ (os.path.join(directory,'Slike/eye.png'),270,270) ] , 
        'MUVS':      [ (os.path.join(directory,'Slike/muvs.png'),280,280) ],
-       'Signs':  [ (os.path.join(directory,'Slike/sign_equal.png'),42,28),
-                            (os.path.join(directory,'Slike/sign_like.png'),42,28),
-                                   (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
-                                          (os.path.join(directory,'Slike/sign_between.png'),42,28)   ],
-       'Themes': [ (os.path.join(directory,'Slike/theme_fruit.png'),240,130),
-                     (os.path.join(directory,'Slike/theme_moon.png'),240,130),
-                            (os.path.join(directory,'Slike/theme_sunrise.png'),240,130),
-                            (os.path.join(directory,'Slike/theme_night.png'),240,130),
-                                   (os.path.join(directory,'Slike/theme_flower.png'),240,130),
-                                   (os.path.join(directory,'Slike/theme_sunset.png'),240,130),
-                                          (os.path.join(directory,'Slike/theme_sea.png'),240,130) ]   }
+       'Signs': [
+           (os.path.join(directory,'Slike/sign_equal.png'),42,28),
+           (os.path.join(directory,'Slike/sign_like.png'),42,28),
+           (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
+           (os.path.join(directory,'Slike/sign_between.png'),42,28)
+       ],
+       'Themes': [
+           os.path.join(directory,'Slike/theme_moon.png'),
+           os.path.join(directory,'Slike/theme_fruit.png'),
+           os.path.join(directory,'Slike/theme_sea.png'),
+           os.path.join(directory,'Slike/theme_sunrise.png'),
+           os.path.join(directory,'Slike/theme_night.png'),
+           os.path.join(directory,'Slike/theme_flower.png'),
+           os.path.join(directory,'Slike/theme_sunset.png')
+       ]
+}
 
-TITLE_IMAGE = IMAGES['Title']['God']
-themes_list = ['moon','fruit','night','flower','sunset','sea','sunrise']
-THEME = themes_list[0]
+
+with open(os.path.join(directory,'Settings.json'), 'r') as file:
+    SETTINGS = json.load(file)
+
+Theme_Names = ['Moon','Fruit','Sea','Sunrise','Night','Flower','Sunset']
+Title_Names = ['Creation','Eye','Evolution','Egypt','RHMH']
+
+FONT = 'Arial'
+F_SIZE = 11
+THEME = SETTINGS['Theme']
+TITLE_IMAGE = IMAGES['Title'][SETTINGS['Title']]
+TITLE_IMAGE = TITLE_IMAGE if not isinstance(TITLE_IMAGE,tuple) else TITLE_IMAGE[Theme_Names.index(THEME)]
+
+
+
+
+
 
 UserSession = {'Email':'offline_admin@gmail.com','PC':{},'GUI':{},'GoogleDrive':{},'Database':{},
                'AI':{},'Media':{},'Graph':{},'Controller':{},'ManageDB':{},'SelectDB':{}}
@@ -115,8 +160,7 @@ title_height = 180
 ThemeColors = {}
 
 
-FONT = 'Arial'
-F_SIZE = 11
+
 
 font_verybig = lambda weight='bold': (FONT, int(F_SIZE*3.7), weight)
 font_big = lambda weight='bold': (FONT, int(F_SIZE*1.8), weight)
@@ -124,10 +168,10 @@ font_medium = lambda weight='bold': (FONT, int(F_SIZE*1.1), weight)
 font_default = (FONT, F_SIZE)
 
 
-color_labeltext =   'light' if THEME not in ['sunrise','fruit','flower','sea'] else 'primary'
-color_notebooktab = 'light' if THEME not in ['sunrise','fruit','flower','sea'] else 'primary'
-color_titletext = 'light' if THEME not in ['sunrise','fruit','flower','sea'] else 'primary'
-color_highlight = 'selectbg' if THEME not in ['sunrise','fruit','flower','sea'] else 'border' 
+color_labeltext =   'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
+color_notebooktab = 'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
+color_titletext = 'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
+color_highlight = 'selectbg' if THEME not in ['Sunrise','Fruit','Flower'] else 'border' 
 
 style_scrollbar = 'primary'
 style_checkbutton = 'primary'

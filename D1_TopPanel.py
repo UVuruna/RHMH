@@ -17,7 +17,7 @@ class TopPanel:
         try:
             image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = TITLE_IMAGE
         except Exception:
-            image = TITLE_IMAGE
+            image = TITLE_IMAGE if not isinstance(TITLE_IMAGE,list) else TITLE_IMAGE[0]
 
         TopPanel.title_image = Image.open(image)
 

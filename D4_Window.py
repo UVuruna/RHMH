@@ -2,7 +2,7 @@ from A1_Variables import *
 from A2_Decorators import spam_stopper,PC,print_dict
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH,LOGS
-from B3_Media import Media
+from B5_AI import AI
 from C1_Controller import Controller,GodMode
 from C2_ManageDB import ManageDB
 from C3_SelectDB import SelectDB
@@ -67,7 +67,7 @@ class GUI:
         UserSession['PC']['CPU'] = cpu
         UserSession['PC']['GPU'] = gpu
         UserSession['PC']['RAM'] = ram
-        Media.initialize()
+        AI.initialize()
 
     @staticmethod
     def Buttons_SpamStopper() -> None:
@@ -89,15 +89,19 @@ class GUI:
         response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'])
         if response == 'Save':
             upload = Controller.uploading_to_GoogleDrive()
-            Controller.uploading_LOGS()
-            if upload is True:
-                GUI.root.after(1500,GUI.root.destroy)
-            else:
-                report = 'Uploading Failed\nConnection problems\nTry again or EXIT without Saving'
-                Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Upload',message=report)
+            try:
+                Controller.uploading_LOGS()
+            finally:
+                if upload is True:
+                    GUI.root.after(1500,GUI.root.destroy)
+                else:
+                    report = 'Uploading Failed\nConnection problems\nTry again or EXIT without Saving'
+                    Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Upload',message=report)
         if response == 'Exit':
-            Controller.uploading_LOGS()
-            GUI.root.destroy()
+            try:
+                Controller.uploading_LOGS()
+            finally:
+                GUI.root.destroy()
 
     @staticmethod
     def show_form_frame() -> None:

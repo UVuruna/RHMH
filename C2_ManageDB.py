@@ -2,6 +2,7 @@ from A1_Variables import *
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH
 from B3_Media import Media
+from B5_AI import AI
 from C1_Controller import Controller
 from C3_SelectDB import SelectDB
 
@@ -16,7 +17,7 @@ class ManageDB(Controller):
             Messagebox.show_info(parent=Controller.MessageBoxParent,
                     title=f'New Patient added', message=f'{ime}\n\n{report[:-1]}')
         def message_fail():
-            Messagebox.show_warning(parent=Controller.MessageBoxParent,
+            Messagebox.show_error(parent=Controller.MessageBoxParent,
                     title=f'Inserting failed!', message='Wrong data in Patient Form')
 
         if not (Controller.Valid_Default and Controller.Valid_Alternative):
@@ -98,7 +99,7 @@ class ManageDB(Controller):
             SelectDB.fill_PatientForm()
         def message_fail():
             report = 'Image Data added to Database\nFailed to Add Image to Google Drive\nConnection problem'
-            Messagebox.show_warning(parent=Controller.MessageBoxParent,
+            Messagebox.show_error(parent=Controller.MessageBoxParent,
                     title=f'Add Image failed', message=report)
                 
         ime = Controller.Slike_FormVariables['Pacijent'].get()
@@ -465,7 +466,7 @@ class ManageDB(Controller):
                 SelectDB.refresh_tables(['Slike'])
                 SelectDB.fill_PatientForm()
             def message_fail():
-                Messagebox.show_info(parent=Controller.MessageBoxParent,
+                Messagebox.show_warning(parent=Controller.MessageBoxParent,
                         title=f'Deleting failed', message=f'Deleted {selected_image_description}\nfrom Database\nFailed to delete from Google Drive\nConnection problem')
                 SelectDB.refresh_tables(['Slike'])
                 SelectDB.fill_PatientForm()
@@ -606,7 +607,7 @@ class ManageDB(Controller):
                 SelectDB.Show_Image_FullScreen(BLOB=Media.Blob_Data)
 
         def image_reader_with_queue(image, queue):
-            data = Media.Operaciona_Reader(image)
+            data = AI.Operaciona_Reader(image)
             queue.put(data)
 
         try:
@@ -625,7 +626,7 @@ class ManageDB(Controller):
                     thread = threading.Thread(target=Controller.get_image_fromGD,args=(GoogleID,))
                     thread.start()
 
-                response = Media.ImageReader_SettingUp(Controller.MessageBoxParent)
+                response = AI.ImageReader_SettingUp(Controller.MessageBoxParent)
                 if response != 'Run':
                     Media.Downloading = False
                     return

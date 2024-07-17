@@ -398,6 +398,8 @@ class SelectDB(Controller):
                                                        height=Controller.Graph_Canvas.winfo_height())
         Controller.graph_canvas.draw()
         Controller.graph_canvas.get_tk_widget().bind('<Double-1>',Graph.save_and_open_graph_figure)
+        Controller.graph_canvas.get_tk_widget().bind('<Control-s>', Graph.save_and_open_graph_figure)
+        Controller.graph_canvas.get_tk_widget().bind('<Command-s>', Graph.save_and_open_graph_figure)
         Controller.graph_canvas.get_tk_widget().pack(fill=BOTH, expand=True)
 
     @staticmethod

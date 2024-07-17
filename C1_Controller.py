@@ -179,7 +179,7 @@ class Controller:
             Messagebox.show_info(parent=Controller.MessageBoxParent,title='Connect',message=report)
         def message_fail():
                 report = 'Connection failed\nOffline mode'
-                Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Connect',message=report)
+                Messagebox.show_error(parent=Controller.MessageBoxParent,title='Connect',message=report)
         try:
             GoogleDrive.setup_connection()
             if Controller.Connected == False:
@@ -198,13 +198,25 @@ class Controller:
             Controller.ROOT.after(WAIT,message_fail) # Message
             width = Controller.Top_Frame.winfo_width()
             Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
-            
+
+    @staticmethod
+    def update_settings():
+        for col,value in Controller.Settings_FormVariables.items():
+            if not isinstance(value,dict):
+                SETTINGS[col] = value.get()
+            else:
+                for c,v in value.items():
+                    SETTINGS[col][c] = v.get()
+        json_data = json.dumps(SETTINGS, indent=4)
+        with open(os.path.join(directory,'Settings.json'), 'w') as file:
+            file.write(json_data)
+
     @staticmethod
     def uploading_to_GoogleDrive() -> None:
         def message_success():
             Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database successfull')
         def message_fail():
-            Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database failed')
+            Messagebox.show_error(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database failed')
 
         rhmh = GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
 
@@ -217,6 +229,9 @@ class Controller:
 
     @staticmethod
     def uploading_LOGS():
+        Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Ne radi ti upload')
+        time.sleep(1)
+        return
         email = UserSession['Email']
         logged_in = UserSession['Logged IN']
         logged_out = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'

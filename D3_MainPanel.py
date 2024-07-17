@@ -250,7 +250,7 @@ class MainPanel:
         # Top Frame with CheckButtons
         extra_frame = Frame(notebook_frame)
         extra_frame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
-        MainPanel.Checkbutton_Create(extra_frame)
+        MainPanel.Checkbutton_Create(extra_frame, settings=False)
 
         # Table Main Part
         PacijentiTable_Create()
@@ -261,11 +261,25 @@ class MainPanel:
         return table
 
     @staticmethod
-    def Checkbutton_Create(parent_frame:Frame):
+    def Checkbutton_Create(parent_frame:Frame, settings:bool):
         swap = False
         grouping = [None, -1, 0]
+        var:StringVar
+
+        if settings is True:
+            Controller.Settings_FormVariables['Columns'] = {}
         for orig_name,dicty in MainTablePacijenti.items():
-            Controller.Pacijenti_ColumnVars[orig_name].set(1) # Svi ukljuceni na pocetku (prva 3 moraju biti jer su checkbutton: NONE)
+            if orig_name not in ['Ime','Prezime','id_pacijent','ID']:
+                if settings is True:
+                    Controller.Settings_FormVariables['Columns'][orig_name] = StringVar()
+                    var = Controller.Settings_FormVariables['Columns'][orig_name]
+                else:
+                    var = Controller.Pacijenti_ColumnVars[orig_name]
+                var.set(SETTINGS['Columns'][orig_name])
+                
+            else:
+                Controller.Pacijenti_ColumnVars[orig_name].set(1)
+
             if dicty['checkbutton']:
                 if grouping[0] != dicty['group']:
                     try: # Ovo se izvrsava na promeni grupe, na kraju
@@ -277,21 +291,23 @@ class MainPanel:
                     grouping[0] = dicty['group'] # grupacije checkbuttona
                     grouping[1] += 1 # kolone za grupe
                     grouping[2] = 0 # kolone za checkbuttone (resetuje kod nove grupe)
-                    frame = Frame(parent_frame, bd=2, relief=RAISED)
+                    frame = Frame(parent_frame)
+                    if settings is False:
+                        frame.configure(bd=2, relief=RAISED)
                     frame.grid(row=0, column=grouping[1], sticky=NSEW)
                     if dicty['group']:
                         lbl = tb.Label(frame,anchor=CENTER, bootstyle=color_labeltext, text=dicty['group'], font=font_medium())
                         lbl.grid(row=0, column=0, pady=4)
-                if dicty['group']:
-                    tb.Checkbutton(frame, text=dicty['checkbutton'], variable=Controller.Pacijenti_ColumnVars[orig_name],
-                            bootstyle=style_checkbutton).grid(row=1, column=grouping[2], padx=6, pady=(0,4))
-                    grouping[2] += 1
 
+                cb = tb.Checkbutton(frame, text=dicty['checkbutton'], bootstyle=style_checkbutton, variable=var)
+                if dicty['group']:
+                    cb.grid(row=1, column=grouping[2], padx=6, pady=(0,4))
+                    grouping[2] += 1
                 else:
-                    tb.Checkbutton(frame, text=dicty['checkbutton'], variable=Controller.Pacijenti_ColumnVars[orig_name],
-                            bootstyle=style_checkbutton).grid(row=swap, column=grouping[2]-swap, padx=6, pady=(8*(not swap),4)) # ovo pady ce dati 8,4,4 padding
+                    cb.grid(row=swap, column=grouping[2]-swap, padx=6, pady=(8*(not swap),4)) # ovo pady ce dati 8,4,4 padding
                     grouping[2] += 1
                     swap = not swap # vrti 0/1 za redove checkbuttona kod None grupe
+
         frame.grid_columnconfigure([i for i in range(grouping[2])], weight=1) # na kraju jos jednom za poslednju grupu
         frame.grid_rowconfigure([1,2],weight=1)
         parent_frame.grid_columnconfigure([i for i in range(grouping[1]+1)],weight=1)
@@ -708,47 +724,92 @@ class MainPanel:
         notebook_frame = tb.Frame(Controller.NoteBook)
         Controller.NoteBook.add(notebook_frame, text='Settings')
 
-        settings = ['Theme','Language','Title','Font','Showed Columns','Font Size']
-        settings += ['Theme1','Language1','Title1','Font1','Showed Columns1','Font Size1']
+        setting_width = int(WIDTH/1.4)
 
-        #notebook_frame.grid_rowconfigure([i for i in range(len(settings)//2)], weight=1)
+        def create_setting_title(row, text):
+            frame = Frame(notebook_frame, bd=2, relief=GROOVE)
+            frame.grid(row=row, column=0, sticky=NSEW)
+            frame.grid_columnconfigure(0, weight=1)
+
+            tb.Label(frame, text=text, anchor=W, font=font_big('normal'), bootstyle=color_labeltext).grid(
+                row=0, column=0, padx=33, pady=padding_12, sticky=NSEW)
+            
+            options_frame = Frame(frame)
+            options_frame.grid(row=1,column=0, sticky=NSEW)
+
+            Frame(frame).grid(row=2,column=0,pady=12) # Spacing
+ 
+            return options_frame
+
+        def Theme(row):
+            options_frame = create_setting_title(row, 'Theme Option')
+
+            count = len(Theme_Names)
+            options_frame.grid_columnconfigure([i for i in range(count)], weight=1)
+
+            width = setting_width//count
+            height = int(width/1.5)
+            theme_big_images = [(i,width,height) for i in IMAGES['Themes']]
+            theme_label_images = Media.label_ImageLoad(theme_big_images)
+            Controller.Settings_FormVariables['Theme'] = StringVar(value=SETTINGS['Theme'])
+            for i,(nam,img) in enumerate(zip(Theme_Names,theme_label_images)):
+                Media.ThemeIcons.append(img)
+                label = Label(options_frame, image=Media.ThemeIcons[i], highlightbackground=ThemeColors[color_highlight], highlightthickness=2)
+                label.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=NSEW)
+
+                radio = tb.Radiobutton(options_frame, text=nam, variable=Controller.Settings_FormVariables['Theme'], value=nam)
+                radio.grid(row=1, column=i, sticky=N)
+
+        def Title(row):
+            options_frame = create_setting_title(row, 'Title Image Option')
+
+            count = len(Title_Names)
+            options_frame.grid_columnconfigure([i for i in range(count)], weight=1)
+            width = setting_width//count
+            height = width//4
+
+            title_big_images = [(v[0],width,height) for v in IMAGES['Title'].values()]
+            title_label_images = Media.label_ImageLoad(title_big_images)
+
+            Controller.Settings_FormVariables['Title'] = StringVar(value=SETTINGS['Title'])
+            for i,(nam,img) in enumerate(zip(Title_Names,title_label_images)):
+                Media.TitleIcons.append(img)
+                label = Label(options_frame, image=Media.TitleIcons[i], highlightbackground=ThemeColors[color_highlight], highlightthickness=2)
+                label.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=NSEW)
+
+                radio = tb.Radiobutton(options_frame, text=nam, variable=Controller.Settings_FormVariables['Title'], value=nam)
+                radio.grid(row=1, column=i, sticky=N)
+        
+        def MainTable(row):
+            options_frame = create_setting_title(row, 'Starting Columns for "Pacijenti" Table')
+
+            MainPanel.Checkbutton_Create(options_frame, settings=True)
+
+        def buttons_create(row):
+            buttons_frame = Frame(notebook_frame)
+            buttons_frame.grid(row=row, column=0, padx=padding_12, pady=padding_12, sticky=SE)
+
+            save = ctk.CTkButton(buttons_frame, text='SAVE\nSettings', width=buttonX, height=buttonY, corner_radius=10,
+                    font=font_medium(), fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                    command=Controller.update_settings)
+            save.grid(row=0, column=1, padx=padding_12, pady=padding_12, sticky=E)
+
+            def testing(): # Prepraviti
+                print(SETTINGS)
+
+            restore = ctk.CTkButton(buttons_frame, text='RESTORE\nDefault', width=buttonX, height=buttonY, corner_radius=10,
+                    font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                    command=testing)
+            restore.grid(row=0, column=0, padx=padding_12, pady=padding_12, sticky=E)
+
+        Theme(0)
+        Title(1)
+        MainTable(2)
+
+        BUTTON = 3
+        buttons_create(BUTTON)
+        notebook_frame.grid_rowconfigure(BUTTON,weight=1)
         notebook_frame.grid_columnconfigure(0,weight=1)
-        #notebook_frame.grid_columnconfigure(1,weight=1)
-
-        frame = Frame(notebook_frame, bd=2, relief=RAISED)
-        frame.grid(row=0, column=0, sticky=NSEW)
-        Theme_Names = ['Fruit','Moon','Sunrise','Night','Flower','Sunset','Sea']
-        frame.grid_columnconfigure([i for i in range(len(Theme_Names))], weight=1)
-
-        theme_images = Media.label_ImageLoad(IMAGES['Themes'])
-        Controller.Settings_FormVariables['Theme'] = StringVar(value='Moon')
-        for i,(nam,img) in enumerate(zip(Theme_Names,theme_images)):
-            Media.ThemeIcons.append(img)
-            label = tb.Label(frame, image=Media.ThemeIcons[i])
-            label.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=NSEW)
-
-            radio = tb.Radiobutton(frame, text=nam, variable=Controller.Settings_FormVariables['Theme'], value=nam)
-            radio.grid(row=1, column=i, padx=padding_6, pady=padding_6, sticky=EW)
-
-        '''
-        frame = Frame(notebook_frame, bd=2, relief=RAISED)
-        frame.grid(row=1, column=0, sticky=NSEW)
-        Image_Names = ['God','Eye','Monkey','RHMH']
-        frame.grid_columnconfigure([i for i in range(len(Image_Names))], weight=1)
-
-        images = [v[0] for v in IMAGES['Title'].values()]
-        pil_images = Media.label_ImageLoad(images)
-        for img in pil_images:
-            Media.TitleImages.append(Media.resize_image(img,max_height=200,max_width=300))
-
-        Controller.Settings_FormVariables['Title Image'] = StringVar(value='God')
-        for i,(nam,img) in enumerate(zip(Image_Names,Media.TitleImages)):
-            label = tb.Label(frame, image=img)
-            label.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=NSEW)
-
-            radio = tb.Radiobutton(frame, text=nam, variable=Controller.Settings_FormVariables['Theme'], value=nam)
-            radio.grid(row=1, column=i, padx=padding_6, pady=padding_6, sticky=EW)
-        #'''
 
         return notebook_frame
     

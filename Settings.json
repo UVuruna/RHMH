@@ -1,0 +1,28 @@
+{
+    "Columns": {
+        "Starost": "1",
+        "Godi\u0161te": "1",
+        "Pol": "1",
+        "Datum Prijema": "1",
+        "Datum Operacije": "1",
+        "Datum Otpusta": "1",
+        "Uputna dijagnoza": "0",
+        "Osnovni Uzrok Hospitalizacije": "0",
+        "Glavna Operativna dijagnoza": "0",
+        "Sporedna Operativna dijagnoza": "0",
+        "Prate\u0107a dijagnoza": "0",
+        "Dg Latinski": "0",
+        "Operator": "1",
+        "Asistent": "0",
+        "Anesteziolog": "1",
+        "Anesteti\u010dar": "0",
+        "Gostuju\u0107i Specijalizant": "1",
+        "Instrumentarka": "0"
+    },
+    "Theme": "Sunset",
+    "Title": "RHMH",
+    "Font": {
+        "size": 11,
+        "family": "Arial"
+    }
+}
