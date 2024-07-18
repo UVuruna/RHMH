@@ -15,6 +15,7 @@ import customtkinter as ctk
 import sqlite3
 import sqlparse
 
+import math
 import os
 import threading
 import queue
@@ -32,6 +33,7 @@ import GPUtil
 import cpuinfo
 
 #import ffmpeg
+import webbrowser
 import httplib2
 import pickle
 from google.auth.transport.requests import Request
@@ -69,9 +71,7 @@ IMAGES = {
        'Evolution':[
            os.path.join(directory,'Slike/GodHand_Monkey.png') ,
            ('Pacijenti RHMH', 0.007, 0.033 ) ] ,
-       'Egypt': [
-           os.path.join(directory,'Slike/God_Egypt.png')
-           ] ,
+       'Egypt': os.path.join(directory,'Slike/God_Egypt.png') ,
        'RHMH':(
            os.path.join(directory,'Slike/God_Moon.png'),
            os.path.join(directory,'Slike/God_Fruit.png'),
@@ -134,42 +134,35 @@ with open(os.path.join(directory,'Settings.json'), 'r') as file:
 Theme_Names = ['Moon','Fruit','Sea','Sunrise','Night','Flower','Sunset']
 Title_Names = ['Creation','Eye','Evolution','Egypt','RHMH']
 
-FONT = 'Arial'
-F_SIZE = 11
+LANGUAGE = SETTINGS['System']['Language']
+FONT = SETTINGS['System']['Font']
+F_SIZE = SETTINGS['System']['Font Size']
+
+BUTTON_LOCK = SETTINGS['System']['Button cooldown']
+WAIT = SETTINGS['System']['Thread cooldown']
+
+WIDTH = SETTINGS['System']['Width']
+HEIGHT = SETTINGS['System']['Height']
+TITLE_HEIGHT = SETTINGS['System']['Title Height']/100
+
 THEME = SETTINGS['Theme']
 TITLE_IMAGE = IMAGES['Title'][SETTINGS['Title']]
 TITLE_IMAGE = TITLE_IMAGE if not isinstance(TITLE_IMAGE,tuple) else TITLE_IMAGE[Theme_Names.index(THEME)]
 
 
 
-
-
-
 UserSession = {'Email':'offline_admin@gmail.com','PC':{},'GUI':{},'GoogleDrive':{},'Database':{},
                'AI':{},'Media':{},'Graph':{},'Controller':{},'ManageDB':{},'SelectDB':{}}
-WAIT = 10 # ms
-BUTTON_LOCK = 500 # ms
-
-WIDTH = 1720
-HEIGHT = 930
 app_name = 'Restruktivna Hirurgija Ortopedije'
-
 form_name = 'Pacijent'
-title_height = 180
-
 ThemeColors = {}
-
-
-
 
 font_verybig = lambda weight='bold': (FONT, int(F_SIZE*3.7), weight)
 font_big = lambda weight='bold': (FONT, int(F_SIZE*1.8), weight)
 font_medium = lambda weight='bold': (FONT, int(F_SIZE*1.1), weight)
 font_default = (FONT, F_SIZE)
 
-
 color_labeltext =   'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
-color_notebooktab = 'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
 color_titletext = 'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
 color_highlight = 'selectbg' if THEME not in ['Sunrise','Fruit','Flower'] else 'border' 
 
@@ -305,11 +298,7 @@ SessionTable = {
        
        }
 
-
-SIGNS = [
-    'EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN']
-
-       
+SIGNS = [ 'EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN' ]
 
 Image_buttons = [   ('ADD\nImage',None),
                     ('EDIT\nImage',None),
@@ -340,9 +329,9 @@ Slike_Editor = {
         'width': 10}
 }
 
+GD_SLIKE = ['1e-KyYcDIt_V2Gn79blz0gESZLpeV4xVn']
+GD_MAIN = ['1ybEVItyB75BParYUN2-ab_oVe2tBj1NW']
 
-GD_Slike_folder = ['1e-KyYcDIt_V2Gn79blz0gESZLpeV4xVn']
-GD_RHMH_folder = ['1ybEVItyB75BParYUN2-ab_oVe2tBj1NW']
 RHMH_dict = {
     'path':os.path.join(directory,'RHMH.db'),
     'id':'1vLJxgeqXMXfqGE_PTrtywdL69TPZDjhw',
@@ -351,6 +340,11 @@ LOGS_dict = {
     'path':os.path.join(directory,'LOGS.db'),
     'id':'1uvz-BN2DI4_7xcs7-dwJmfz-Z7jrpMU2',
     'mime':'application/x-sqlite3'}
+
+SETTINGS_dict = {
+    'path':os.path.join(directory,'Default.json'),
+    'id':'1h5n_FSEKEQQoed2yjJOsXMSaQYefP0cx',
+    'mime':'application/json'}
 
 MIME = {'PNG' : 'image/png',
         'JPG' : 'image/jpeg',

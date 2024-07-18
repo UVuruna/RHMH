@@ -1,5 +1,5 @@
 {
-    "Version": "1.00",
+    "Version": "1.01",
     "Columns": {
         "Starost": "1",
         "Godi\u0161te": "1",
@@ -33,18 +33,8 @@
         "Title Height": 20
     },
     "Reader": {
-        "VRAM": 12288,
-        "Zoom": 114,
+        "VRAM": 1,
+        "Zoom": 115,
         "Type": "AI-Line Reader"
-    },
-    "Graph": {
-        "left": 7,
-        "right": 97,
-        "top": 92,
-        "bottom": 22,
-        "tight": 0,
-        "legend": 1,
-        "x label": 1,
-        "y label": 1
     }
 }

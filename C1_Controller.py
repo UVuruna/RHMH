@@ -32,7 +32,7 @@ class GodMode(simpledialog.Dialog):
         def download_logs():
             GoogleDrive.download_DB(LOGS_dict['id'],LOGS_dict['path'])
 
-        dialog = GodMode(Controller.MessageBoxParent, 'Privileges Unlocking...')
+        dialog = GodMode(Controller.SearchBar, 'Privileges Unlocking...')
         if dialog.password=='63636':
             Controller.Admin = True
             info = 'New tabs:\n\t-Logs'
@@ -51,13 +51,13 @@ class GodMode(simpledialog.Dialog):
         
         threading.Thread(target=download_logs).start()
         Controller.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
-        Messagebox.show_info(parent=Controller.MessageBoxParent, message=info, title=title)
+        Messagebox.show_info(parent=Controller.SearchBar, message=info, title=title)
 
 class Controller:
     ROOT:Tk = None
     Connected:bool = False
+    DEFAULT:dict = None
     Buttons = {'Filter Patient':[]}
-    MessageBoxParent: Frame = None
     
         # ADMIN
     Admin: bool             = False
@@ -111,7 +111,7 @@ class Controller:
     
     
         # SEARCH BAR
-    max_SearchBars      = 5
+    max_SearchBars      = 7
     SearchBar_number    = 1
     SearchBar: Frame    = None
     SearchBar_widgets   = dict()
@@ -145,7 +145,7 @@ class Controller:
                     report += 'Offline mode can only View from Local Database\n'
                     report += 'Managing Database is forbidden in Offline mode\n'
                     report += f'Please Reconnect if you want to "{func.__name__}"\n'
-                    Messagebox.show_warning(parent=Controller.MessageBoxParent,
+                    Messagebox.show_warning(parent=Controller.SearchBar,
                         title=f'{func.__name__} failed!', message=report)
                 else:
                     func(*args, **kwargs)
@@ -153,7 +153,7 @@ class Controller:
         return decorator
 
     def message_download_fail():
-        Messagebox.show_error(parent=Controller.MessageBoxParent,title='Downloading failed',message='Can`t connect to Google Drive')
+        Messagebox.show_error(parent=Controller.SearchBar,title='Downloading failed',message='Can`t connect to Google Drive')
 
     @staticmethod
     def get_image_fromGD(GoogleID,queue=None):
@@ -176,16 +176,30 @@ class Controller:
     def starting_application():
         def message_success():
             report = 'Connection successfull\nOnline mode'
-            Messagebox.show_info(parent=Controller.MessageBoxParent,title='Connect',message=report)
+            Messagebox.show_info(parent=Controller.SearchBar,title='Connect',message=report)
         def message_fail():
                 report = 'Connection failed\nOffline mode'
-                Messagebox.show_error(parent=Controller.MessageBoxParent,title='Connect',message=report)
+                Messagebox.show_error(parent=Controller.SearchBar,title='Connect',message=report)
+        def update_message():
+            report = 'Please Download latest version from Google Drive\n' + \
+                'Unzip files and copy them into directory of RHMH app'
+            download = Messagebox.show_question(parent=Controller.SearchBar,
+                title='New Version', message=report, buttons=['Skip:warning','Download:success'])
+            if download == 'Download':
+                Controller.open_link(link=r'https://drive.google.com/drive/folders/1yvDczxK01aBO3xdm-Vlkr38hP8DGD2g0')
+
         try:
             GoogleDrive.setup_connection()
             if Controller.Connected == False:
                 email = GoogleDrive.get_UserEmail()
                 GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
+                GoogleDrive.download_DB(SETTINGS_dict['id'],SETTINGS_dict['path'])
+                with open(os.path.join(directory,'Default.json'), 'r') as file:
+                    Controller.DEFAULT = json.load(file)
 
+                if SETTINGS['Version'] != Controller.DEFAULT['Version']:
+                    Controller.ROOT.after(WAIT,update_message) # Message
+                    
                 Controller.Connected = True
                 if Controller.Reconnect_window:
                     Controller.Top_Frame.delete(Controller.Reconnect_window)
@@ -193,11 +207,20 @@ class Controller:
                     Controller.ROOT.update()
                 if email:
                     UserSession['Email'] = email
-                Controller.ROOT.after(WAIT,message_success) # Message
+                Controller.ROOT.after(WAIT*2,message_success) # Message
         except Exception as e:
-            Controller.ROOT.after(WAIT,message_fail) # Message
+            print(e)
+            print(traceback.format_exc())
+            Controller.ROOT.after(WAIT*2,message_fail) # Message
             width = Controller.Top_Frame.winfo_width()
             Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
+
+    @staticmethod
+    def open_link(event=None, link=None, time=None):
+        if time:
+            new_link = f'{link}&t{time}s' # Otvara video na 42. sekundi ovo &t=42s
+        # "https://www.https://www.youtube.com/@UV-Byzantine"  
+        webbrowser.open_new(link)
 
     @staticmethod
     def update_settings():
@@ -206,17 +229,41 @@ class Controller:
                 SETTINGS[col] = value.get()
             else:
                 for c,v in value.items():
-                    SETTINGS[col][c] = v.get()
+                    try:
+                        SETTINGS[col][c] = v.get()
+                    except AttributeError:
+                        v:tb.Meter
+                        SETTINGS[col][c] = v.amountusedvar.get()
         json_data = json.dumps(SETTINGS, indent=4)
         with open(os.path.join(directory,'Settings.json'), 'w') as file:
             file.write(json_data)
 
     @staticmethod
+    def restore_default_settings() -> None:
+        for k,v in Controller.DEFAULT.items():
+            if k=='Version':
+                continue
+            SETTINGS[k] = v
+        for col,val in SETTINGS.items():
+            if col=='Version':
+                continue
+            if not isinstance(val,dict):
+                Controller.Settings_FormVariables[col].set(val)
+            else:
+                for column,value in val.items():
+                    try:
+                        Controller.Settings_FormVariables[col][column].set(value)
+                    except AttributeError:
+                        Controller.Settings_FormVariables[col][column].amountusedvar.set(value)
+                    except KeyError:
+                        continue
+
+    @staticmethod
     def uploading_to_GoogleDrive() -> None:
         def message_success():
-            Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database successfull')
+            Messagebox.show_info(parent=Controller.SearchBar,title='Upload',message='Upload Database successfull')
         def message_fail():
-            Messagebox.show_error(parent=Controller.MessageBoxParent,title='Upload',message='Upload Database failed')
+            Messagebox.show_error(parent=Controller.SearchBar,title='Upload',message='Upload Database failed')
 
         rhmh = GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
 
@@ -229,7 +276,7 @@ class Controller:
 
     @staticmethod
     def uploading_LOGS():
-        Messagebox.show_info(parent=Controller.MessageBoxParent,title='Upload',message='Ne radi ti upload')
+        Messagebox.show_info(parent=Controller.SearchBar,title='Upload',message='Ne radi ti upload')
         time.sleep(1)
         return
         email = UserSession['Email']
@@ -249,7 +296,7 @@ class Controller:
                                          'ManageDB':pickle.dumps(UserSession['ManageDB']),'SelectDB':pickle.dumps(UserSession['SelectDB'])})
         if inserted:
             filename = f'LOG - {email} {logged_in}'
-            driveID = GoogleDrive.upload_NewFile_asFile(file_name=filename, GoogleDrive_folder=GD_RHMH_folder,
+            driveID = GoogleDrive.upload_NewFile_asFile(file_name=filename, GoogleDrive_folder=GD_MAIN,
                                           file_path=LOGS_dict['path'], mime_type=LOGS_dict['mime'])
             if driveID:
                 LOGS.connect()

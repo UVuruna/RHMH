@@ -96,7 +96,7 @@ class GUI:
                     GUI.root.after(1500,GUI.root.destroy)
                 else:
                     report = 'Uploading Failed\nConnection problems\nTry again or EXIT without Saving'
-                    Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Upload',message=report)
+                    Messagebox.show_warning(parent=Controller.SearchBar,title='Upload',message=report)
         if response == 'Exit':
             try:
                 Controller.uploading_LOGS()

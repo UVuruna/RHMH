@@ -2,7 +2,20 @@ from A1_Variables import *
 from B2_SQLite import RHMH
 
 class Graph:
+    Settings = {}
+    Checkbuttons = {}
+    X_Groups  = list()
 
+    figure:Figure = None
+    plot   = None
+    legend = None
+
+    for k,v in SETTINGS['Graph'].items():
+        if k in ['left','right','top','bottom']:
+            Settings[k] = v/100
+        else:
+            Settings[k] = v
+    
     DateTypes = {
         'Godina': '%Y',
         'Mesec': '%m',
@@ -60,14 +73,20 @@ class Graph:
         Graph.X: list   = X     # ovo su labeli X
         Graph.X2: list  = X2    # ovo su labeli X2
         Graph.Y: list   = Y     # ovo su values na Y osi --> moze da bude za 1D = [1,2,3] ili za 2D = [ [1,2,3],[4,5,6],[7,8,9] ]
-        Graph.figure    = None
-        Graph.plot      = None
 
-        Graph.create_figure_plot(width, height, title, X_label, Y_label)
+        Graph.width = width
+        Graph.height = height
+        Graph.title = title
+        Graph.X_label = X_label
+        Graph.Y_label = Y_label
 
     @staticmethod
-    def create_figure_plot(width, height, title:str, X_label:str, Y_label:str ) -> None:
-        Graph.figure = Figure(figsize=(width, height), dpi=100)
+    def create_figure_plot() -> None:
+        Graph.figure    = None
+        Graph.plot      = None
+        Graph.legend    = None
+
+        Graph.figure = Figure(figsize=(Graph.width, Graph.height), dpi=100)
         Graph.plot = Graph.figure.add_subplot(1, 1, 1)
     
         Graph.figure.patch.set_facecolor(ThemeColors['bg'])
@@ -77,9 +96,9 @@ class Graph:
             spine.set_edgecolor(ThemeColors[color_titletext])
             spine.set_linewidth(1)   
 
-        Graph.plot.set_title(title, fontname=FONT, fontsize=int(F_SIZE*2), color=ThemeColors[color_titletext], fontweight='bold')
-        Graph.plot.set_xlabel(X_label, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext])
-        Graph.plot.set_ylabel(Y_label, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext])
+        Graph.plot.set_title(Graph.title, fontname=FONT, fontsize=int(F_SIZE*1.8), color=ThemeColors[color_titletext], fontweight='bold')
+        Graph.plot.set_xlabel(Graph.X_label, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext])
+        Graph.plot.set_ylabel(Graph.Y_label, fontname=FONT, fontsize=int(F_SIZE*1.5), color=ThemeColors[color_titletext])
 
         Graph.plot.tick_params(axis='x', colors=ThemeColors[color_titletext], labelsize=F_SIZE, labelrotation=28)
         Graph.plot.tick_params(axis='y', colors=ThemeColors[color_titletext], labelsize=F_SIZE)
@@ -99,6 +118,8 @@ class Graph:
 
     @staticmethod
     def create_1D_bar( colors=0, values=0 ) -> None:
+        Graph.create_figure_plot()
+
         if colors == 1:
             num_bars = len(Graph.X)
             colors = cm.viridis(np.linspace(0, 1, num_bars))
@@ -115,6 +136,8 @@ class Graph:
 
     @staticmethod
     def create_1D_pie() -> None:
+        Graph.create_figure_plot()
+
         colors = cm.viridis(np.linspace(0, 1, len(Graph.X)))
 
         wedges, texts, autotexts = Graph.plot.pie(Graph.Y, labels=Graph.X, colors=colors, autopct='%1.1f%%', textprops={'color': ThemeColors[color_titletext]})
@@ -125,6 +148,8 @@ class Graph:
 
     @staticmethod
     def create_2D_bar(values = 0, width = 0.1) -> None:
+        Graph.create_figure_plot()
+
         num_groups = len(Graph.X)
         num_bars_per_group = len(Graph.Y[0])
 
@@ -147,10 +172,12 @@ class Graph:
 
         Graph.plot.set_xticks(index + bar_width * (num_bars_per_group - 1) / 2)
         Graph.plot.set_xticklabels(Graph.X)
-        Graph.plot.legend()
+        Graph.legend = Graph.plot.legend()
 
     @staticmethod
     def create_2D_stackedbar(values = 1, width = 0.6) -> None:
+        Graph.create_figure_plot()
+
         num_groups = len(Graph.X)
         num_bars_per_group = len(Graph.Y[0])
 
@@ -175,7 +202,7 @@ class Graph:
 
         Graph.plot.set_xticks(index)
         Graph.plot.set_xticklabels(Graph.X)
-        Graph.plot.legend()
+        Graph.legend = Graph.plot.legend()
 
     @staticmethod
     def Graph_DistinctMKB(mkb=None,IDS=None) -> str:
@@ -306,6 +333,145 @@ class Graph:
             QUERY += f'ORDER BY {GROUP.rstrip(', ')} '
 
         return QUERY
+
+    @staticmethod
+    def Graph_SettingUp(parent:Frame):
+
+        def create_meter(parent,STYLE,text,ROW,COL,MIN,MAX,AMOUNT,unit,jump):
+            meter = tb.Meter(
+                master=parent,
+                metersize=150,
+                bootstyle=STYLE,
+                subtextstyle=STYLE,
+                subtext=text,
+                textright=unit,
+                padding=padding_6,
+                amountused=AMOUNT,
+                amountmin=MIN,
+                amounttotal=MAX,
+                stepsize=jump,
+                stripethickness=math.ceil(270/((MAX-MIN)/jump)),
+                metertype="semi",
+                interactive=True,
+            )
+            meter.grid(row=ROW, column=COL, sticky=NSEW)
+            return meter
+
+        result = {'action':None}
+        def run_command():
+            for widget,text in zip([left,right,top,bottom],['left','right','top','bottom']):
+                Graph.Settings[text] = widget.amountusedvar.get()/100
+
+            for col,check in Graph.Checkbuttons.items():
+                check:IntVar
+                Graph.Settings[col] = check.get()
+
+            result['action'] = 'Show'
+            toplevel.destroy()
+
+        def savedefault_command():
+            for widget,text in zip([left,right,top,bottom],['left','right','top','bottom']):
+                Graph.Settings[text] = widget.amountusedvar.get()/100
+                SETTINGS['Graph'][text] = widget.amountusedvar.get()
+
+            for col,check in Graph.Checkbuttons.items():
+                check:IntVar
+                boolean = check.get()
+                Graph.Settings[col] = boolean
+                SETTINGS['Graph'][col] = boolean
+
+            json_data = json.dumps(SETTINGS, indent=4)
+            with open(os.path.join(directory,'Settings.json'), 'w') as file:
+                file.write(json_data)
+
+            result['action'] = 'Save'
+            toplevel.destroy()
+
+        toplevel = Toplevel(parent)
+        toplevel.title('Graph - Configure')
+        toplevel.grid_columnconfigure(0, weight=1)
+        toplevel.grid_rowconfigure([0,1,2],weight=1)
+        toplevel.resizable(False,False)
+        if os.name == 'nt':  # Windows
+            toplevel.attributes('-toolwindow', True)
+        else:  # macOS/Linux
+            toplevel.attributes('-type', 'dialog')
+
+        meter_frame = Frame(toplevel)
+        meter_frame.grid(row=0,column=0,sticky=NSEW)
+        meter_frame.grid_columnconfigure([0,1],weight=1)
+
+        left:tb.Meter = create_meter(parent=meter_frame,
+                            STYLE='primary',
+                            text='Left',
+                            ROW=0,
+                            COL=0,
+                            MIN=0,
+                            MAX=30,
+                            AMOUNT=int(Graph.Settings['left']*100),
+                            unit='%',
+                            jump=1)
+        right:tb.Meter = create_meter(parent=meter_frame,
+                            STYLE='primary',
+                            text='Right',
+                            ROW=0,
+                            COL=1,
+                            MIN=70,
+                            MAX=100,
+                            AMOUNT=int(Graph.Settings['right']*100),
+                            unit='%',
+                            jump=1)
+        top:tb.Meter = create_meter(parent=meter_frame,
+                            STYLE='primary',
+                            text='Top',
+                            ROW=1,
+                            COL=0,
+                            MIN=70,
+                            MAX=100,
+                            AMOUNT=int(Graph.Settings['top']*100),
+                            unit='%',
+                            jump=1)
+        bottom:tb.Meter = create_meter(parent=meter_frame,
+                            STYLE='primary',
+                            text='Bottom',
+                            ROW=1,
+                            COL=1,
+                            MIN=0,
+                            MAX=40,
+                            AMOUNT=int(Graph.Settings['bottom']*100),
+                            unit='%',
+                            jump=1)
+
+        checkbutton_frame = Frame(toplevel)
+        checkbutton_frame.grid(row=1, column=0, padx=12, pady=padding_6, sticky=NSEW)
+        checkbutton_frame.grid_columnconfigure([0,1],weight=1)
+        ROW = 0
+        for i,txt in enumerate(['tight','legend','x label', 'y label']):
+            txt:str
+            if i==2:
+                ROW = 1
+            try:
+                Graph.Checkbuttons[txt].set(int(Graph.Settings[txt]))
+            except KeyError:
+                Graph.Checkbuttons[txt] = IntVar()
+                Graph.Checkbuttons[txt].set(int(Graph.Settings[txt]))
+            tb.Checkbutton(checkbutton_frame, text=txt.title(), bootstyle='primary, round-toggle',
+                    variable=Graph.Checkbuttons[txt]).grid(row=ROW, column=i%2, padx=padding_6, pady=padding_6, sticky=NSEW)
+        
+        button_frame = Frame(toplevel)
+        button_frame.grid(row=2, column=0, padx=12, pady=(24, 6), sticky=E)
+
+        ctk.CTkButton(button_frame, text='SAVE\nDEFAULT', width=buttonX-2, height=buttonY, corner_radius=12, font=font_medium(),
+                    fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                    command=savedefault_command).grid(row=0, column=0, padx=padding_6[0], pady=padding_6[1])
+        
+        ctk.CTkButton(button_frame, text='SHOW', width=buttonX-4, height=buttonY, corner_radius=12, font=font_medium(),
+                    fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                    command=run_command).grid(row=0, column=1, padx=padding_6[0], pady=padding_6[1])
+        
+        parent.wait_window(toplevel)
+        return result['action']
+
 
 if __name__=='__main__':
     pass

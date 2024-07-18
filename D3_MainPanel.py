@@ -17,7 +17,6 @@ class MainPanel:
         notebookROW = 9
         Window_Frame = Frame(root)
         Window_Frame.grid(row=1, column=1, padx=padding_6, pady=padding_0_6, sticky=NSEW)
-        Controller.MessageBoxParent = Window_Frame
                 # Ovo znaci da ce se NOTEBOOK siriti sa WINDOW
         Window_Frame.grid_rowconfigure(notebookROW, weight=1) 
         Window_Frame.grid_columnconfigure(0, weight=1)
@@ -689,9 +688,17 @@ class MainPanel:
             button = ctk.CTkButton(optionsframe, text='SHOW\nGraph', width=buttonX, height=buttonY, corner_radius=10,
                 font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                 command=SelectDB.Show_Graph)
-            button.grid(row=0, column=col, rowspan=2, padx=padding_12, pady=padding_3, sticky=E)
-            Controller.Buttons['SHOW\nGraph'.replace('\n',' ')] = button
+            button.grid(row=0, column=col, rowspan=2, padx=padding_3_12, pady=padding_3, sticky=E)
+            Controller.Buttons['SHOW Graph'] = button
             button.configure(state=DISABLED)
+        
+        def configure_button(col):
+            button = ctk.CTkButton(optionsframe, text='CONFIGURE\nGraph', width=buttonX, height=buttonY, corner_radius=10,
+                font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                command=SelectDB.Configure_Graph)
+            button.grid(row=0, column=col, rowspan=2, padx=padding_6, pady=padding_3, sticky=E)
+            Controller.Buttons['CONFIGURE Graph'] = button
+            button.grid_remove()
 
         Controller.Graph_FormVariables['afterchoice'] = dict()
 
@@ -707,7 +714,8 @@ class MainPanel:
         MainPanel.filter_maintable_switch(parent= optionsframe,
                                           savingplace= Controller.Graph_FormVariables['afterchoice'],
                                           row=0, col=9, rowspan=2, sticky=W)
-        showgraph_button(col=10)
+        configure_button(col=10)
+        showgraph_button(col=11)
 
         optionsframe.grid_columnconfigure(blankspace, weight=1) # checkbuttoni zauzimaju prazan i ravnaju E
         optionsframe.grid_rowconfigure(0, weight=1)
@@ -726,18 +734,21 @@ class MainPanel:
 
         setting_width = int(WIDTH/1.4)
 
-        def create_setting_title(row, text):
-            frame = Frame(notebook_frame, bd=2, relief=GROOVE)
+        def create_setting_title(row, text, buffer=True):
+            frame = Frame(notebook_frame, bd=2, relief=SUNKEN)
             frame.grid(row=row, column=0, sticky=NSEW)
             frame.grid_columnconfigure(0, weight=1)
+            frame.grid_rowconfigure(1,weight=1)
 
             tb.Label(frame, text=text, anchor=W, font=font_big('normal'), bootstyle=color_labeltext).grid(
-                row=0, column=0, padx=33, pady=padding_12, sticky=NSEW)
+                row=0, column=0, padx=33, pady=padding_6, sticky=NSEW)
             
             options_frame = Frame(frame)
             options_frame.grid(row=1,column=0, sticky=NSEW)
 
-            Frame(frame).grid(row=2,column=0,pady=12) # Spacing
+            if buffer is True:
+                Frame(frame).grid(row=2,column=0,pady=6) # Spacing
+            
  
             return options_frame
 
@@ -748,7 +759,7 @@ class MainPanel:
             options_frame.grid_columnconfigure([i for i in range(count)], weight=1)
 
             width = setting_width//count
-            height = int(width/1.5)
+            height = int(width/1.8)
             theme_big_images = [(i,width,height) for i in IMAGES['Themes']]
             theme_label_images = Media.label_ImageLoad(theme_big_images)
             Controller.Settings_FormVariables['Theme'] = StringVar(value=SETTINGS['Theme'])
@@ -768,7 +779,14 @@ class MainPanel:
             width = setting_width//count
             height = width//4
 
-            title_big_images = [(v[0],width,height) for v in IMAGES['Title'].values()]
+            title_big_images = []
+            for img in IMAGES['Title'].values():
+                if isinstance(img,tuple):
+                    title_big_images.append((img[Theme_Names.index(THEME)],width,height))
+                elif isinstance(img,list):
+                    title_big_images.append((img[0],width,height))
+                else:
+                    title_big_images.append((img,width,height))
             title_label_images = Media.label_ImageLoad(title_big_images)
 
             Controller.Settings_FormVariables['Title'] = StringVar(value=SETTINGS['Title'])
@@ -785,30 +803,97 @@ class MainPanel:
 
             MainPanel.Checkbutton_Create(options_frame, settings=True)
 
-        def buttons_create(row):
-            buttons_frame = Frame(notebook_frame)
-            buttons_frame.grid(row=row, column=0, padx=padding_12, pady=padding_12, sticky=SE)
+        def System(row):
+            options_frame = create_setting_title(row, 'System Settings', buffer=False)
 
-            save = ctk.CTkButton(buttons_frame, text='SAVE\nSettings', width=buttonX, height=buttonY, corner_radius=10,
+            Values = {
+                'Fonts': [
+                    'Arial',
+                    'Courier New',
+                    'Georgia',
+                    'Times New Roman',
+                    'Trebuchet MS',
+                    'Verdana'
+                ],
+                'Language': [
+                    'English',
+                    'Serbian',
+                    'Latin'
+                ]}
+
+            SYSTEM = {
+                'Language': Values['Language'],
+                'Font': Values['Fonts'],
+                'Font Size': (6,18,'',1),
+                'Width': (1300,3300,'p',20),
+                'Height': (600,1800,'p',10),
+                'Title Height': (10,33,'%',1),
+                'Button cooldown': (50,1000,'ms',25),
+                'Thread cooldown': (5,100,'ms',5)
+            }
+
+
+            Controller.Settings_FormVariables['System'] = {} 
+            
+
+            for i,(txt,values) in enumerate(SYSTEM.items()):    
+                AMOUNT = SETTINGS['System'][txt]
+                STYLE = 'success' if i < 3 else 'warning' if i > 5 else 'info' 
+
+                if i>1:
+                    MIN,MAX,unit,jump = values
+                    meter = tb.Meter(
+                        master=options_frame,
+                        metersize=140,
+                        bootstyle=STYLE,
+                        subtextstyle=STYLE,
+                        subtext=txt,
+                        textright=unit,
+                        padding=padding_3,
+                        amountused=AMOUNT,
+                        amountmin=MIN,
+                        amounttotal=MAX,
+                        stepsize=jump,
+                        stripethickness=math.ceil(270/((MAX-MIN)/jump)),
+                        metertype="semi",
+                        interactive=True,
+                    )
+                    meter.grid(row=0, column=i, rowspan=2, sticky=N)
+                    Controller.Settings_FormVariables['System'][txt] = meter
+
+                else:
+                    width = len(max(values, key=len))
+                    Controller.Settings_FormVariables['System'][txt] = StringVar()
+                    combo = tb.Combobox(options_frame, values=values, justify=CENTER, bootstyle=STYLE,
+                                textvariable=Controller.Settings_FormVariables['System'][txt],
+                                width=width, font=font_medium('normal'), state='readonly')
+                    combo.grid(row=0, column=i, padx=padding_6, pady=padding_6, sticky=EW)
+                    combo.set(AMOUNT)
+
+                    tb.Label(options_frame, text=txt, anchor=CENTER, font=font_big('bold'), bootstyle=STYLE).grid(
+                    row=1, column=i, padx=padding_6, pady=padding_6, sticky=N)
+
+            cols = len(SYSTEM)
+
+            restore = ctk.CTkButton(options_frame, text='RESTORE\nDefault', width=buttonX, height=buttonY, corner_radius=10,
+                    font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                    command=Controller.restore_default_settings)
+            restore.grid(row=0, column=cols, rowspan=2, padx=padding_6, pady=padding_6, sticky=SE)
+
+            save = ctk.CTkButton(options_frame, text='SAVE\nSettings', width=buttonX, height=buttonY, corner_radius=10,
                     font=font_medium(), fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                     command=Controller.update_settings)
-            save.grid(row=0, column=1, padx=padding_12, pady=padding_12, sticky=E)
+            save.grid(row=0, column=cols+1, rowspan=2, padx=padding_6, pady=padding_6, sticky=SE)
 
-            def testing(): # Prepraviti
-                print(SETTINGS)
-
-            restore = ctk.CTkButton(buttons_frame, text='RESTORE\nDefault', width=buttonX, height=buttonY, corner_radius=10,
-                    font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                    command=testing)
-            restore.grid(row=0, column=0, padx=padding_12, pady=padding_12, sticky=E)
+            options_frame.grid_columnconfigure([i for i in range(cols+2)],weight=1)
+            options_frame.grid_rowconfigure(1,weight=1)
 
         Theme(0)
         Title(1)
         MainTable(2)
+        System(3)
 
-        BUTTON = 3
-        buttons_create(BUTTON)
-        notebook_frame.grid_rowconfigure(BUTTON,weight=1)
+        notebook_frame.grid_rowconfigure(3,weight=1)
         notebook_frame.grid_columnconfigure(0,weight=1)
 
         return notebook_frame

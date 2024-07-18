@@ -1,6 +1,8 @@
-import sys
-if getattr(sys, 'frozen', False):
-    import pyi_splash
+import os
+if os.name == 'nt':  # Windows
+    import sys
+    if getattr(sys, 'frozen', False):
+        import pyi_splash
 
 from A1_Variables import *
 from A2_Decorators import method_efficency,error_catcher
@@ -29,9 +31,9 @@ def start():
 
     style.configure('TNotebook.Tab')
     style.map('TNotebook.Tab', background=[('selected', ThemeColors['selectbg']),
-                                        ('!selected', ThemeColors['active'])])
+                                        ('!selected', ThemeColors['bg'])])
     style.map('TNotebook.Tab', foreground=[('selected', ThemeColors['selectfg']),
-                                        ('!selected', ThemeColors[color_notebooktab])])
+                                        ('!selected', ThemeColors['fg'])])
     style.configure('Treeview', rowheight=int(F_SIZE*2.2))
     style.map('Treeview.Heading', background=[('active',ThemeColors['primary'])])
     style.configure('Treeview.Heading',font=font_medium('normal'), padding=(0 , 2 , 0 , int(2.2*F_SIZE)))
@@ -52,8 +54,10 @@ def start():
     Classes_Decorating([GoogleDrive,Database,Media,Graph,AI,Controller,GodMode,ManageDB,SelectDB,TopPanel,FormPanel,MainPanel,GUI])
 
     GUI.initialize(root) # Load
-    if getattr(sys,'frozen',False):
-        pyi_splash.close() # Finished Loading
+    
+    if os.name == 'nt':  # Windows
+        if getattr(sys,'frozen',False):
+            pyi_splash.close() # Finished Loading
     root.mainloop()
 
 if __name__=='__main__':

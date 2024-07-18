@@ -3,8 +3,7 @@ from A1_Variables import *
 pillow_heif.register_heif_opener()
 
 class AI:
-    TopLevel = None
-    
+
     if os.name == 'posix' and os.uname().sysname == 'Darwin':  # macOS
         if torch.backends.mps.is_available():
             device = torch.device("mps")
@@ -18,7 +17,7 @@ class AI:
             
     torch.set_default_tensor_type(torch.FloatTensor)
     torch.set_default_device(device)
-    ReaderSetting = easyocr.Reader(['rs_latin','en'], gpu=(device != torch.device("cpu"))) # ovo pravi True/False za device
+    ReaderSetup = easyocr.Reader(['rs_latin','en'], gpu=(device != torch.device("cpu"))) # ovo pravi True/False za device
 
     OperacionaChoice = {
         'Datum Operacije': None,
@@ -32,16 +31,15 @@ class AI:
         'Instrumentarka':  None,
         'Gostujući Specijalizant':  None,
     }
-    
-    Reader_Type = None
-    GPU_VRAM_MB: int = None
-    Image_Reader_RAM: int = None
-    Image_Reader_Zoom: float = 1.13
+
+    Settings = {}
+    Settings['Type'] = SETTINGS['Reader']['Type']
+    Settings['VRAM'] = SETTINGS['Reader']['VRAM']
+    Settings['Zoom'] = SETTINGS['Reader']['Zoom']/100
     
     @staticmethod
     def initialize():
-        AI.GPU_VRAM_MB = AI.get_gpu_vram()
-        AI.Image_Reader_RAM = int(AI.GPU_VRAM_MB/2)
+        AI.Settings['Max VRAM'] = AI.get_gpu_vram()
 
     @staticmethod
     def get_gpu_vram():
@@ -110,20 +108,63 @@ class AI:
 
     @staticmethod
     def ImageReader_SettingUp(parent:Frame):
-        AI.TopLevel = Toplevel(parent)
-        AI.TopLevel.title('Scroll Window')
-        AI.TopLevel.grid_columnconfigure(0, weight=1)
-        AI.TopLevel.resizable(False,False)
+
+        def create_meter(parent,STYLE,text,ROW,COL,MIN,MAX,AMOUNT,unit,jump):
+            meter = tb.Meter(
+                master=parent,
+                metersize=150,
+                bootstyle=STYLE,
+                subtextstyle=STYLE,
+                subtext=text,
+                textright=unit,
+                padding=padding_6,
+                amountused=AMOUNT,
+                amountmin=MIN,
+                amounttotal=MAX,
+                stepsize=jump,
+                stripethickness=math.ceil(270/((MAX-MIN)/jump)),
+                metertype="semi",
+                interactive=True,
+            )
+            meter.grid(row=ROW, column=COL, sticky=NSEW)
+            return meter
+
+        result = {'action':None}
+        def run_command():
+            AI.Settings['VRAM'] = ram.amountusedvar.get()
+            AI.Settings['Zoom'] = zoom.amountusedvar.get()/100
+            AI.Settings['Type'] = combobox.get()
+            result['action'] = 'Run'
+            toplevel.destroy()
+
+        def savedefault_command():
+            AI.Settings['VRAM'] = ram.amountusedvar.get()
+            AI.Settings['Zoom'] = zoom.amountusedvar.get()/100
+            AI.Settings['Type'] = combobox.get()
+            SETTINGS['Reader']['VRAM'] = AI.Settings['VRAM']
+            SETTINGS['Reader']['Zoom'] = zoom.amountusedvar.get()
+            SETTINGS['Reader']['Type'] = AI.Settings['Type']
+
+            json_data = json.dumps(SETTINGS, indent=4)
+            with open(os.path.join(directory,'Settings.json'), 'w') as file:
+                file.write(json_data)
+            result['action'] = 'Save'
+            toplevel.destroy()
+
+        toplevel = Toplevel(parent)
+        toplevel.title('Reader - Configure')
+        toplevel.grid_columnconfigure(0, weight=1)
+        toplevel.resizable(False,False)
         if os.name == 'nt':  # Windows
-            AI.TopLevel.attributes('-toolwindow', True)
+            toplevel.attributes('-toolwindow', True)
         else:  # macOS/Linux
-            AI.TopLevel.attributes('-type', 'dialog')
+            toplevel.attributes('-type', 'dialog')
 
         titletxt = ' - Choose your settings for new AI Reading of document.\n'+\
                     ' - You can save your settings as default values for future readings.'
-        title = tb.Label(AI.TopLevel, text=titletxt, anchor=W, wraplength=310)
+        title = tb.Label(toplevel, text=titletxt, anchor=W, wraplength=310)
         title.grid(row=0, column=0, padx=10, pady=(24,0)) 
-        titleframe = Frame(AI.TopLevel)
+        titleframe = Frame(toplevel)
         titleframe.grid(row=1, column=0, padx=10, sticky=W)
         titlelabels = [ (' Slower ','High Zoom and Less Ram','danger'),
                         (' Faster ','Low Zoom and More Ram','success'),
@@ -132,38 +173,40 @@ class AI:
             tb.Label(titleframe, anchor=W, justify=CENTER, text=txt1, bootstyle=bt, wraplength=310).grid(row=i, column=0, padx=0)
             tb.Label(titleframe, anchor=W, justify=LEFT, text=txt2, wraplength=310).grid(row=i, column=1, padx=0)
 
-        label = tb.Label(AI.TopLevel, text=f'Image Reader Type', anchor=CENTER, justify=CENTER)
+        label = tb.Label(toplevel, text=f'Image Reader Type', anchor=CENTER, justify=CENTER)
         label.grid(row=2, column=0, padx=12, pady=(24,6)) 
         values = ['AI-Line Reader', 'AI-Paragraph Reader']
-        combobox = tb.Combobox(AI.TopLevel, values=values, state='readonly')
+        combobox = tb.Combobox(toplevel, values=values, state='readonly')
         combobox.set(values[0])
         combobox.grid(row=3, column=0, padx=12, pady=6)
 
-        def create_scale(parent,row:int,fromto:tuple,text:str,default):
-            if 'Zoom' in text:
-                value = f'{default:.2f}x'
-                def get_data(event):
-                    label.config(text=f'{text}: {scale.get():.2f}x')
-            elif 'Ram' in text:
-                value = f'{default:,.0f} MB'
-                def get_data(event):
-                    label.config(text=f'{text}: {int(scale.get()):,} MB')
+        meter_frame = Frame(toplevel)
+        meter_frame.grid(row=4,column=0,sticky=NSEW)
+        meter_frame.grid_columnconfigure([0,1],weight=1)
 
-            label = tb.Label(parent, text=f'{text}: {value}', anchor=CENTER, justify=CENTER)
-            label.grid(row=row, column=0, padx=20, pady=(16,6))    
+        zoom:tb.Meter = create_meter(parent=meter_frame,
+                            STYLE='info',
+                            text='Zoom',
+                            ROW=0,
+                            COL=0,
+                            MIN=70,
+                            MAX=230,
+                            AMOUNT=int(AI.Settings['Zoom']*100),
+                            unit='x',
+                            jump=1)
+        ram:tb.Meter = create_meter(parent=meter_frame,
+                            STYLE='warning',
+                            text='VRAM',
+                            ROW=0,
+                            COL=1,
+                            MIN=1,
+                            MAX=AI.Settings['Max VRAM'],
+                            AMOUNT=AI.Settings['VRAM'],
+                            unit='MB',
+                            jump=100)
 
-            scale = tb.Scale(parent, from_=fromto[0], to=fromto[1], orient=HORIZONTAL, length=160, variable=StringVar())
-            scale.grid(row=row+1, column=0, padx=20, pady=(6,16))
-            scale.set(default)
-            scale.bind('<Motion>', get_data)
-
-            return scale
-        
-        zoom = create_scale(AI.TopLevel,4,(0.7,2.3),'Image Zoom',AI.Image_Reader_Zoom)
-        ram = create_scale(AI.TopLevel,6,(1,AI.GPU_VRAM_MB),'Ram Usage',AI.Image_Reader_RAM)
-
-        checkbutton_frame = Frame(AI.TopLevel)
-        checkbutton_frame.grid(row=8, column=0, padx=12, pady=padding_6, sticky=NSEW)
+        checkbutton_frame = Frame(toplevel)
+        checkbutton_frame.grid(row=6, column=0, padx=12, pady=padding_6, sticky=NSEW)
         checkbutton_frame.grid_columnconfigure(1,weight=1)
    
         col = 0
@@ -183,23 +226,8 @@ class AI:
             cb.grid(row=row, column=col, padx=padding_12, pady=padding_6, sticky=W)
             col += 1
 
-        result = {'action':None}
-        def run_command():
-            AI.Image_Reader_RAM = int(ram.get())
-            AI.Image_Reader_Zoom = round(zoom.get(),2)
-            AI.Reader_Type = combobox.get()
-            result['action'] = 'Run'
-            AI.TopLevel.destroy()
-
-        def savedefault_command():
-            AI.Image_Reader_RAM = int(ram.get())
-            AI.Image_Reader_Zoom = round(zoom.get(),2)
-            AI.Reader_Type = combobox.get()
-            result['action'] = 'Save'
-            AI.TopLevel.destroy()
-
-        button_frame = Frame(AI.TopLevel)
-        button_frame.grid(row=9, column=0, padx=12, pady=(24, 6), sticky=E)
+        button_frame = Frame(toplevel)
+        button_frame.grid(row=7, column=0, padx=12, pady=(24, 6), sticky=E)
 
         ctk.CTkButton(button_frame, text='SAVE\nDEFAULT', width=buttonX-2, height=buttonY, corner_radius=12, font=font_medium(),
                     fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
@@ -209,14 +237,14 @@ class AI:
                     fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                     command=run_command).grid(row=0, column=1, padx=padding_6[0], pady=padding_6[1])
 
-        parent.wait_window(AI.TopLevel)
+        parent.wait_window(toplevel)
         return result['action']
 
     @staticmethod
     def Operaciona_Reader(image):
-        if AI.Reader_Type == 'AI-Line Reader':
+        if AI.Settings['Type'] == 'AI-Line Reader':
             return AI.Operaciona_LineReader(image)
-        elif AI.Reader_Type == 'AI-Paragraph Reader':
+        elif AI.Settings['Type'] == 'AI-Paragraph Reader':
             return AI.Operacion_ParagraphReader(image)
 
     @staticmethod
@@ -225,7 +253,7 @@ class AI:
 
     @staticmethod
     def Operaciona_LineReader(image):
-        result = AI.ReaderSetting.readtext(image, detail=0, mag_ratio=AI.Image_Reader_Zoom, batch_size=AI.Image_Reader_RAM)
+        result = AI.ReaderSetup.readtext(image, detail=0, mag_ratio=AI.Settings['Zoom'], batch_size=AI.Settings['VRAM'])
 
         def extend_variable(i, variable, searchlist, image_text):
             j = i + 1

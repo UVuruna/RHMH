@@ -291,6 +291,8 @@ class SelectDB(Controller):
 
     @staticmethod
     def Show_Graph():
+        Controller.Buttons['CONFIGURE Graph'].grid()
+        Graph.X_Groups.clear()
         X1 = []
         X2 = []
         COLOR = 1
@@ -320,16 +322,15 @@ class SelectDB(Controller):
 
         view = RHMH.execute_selectquery(QUERY)
 
-        X_groups = []
         for i,X in enumerate([X1,X2]):
             if not X:
                 continue
             if X[0] in ['Pol','Trauma']:
                 lista = Graph.X_options[X[0]]
-                X_groups.append(lista[0])
+                Graph.X_Groups.append(lista[0])
             elif 'MKB' in X[0]:
                 mkb = X[1] if len(X[1])==1 else None
-                X_groups.append(RHMH.get_distinct_mkb(mkb,FILTER))
+                Graph.X_Groups.append(RHMH.get_distinct_mkb(mkb,FILTER))
             elif X[0]=='Starost':
                 starost_groups = []
                 i = 0
@@ -343,56 +344,88 @@ class SelectDB(Controller):
                 else:
                     count +=1 
                     starost_groups.append(f'{i}+')
-                X_groups.append(starost_groups)
+                Graph.X_Groups.append(starost_groups)
             elif X[0]=='Zaposleni':
-                X_groups.append(RHMH.get_distinct_zaposleni(X[1],FILTER))
+                Graph.X_Groups.append(RHMH.get_distinct_zaposleni(X[1],FILTER))
             else:
                 y,datewhere = Graph.Y_options[Y]
                 dates = RHMH.get_distinct_date(Graph.DateTypes[X[0]],datewhere,FILTER)
                 if X[0] in ['Mesec','Dan u Sedmici']:
                     dates = [Graph.SQL_date_num[X[0]][i] for i in dates]
-                X_groups.append(dates)
+                Graph.X_Groups.append(dates)
 
         view = [i if i is not None else 0 for i in list(view[0])]
 
         VIEW = []
-        if len(X_groups)==2:
-            grouping = len(X_groups[1])
-            for i in range(len(X_groups[0])):
+        if len(Graph.X_Groups)==2:
+            grouping = len(Graph.X_Groups[1])
+            for i in range(len(Graph.X_Groups[0])):
                 VIEW.append(view[grouping*i:grouping*(i+1)])
         else:
             VIEW = view
                             
 
-        X2Groups = X_groups[1] if len(X_groups)==2 else None
+        X2Groups = Graph.X_Groups[1] if len(Graph.X_Groups)==2 else None
         widthinch = Controller.Graph_Canvas.winfo_width()/100
         heightinch = Controller.Graph_Canvas.winfo_height()/100
 
-        TITLE = f'{Y}\n'
-        TITLE += f'grupisan po {X1[0]}'
+        TITLE = f'{Y} - grupisan po {X1[0]}'
         if X2:
             TITLE += f' i {X2[0]}'
+        if FILTER:
+            print(Controller.SEARCH)
         Graph.initialize(width=widthinch, height=heightinch,
-                         X=X_groups[0], Y=VIEW, title=TITLE, X_label=X1[0], Y_label=Y, X2=X2Groups)
+                         X=Graph.X_Groups[0], Y=VIEW, title=TITLE, X_label=X1[0], Y_label=Y, X2=X2Groups)
         
-        if len(X_groups)==2:
-            if PLOT == 'bars':
-                bar_width = 0.95/len(X_groups[1])
-                Graph.create_2D_bar(VALUES,bar_width)
-            elif PLOT == 'stacked':
-                Graph.create_2D_stackedbar(VALUES)
+        SelectDB.graph_type_create(PLOT,VALUES,COLOR)
+        SelectDB.Show_Graph_execute()
+
+    @staticmethod
+    def graph_type_create(plot,values,color):
+        if len(Graph.X_Groups)==2:
+            if plot == 'bars':
+                bar_width = 0.95/len(Graph.X_Groups[1])
+                Graph.create_2D_bar(values,bar_width)
+            elif plot == 'stacked':
+                Graph.create_2D_stackedbar(values)
         else:
             
-            if PLOT == 'bars':
-                Graph.create_1D_bar(COLOR,VALUES)
-            elif PLOT == 'pie':
+            if plot == 'bars':
+                Graph.create_1D_bar(color,values)
+            elif plot == 'pie':
                 Graph.create_1D_pie()
 
-        
+    @staticmethod
+    def Configure_Graph():
+        PLOT = Controller.Graph_FormVariables['afterchoice']['radio']['choice'].get()
+        VALUES = Controller.Graph_FormVariables['afterchoice']['values'][1].get()
+        COLOR = Controller.Graph_FormVariables['afterchoice']['color'][1].get()
+        SelectDB.graph_type_create(PLOT,VALUES,COLOR)
+
+        response = Graph.Graph_SettingUp(Controller.SearchBar)
+        if response == 'Show':
+            SelectDB.Show_Graph_execute()
+
+    @staticmethod
+    def Show_Graph_execute():   
         if Controller.graph_canvas is not None:
             Controller.graph_canvas.get_tk_widget().destroy()
-        
-        Graph.figure.subplots_adjust(left=0.06,right=0.96,bottom=0.18,top=0.90)
+
+        if Graph.legend:
+            Graph.legend.set_visible(Graph.Settings['legend'])
+
+        Graph.plot.get_xaxis().set_visible(Graph.Settings['x label'])
+        Graph.plot.get_yaxis().set_visible(Graph.Settings['y label']) 
+
+        if Graph.Settings['tight']:
+            Graph.figure.tight_layout()
+         
+        else:
+            Graph.figure.subplots_adjust(left=Graph.Settings['left'],
+                                        right=Graph.Settings['right'],
+                                        bottom=Graph.Settings['bottom'],
+                                        top=Graph.Settings['top'])
+
         Controller.graph_canvas = FigureCanvasTkAgg(Graph.figure, master=Controller.Graph_Canvas)
         Controller.graph_canvas.get_tk_widget().config(width=Controller.Graph_Canvas.winfo_width(),
                                                        height=Controller.Graph_Canvas.winfo_height())
@@ -483,6 +516,7 @@ class SelectDB(Controller):
         Values = []
         add_button.grid_remove()
         execute_button.configure(state=DISABLED)
+        Controller.Buttons['CONFIGURE Graph'].grid_remove()
         FINAL = False
 
         def finishing_setup(option):

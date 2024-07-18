@@ -17,11 +17,11 @@ class TopPanel:
         try:
             image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = TITLE_IMAGE
         except Exception:
-            image = TITLE_IMAGE if not isinstance(TITLE_IMAGE,list) else TITLE_IMAGE[0]
+            image = TITLE_IMAGE
 
         TopPanel.title_image = Image.open(image)
 
-        Controller.Top_Frame = tb.Canvas(root, height=title_height)
+        Controller.Top_Frame = tb.Canvas(root, height=int(TITLE_HEIGHT*HEIGHT))
         Controller.Top_Frame.grid(row=0, column=0, columnspan=2, sticky=NSEW)
 
         Controller.Top_Frame.bind('<Button-1>' , Controller.lose_focus)

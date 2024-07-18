@@ -14,10 +14,10 @@ class ManageDB(Controller):
 
         def message_success():
             SelectDB.refresh_tables(table_names=['Pacijenti','Slike'])
-            Messagebox.show_info(parent=Controller.MessageBoxParent,
+            Messagebox.show_info(parent=Controller.SearchBar,
                     title=f'New Patient added', message=f'{ime}\n\n{report[:-1]}')
         def message_fail():
-            Messagebox.show_error(parent=Controller.MessageBoxParent,
+            Messagebox.show_error(parent=Controller.SearchBar,
                     title=f'Inserting failed!', message='Wrong data in Patient Form')
 
         if not (Controller.Valid_Default and Controller.Valid_Alternative):
@@ -94,12 +94,12 @@ class ManageDB(Controller):
     def Add_Image():
         def message_success():
             report = 'Add Image successfull\nImage added to Database and Google Drive'
-            Messagebox.show_info(parent=Controller.MessageBoxParent,title='Add Image',message=report)
+            Messagebox.show_info(parent=Controller.SearchBar,title='Add Image',message=report)
             SelectDB.refresh_tables(['Slike'])
             SelectDB.fill_PatientForm()
         def message_fail():
             report = 'Image Data added to Database\nFailed to Add Image to Google Drive\nConnection problem'
-            Messagebox.show_error(parent=Controller.MessageBoxParent,
+            Messagebox.show_error(parent=Controller.SearchBar,
                     title=f'Add Image failed', message=report)
                 
         ime = Controller.Slike_FormVariables['Pacijent'].get()
@@ -108,7 +108,7 @@ class ManageDB(Controller):
         id_pacijent = id_pacijent.split('/')[0]
 
         if not (ime and opis):
-            Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Add Image Failed',message='Please fill required Fields')
+            Messagebox.show_warning(parent=Controller.SearchBar,title='Add Image Failed',message='Please fill required Fields')
             return
         def open_file_dialog():
             file_types = [  ('PNG files', '*.png'),
@@ -158,7 +158,7 @@ class ManageDB(Controller):
                 
                 BLOB = Media.image_to_blob(file_path)
                 try:
-                    GOOGLE_ID = GoogleDrive.upload_NewFile_asBLOB(file_name=Naziv,GoogleDrive_folder=GD_Slike_folder, blob_data=BLOB, mime_type=FORMAT)
+                    GOOGLE_ID = GoogleDrive.upload_NewFile_asBLOB(file_name=Naziv,GoogleDrive_folder=GD_SLIKE, blob_data=BLOB, mime_type=FORMAT)
                     RHMH.execute_Update('slike',('id_slike',id_slike),**{'Naziv':Naziv,'image_data':GOOGLE_ID})
                     Controller.ROOT.after(WAIT,message_success)
                 except Exception:
@@ -179,14 +179,14 @@ class ManageDB(Controller):
             for col,val in {'MKB - šifra':mkb,'Opis Dijagnoze':opis}.items():
                 report += f' - {col}:\n{val}\n\n'
 
-            Messagebox.show_info(parent=Controller.MessageBoxParent,
+            Messagebox.show_info(parent=Controller.SearchBar,
                     title=f'New MKB added', message=report[:-1], alert=True)
             
             Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
             ManageDB.LoggingData(query_type='Add MKB',loggingdata=report[:-1])
             SelectDB.refresh_tables(['Katalog'])
         else:
-            Messagebox.show_warning(parent=Controller.MessageBoxParent,
+            Messagebox.show_warning(parent=Controller.SearchBar,
                     title=f'Inserting failed!', message='You didn`t fill the form')
     
     @Controller.block_manageDB()
@@ -197,14 +197,14 @@ class ManageDB(Controller):
             RHMH.execute_Insert('zaposleni',**{'Zaposleni':name})
             report = f' - Ime:\n{name}'
 
-            Messagebox.show_info(parent=Controller.MessageBoxParent,
+            Messagebox.show_info(parent=Controller.SearchBar,
                     title=f'New Employee added', message=report, alert=True)
             
             Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
             ManageDB.LoggingData(query_type='Add Employee',loggingdata=report)
             SelectDB.refresh_tables(['Katalog'])
         else:
-            Messagebox.show_warning(parent=Controller.MessageBoxParent,
+            Messagebox.show_warning(parent=Controller.SearchBar,
                     title=f'Inserting failed!', message='You didn`t enter Name of Employee')
 
     @Controller.block_manageDB()
@@ -212,7 +212,7 @@ class ManageDB(Controller):
     def Update_Patient():
         if not (Controller.Valid_Default and Controller.Valid_Alternative):
             report = 'You have entered incorrect data'
-            Messagebox.show_error(parent=Controller.MessageBoxParent,
+            Messagebox.show_error(parent=Controller.SearchBar,
                     title='Updating failed!', message=report)
             return
         if Controller.PatientFocus_ID:    
@@ -278,7 +278,7 @@ class ManageDB(Controller):
                         logging += f'\n - {k} (old):\n{v['Old']}\n'
                 else:
                     reportquestion = 'Do You Want to Process Update?'
-                    confirmation = Messagebox.yesno(parent=Controller.MessageBoxParent,
+                    confirmation = Messagebox.yesno(parent=Controller.SearchBar,
                             title=f'Patient Updating...', message=reportquestion+report[:-1], alert=True)
             else:
                 report = 'You made no changes to current patient'
@@ -322,14 +322,14 @@ class ManageDB(Controller):
                                 deleting = [('id_zaposleni', idzaposleni), ('id_pacijent', Controller.PatientFocus_ID), ('id_funkcija', idfunkcija)]
                                 RHMH.execute_Delete('operacija',deleting)
 
-                Messagebox.show_info(parent=Controller.MessageBoxParent,
+                Messagebox.show_info(parent=Controller.SearchBar,
                         title=f'Updating successfull', message=PATIENT)
                 
                 ManageDB.LoggingData(query_type='Update Patient',loggingdata=logging)
                 SelectDB.refresh_tables(table_names=['Pacijenti','Slike'])
 
         except UnboundLocalError:
-            Messagebox.show_error(parent=Controller.MessageBoxParent,
+            Messagebox.show_error(parent=Controller.SearchBar,
                     title='Update failed!', message=report)
     
     @Controller.block_manageDB()
@@ -344,12 +344,13 @@ class ManageDB(Controller):
                 report = 'Please select Image'
             elif not opis:
                 report = 'Please fill required Fields'
-            Messagebox.show_warning(parent=Controller.MessageBoxParent,title='Edit Image Failed',message=report)
+            Messagebox.show_warning(parent=Controller.SearchBar,title='Edit Image Failed',message=report)
             return
-
-        RHMH.execute_Update('slike',('id_slike',id_slike),**{'Opis':opis})
+        old_naziv,old_opis = RHMH.execute_selectquery(f'SELECT Naziv,Opis FROM slike WHERE id_slike = {id_slike}')[0]
+        naziv = old_naziv.replace(old_opis,opis)
+        RHMH.execute_Update('slike',('id_slike',id_slike),**{'Naziv':naziv,'Opis':opis})
         report = f'Editing successfull.\nImage id: {id_slike}\nNew Opis: {opis}'
-        Messagebox.show_info(parent=Controller.MessageBoxParent,title='Edit Image',message=report)
+        Messagebox.show_info(parent=Controller.SearchBar,title='Edit Image',message=report)
         SelectDB.refresh_tables(['Slike'])
         SelectDB.fill_PatientForm()
 
@@ -374,12 +375,12 @@ class ManageDB(Controller):
 
                     if report:
                         reportquestion = 'Do you want to process update?\n\n'
-                        confirmation = Messagebox.yesno(parent=Controller.MessageBoxParent,
+                        confirmation = Messagebox.yesno(parent=Controller.SearchBar,
                                 title=f'MKB Updating...', message=reportquestion+report[:-1], alert=True)
                         if confirmation == 'Yes':
                             RHMH.execute_Update(table='mkb10', id=('id_dijagnoza',ID), **{'MKB - šifra':mkb,'Opis Dijagnoze':opis})
 
-                            Messagebox.show_info(parent=Controller.MessageBoxParent,
+                            Messagebox.show_info(parent=Controller.SearchBar,
                                     title=f'Updating successfull', message=report[:-1])
                             
                             Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
@@ -392,7 +393,7 @@ class ManageDB(Controller):
                     report = 'You didn`t enter required data'
         except IndexError:
             report = 'You didn`t select MKB you want to update'
-        Messagebox.show_warning(parent=Controller.MessageBoxParent,
+        Messagebox.show_warning(parent=Controller.SearchBar,
                 title=f'Updating failed!', message=report)
 
     @Controller.block_manageDB()
@@ -407,12 +408,12 @@ class ManageDB(Controller):
                         reportquestion = 'Do you want to process update?\n\n'
                         report = f' - Ime (new):\n{name}\n'
                         report += f'\n - Ime (old):\n{selected_name}\n'
-                        confirmation = Messagebox.yesno(parent=Controller.MessageBoxParent,
+                        confirmation = Messagebox.yesno(parent=Controller.SearchBar,
                                 title=f'Employee Updating...', message=reportquestion+report[:-1], alert=True)
                         if confirmation == 'Yes':
                             RHMH.execute_Update(table='zaposleni', id=('id_zaposleni',ID), **{'Zaposleni':name})
 
-                            Messagebox.show_info(parent=Controller.MessageBoxParent,
+                            Messagebox.show_info(parent=Controller.SearchBar,
                                     title=f'Updating successfull', message=report[:-1])
                             
                             Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
@@ -425,21 +426,21 @@ class ManageDB(Controller):
                     report = 'You didn`t enter required data'
         except IndexError:
             report = 'You didn`t select Employee you want to update'
-        Messagebox.show_warning(parent=Controller.MessageBoxParent,
+        Messagebox.show_warning(parent=Controller.SearchBar,
                 title=f'Updating failed!', message=report)
 
     @Controller.block_manageDB()
     @staticmethod
     def Delete_Patient():
         patient = Controller.get_widget_value(Controller.PatientInfo)
-        confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
+        confirm = Messagebox.yesno(parent=Controller.SearchBar,
                 title=f'Deleting...', message=f'Are you sure you want to delete\n{patient}?', alert=True)
         if confirm=='Yes':
             patientdict = RHMH.get_patient_data(Controller.PatientFocus_ID)
             RHMH.execute_Delete('pacijent',[('id_pacijent',Controller.PatientFocus_ID)])
             ManageDB.Clear_Form()
 
-            Messagebox.show_info(parent=Controller.MessageBoxParent,
+            Messagebox.show_info(parent=Controller.SearchBar,
                     title=f'Deleting successfull', message=f'Deleted {patient}')
             
             patient += '\n'
@@ -457,16 +458,16 @@ class ManageDB(Controller):
         selected_image:list = Controller.Table_Slike.item(Controller.Table_Slike.focus())['values'][1:7]
         ID, id_pacijent, PatientName, Opis, Format, Velicina = selected_image
         selected_image_description = f'{ID}: {PatientName} - {Opis} : ({Format} - {Velicina})'
-        confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
+        confirm = Messagebox.yesno(parent=Controller.SearchBar,
                 title=f'Deleting...', message=f'Are you sure you want to delete\n{selected_image_description}?', alert=True)
         if confirm == 'Yes':
             def message_success():
-                Messagebox.show_info(parent=Controller.MessageBoxParent,
+                Messagebox.show_info(parent=Controller.SearchBar,
                         title=f'Deleting successfull', message=f'Deleted {selected_image_description}\nfrom Database and Google Drive')
                 SelectDB.refresh_tables(['Slike'])
                 SelectDB.fill_PatientForm()
             def message_fail():
-                Messagebox.show_warning(parent=Controller.MessageBoxParent,
+                Messagebox.show_warning(parent=Controller.SearchBar,
                         title=f'Deleting failed', message=f'Deleted {selected_image_description}\nfrom Database\nFailed to delete from Google Drive\nConnection problem')
                 SelectDB.refresh_tables(['Slike'])
                 SelectDB.fill_PatientForm()
@@ -486,12 +487,12 @@ class ManageDB(Controller):
     @staticmethod
     def Delete_MKB():
         ID, mkb, opis = Controller.Table_MKB.item(Controller.Table_MKB.focus())['values'][1:]
-        confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
+        confirm = Messagebox.yesno(parent=Controller.SearchBar,
                 title=f'Deleting...', message=f'Are you sure you want to delete {mkb}?', alert=True)
         if confirm=='Yes':
             RHMH.execute_Delete('mkb10',[('id_dijagnoza',ID)])
 
-            Messagebox.show_info(parent=Controller.MessageBoxParent,
+            Messagebox.show_info(parent=Controller.SearchBar,
                     title=f'Deleting successfull', message=f'Deleted {mkb}')
             
             logging = f' - MKB:\n{mkb}\n'
@@ -505,11 +506,11 @@ class ManageDB(Controller):
     @staticmethod
     def Delete_Zaposleni():
         ID, name = Controller.Table_Zaposleni.item(Controller.Table_Zaposleni.focus())['values'][1:]
-        confirm = Messagebox.yesno(parent=Controller.MessageBoxParent,
+        confirm = Messagebox.yesno(parent=Controller.SearchBar,
                 title=f'Deleting...', message=f'Are you sure you want to delete {name}?', alert=True)
         if confirm=='Yes':
             RHMH.execute_Delete('zaposleni',[('id_zaposleni',ID)])
-            Messagebox.show_info(parent=Controller.MessageBoxParent,
+            Messagebox.show_info(parent=Controller.SearchBar,
                     title=f'Deleting successfull', message=f'Deleted {name}')
             
             Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
@@ -520,7 +521,7 @@ class ManageDB(Controller):
     def Download_SelectedImages():
         images = Controller.Table_Slike.selection()
         if not images:
-            Messagebox.show_warning(parent=Controller.MessageBoxParent,
+            Messagebox.show_warning(parent=Controller.SearchBar,
                 title=f'Download Images!', message='You need to select atleast one row')
             return
         imagesID = []
@@ -542,7 +543,7 @@ class ManageDB(Controller):
         save_directory = filedialog.askdirectory(title='Izaberite direktorijum za čuvanje slika')
 
         if save_directory:
-            text_widget,floodgauge = Media.ProgressBar_DownloadingImages(Controller.MessageBoxParent,'Downloading',imagesName,width)
+            text_widget,floodgauge = Media.ProgressBar_DownloadingImages(Controller.SearchBar,'Downloading',imagesName,width)
             def download():
                 progress = 0
                 totalMB = sum(imageSize)
@@ -567,7 +568,7 @@ class ManageDB(Controller):
                         floodgauge['value'] = progress
                         
                         text_widget.tag_add('success', f'{i+1}.0', f'{i+1}.end')
-                        Controller.MessageBoxParent.update_idletasks()
+                        Controller.SearchBar.update_idletasks()
 
                     except Exception:
                         if Media.TopLevel:
@@ -594,7 +595,7 @@ class ManageDB(Controller):
                     report += f'{col}\n  - {val}\n'
                     ManageDB.set_widget_value(widget,val)
             else:
-                retry = Messagebox.show_question(parent=Controller.MessageBoxParent,
+                retry = Messagebox.show_question(parent=Controller.SearchBar,
                         title='Fill From Image', message=report, buttons=['Retry:secondary','Ok:primary'])
                 if retry == 'Retry':
                     ManageDB.Fill_FromImage(firsttry=False)
@@ -615,7 +616,7 @@ class ManageDB(Controller):
                     Controller.Patient_FormVariables['slike']['Slike'].focus()
                     )['values'][1].split('_')
         except IndexError:
-            Messagebox.show_error(parent=Controller.MessageBoxParent,
+            Messagebox.show_error(parent=Controller.SearchBar,
                     title=f'Fill From Image', message='No image selected!')
             return
         if 'Operaciona' in slika[1]:
@@ -626,7 +627,7 @@ class ManageDB(Controller):
                     thread = threading.Thread(target=Controller.get_image_fromGD,args=(GoogleID,))
                     thread.start()
 
-                response = AI.ImageReader_SettingUp(Controller.MessageBoxParent)
+                response = AI.ImageReader_SettingUp(Controller.SearchBar)
                 if response != 'Run':
                     Media.Downloading = False
                     return
@@ -649,7 +650,7 @@ class ManageDB(Controller):
                 return
         else:
             report = 'Image description ("Opis")\nhave to be "Operaciona Lista" or "Otupusna lista"'
-            Messagebox.show_error(parent=Controller.MessageBoxParent,
+            Messagebox.show_error(parent=Controller.SearchBar,
                     title=f'Fill From Image', message=report)
             
     
@@ -677,7 +678,7 @@ class ManageDB(Controller):
                 widget:Widget
                 widget.focus_force()
 
-        Controller.MessageBoxParent.focus_force()
+        Controller.SearchBar.focus_force()
 
     @staticmethod
     def validate_notblank(x) -> bool:
@@ -771,7 +772,7 @@ class ManageDB(Controller):
         if not query:
             return
         report = RHMH.format_sql(query)
-        response = Messagebox.yesno(parent=Controller.MessageBoxParent, title='Free Query executing...', message=report)
+        response = Messagebox.yesno(parent=Controller.SearchBar, title='Free Query executing...', message=report)
         if response == 'Yes':
             RHMH.connect()
             RHMH.cursor.execute(query)

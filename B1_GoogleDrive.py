@@ -147,6 +147,16 @@ class GoogleDrive:
         GoogleDrive.connection.files().delete(fileId=file_id).execute()
         return True
 
+    @staticmethod
+    def list_folder(folder_id):
+        results = GoogleDrive.connection.files().list(
+            q=f"'{folder_id}' in parents",
+            spaces='drive',
+            fields='nextPageToken, files(id, name)'
+        ).execute()
+
+        items = results.get('files', [])
+
 if __name__ == '__main__':
     GoogleDrive.setup_connection()
     #GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
