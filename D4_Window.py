@@ -1,5 +1,5 @@
 from A1_Variables import *
-from A2_Decorators import spam_stopper,PC,print_dict
+from A2_Decorators import spam_stopper,PC
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH,LOGS
 from B5_AI import AI
@@ -13,7 +13,6 @@ from D3_MainPanel import MainPanel
 class GUI:
     root:Tk = None
     menu:Menu = None
-
     title_visible:BooleanVar = None
 
     @staticmethod
@@ -27,9 +26,9 @@ class GUI:
         Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
         
         Controller.ROOT = GUI.root
-        TopPanel.initialize(GUI.root)
-        FormPanel.initialize(GUI.root)
-        MainPanel.initialize(GUI.root)
+        TopPanel.initializeTP(GUI.root)
+        FormPanel.initializeFP(GUI.root)
+        MainPanel.initializeMP(GUI.root)
         GUI.Buttons_SpamStopper()
 
         
@@ -86,20 +85,22 @@ class GUI:
 
     @staticmethod
     def EXIT() -> None:
-        response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'])
+        response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'],
+                                            position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
         if response == 'Save':
-            upload = Controller.uploading_to_GoogleDrive()
+            upload = Controller.Upload_RHMH()
             try:
-                Controller.uploading_LOGS()
+                Controller.Upload_local_LOGS()
             finally:
                 if upload is True:
-                    GUI.root.after(1500,GUI.root.destroy)
+                    GUI.root.destroy()
                 else:
                     report = 'Uploading Failed\nConnection problems\nTry again or EXIT without Saving'
-                    Messagebox.show_warning(parent=Controller.SearchBar,title='Upload',message=report)
+                    Messagebox.show_warning(title='Upload',message=report,
+                                            position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
         if response == 'Exit':
             try:
-                Controller.uploading_LOGS()
+                Controller.Upload_local_LOGS()
             finally:
                 GUI.root.destroy()
 
@@ -145,7 +146,7 @@ class GUI:
         m.add_command(label ='Settings', command= lambda: SelectDB.NoteBook.select(6))
         m.add_command(label ='About', command= lambda: SelectDB.NoteBook.select(7))
         m.add_separator()
-        m.add_command(label ='Upload to Drive', command= Controller.uploading_to_GoogleDrive)
+        m.add_command(label ='Upload to Drive', command= Controller.Upload_RHMH)
         return m
     
 if __name__=='__main__':

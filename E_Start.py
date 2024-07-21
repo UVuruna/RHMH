@@ -19,7 +19,6 @@ from D2_FormPanel import FormPanel
 from D3_MainPanel import MainPanel
 from D4_Window import GUI
 
-
 def start():
     root = Tk()
     style = tb.Style(theme=THEME)
@@ -53,11 +52,11 @@ def start():
 
     Classes_Decorating([GoogleDrive,Database,Media,Graph,AI,Controller,GodMode,ManageDB,SelectDB,TopPanel,FormPanel,MainPanel,GUI])
 
-    GUI.initialize(root) # Load
+    GUI.initialize(root)
     
-    if os.name == 'nt':  # Windows
+    if os.name == 'nt': 
         if getattr(sys,'frozen',False):
-            pyi_splash.close() # Finished Loading
+            pyi_splash.close()
     root.mainloop()
 
 if __name__=='__main__':

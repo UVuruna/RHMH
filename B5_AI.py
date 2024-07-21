@@ -107,7 +107,7 @@ class AI:
         return mkb
 
     @staticmethod
-    def ImageReader_SettingUp(parent:Frame):
+    def ImageReader_SettingUp(PARENT:Tk):
 
         def create_meter(parent,STYLE,text,ROW,COL,MIN,MAX,AMOUNT,unit,jump):
             meter = tb.Meter(
@@ -151,7 +151,9 @@ class AI:
             result['action'] = 'Save'
             toplevel.destroy()
 
-        toplevel = Toplevel(parent)
+        toplevel = tb.Toplevel()
+        toplevel.iconify()
+        
         toplevel.title('Reader - Configure')
         toplevel.grid_columnconfigure(0, weight=1)
         toplevel.resizable(False,False)
@@ -185,25 +187,16 @@ class AI:
         meter_frame.grid_columnconfigure([0,1],weight=1)
 
         zoom:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='info',
-                            text='Zoom',
-                            ROW=0,
-                            COL=0,
-                            MIN=70,
-                            MAX=230,
+                            STYLE='info', text='Zoom',
+                            ROW=0, COL=0, MIN=70, MAX=230,
                             AMOUNT=int(AI.Settings['Zoom']*100),
-                            unit='x',
-                            jump=1)
+                            unit='x', jump=1)
         ram:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='warning',
-                            text='VRAM',
-                            ROW=0,
-                            COL=1,
-                            MIN=1,
+                            STYLE='warning', text='VRAM',
+                            ROW=0, COL=1, MIN=1,
                             MAX=AI.Settings['Max VRAM'],
                             AMOUNT=AI.Settings['VRAM'],
-                            unit='MB',
-                            jump=100)
+                            unit='MB', jump=100)
 
         checkbutton_frame = Frame(toplevel)
         checkbutton_frame.grid(row=6, column=0, padx=12, pady=padding_6, sticky=NSEW)
@@ -237,7 +230,9 @@ class AI:
                     fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                     command=run_command).grid(row=0, column=1, padx=padding_6[0], pady=padding_6[1])
 
-        parent.wait_window(toplevel)
+        toplevel.deiconify()
+        toplevel.place_window_center()
+        PARENT.wait_window(toplevel)
         return result['action']
 
     @staticmethod
@@ -335,6 +330,3 @@ class AI:
                                 elif not OUTPUT[doctorType]:
                                     OUTPUT[doctorType] = [doctors.replace('Dr','dr')]
         return OUTPUT
-
-if __name__=='__main__':
-    pass

@@ -15,10 +15,14 @@ class Media:
     Image_Zoomed_Width: int = None
     Image_Zoomed_Height: int = None
     delta = 1.18
+
+    AboutImage:  Image.Image = None
+    AboutCanvas:      Canvas = None
     
     @staticmethod
-    def ProgressBar_DownloadingImages(parent:Frame, title:str, titletxt:list, width:int):
-        Media.TopLevel = Toplevel(parent)
+    def ProgressBar_DownloadingImages(title:str, titletxt:list, width:int):
+        Media.TopLevel = tb.Toplevel()
+        Media.TopLevel.iconify()
         Media.TopLevel.title(f'{title}...')
         Media.TopLevel.grid_columnconfigure(0, weight=1)
         Media.TopLevel.resizable(False,False)
@@ -46,6 +50,9 @@ class Media:
        
         bar = tb.Floodgauge(Media.TopLevel, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_big())
         bar.grid(row=2, column=0, columnspan=2, padx=24, pady=24, sticky=EW)
+
+        Media.TopLevel.deiconify()
+        Media.TopLevel.place_window_center()
         return text_widget,bar
 
     @staticmethod
@@ -181,26 +188,6 @@ class Media:
         Media.Slike_Viewer.create_image(Media.Slike_Viewer.winfo_width()//2, Media.Slike_Viewer.winfo_height()//2, anchor=CENTER, image=image)
         Media.Slike_Viewer.image = image
         Media.Slike_Viewer.config(scrollregion=Media.Slike_Viewer.bbox(ALL))
-   
-        '''
-        print(f'Canvas width: {Media.Slike_Viewer.winfo_width()}')
-        print(f'Canvas height: {Media.Slike_Viewer.winfo_height()}')
-        print(f'Image width: {Media.Image_Zoomed_Width}')
-        print(f'Image height: {Media.Image_Zoomed_Height}')
-
-        X_scroll = Media.Slike_Viewer.xview()
-        Y_scroll = Media.Slike_Viewer.yview()
-        left,right = (X_scroll[0]*Media.Image_Zoomed_Width,
-                   X_scroll[1]*Media.Image_Zoomed_Width) # (NW,NE) od WIDTH (left i right)
-        top,bottom = (Y_scroll[0]*Media.Image_Zoomed_Height,
-                     Y_scroll[1]*Media.Image_Zoomed_Height) # (NE,SE) od HEIGHT (top i bottom)
-        bbox = (Media.Slike_Viewer.canvasx(0),  # get visible area of the canvas
-                 Media.Slike_Viewer.canvasy(0),
-                 Media.Slike_Viewer.canvasx(Media.Slike_Viewer.winfo_width()),
-                 Media.Slike_Viewer.canvasy(Media.Slike_Viewer.winfo_height()))
-        print(f'LRTB: {left,right,top,bottom}')
-        print(f'bbox: {bbox}')
-        #'''
 
     @staticmethod
     def move_from(event):
@@ -210,20 +197,15 @@ class Media:
     def move_to(event):
         if Media.Image_Zoomed_Height:
             Media.Slike_Viewer.scan_dragto(event.x, event.y, gain=1)
-            '''
-            X_scroll = Media.Slike_Viewer.xview()
-            Y_scroll = Media.Slike_Viewer.yview()
-            left,right = (X_scroll[0]*Media.Image_Zoomed_Width,
-                    X_scroll[1]*Media.Image_Zoomed_Width) # (NW,NE) od WIDTH (left i right)
-            top,bottom = (Y_scroll[0]*Media.Image_Zoomed_Height,
-                        Y_scroll[1]*Media.Image_Zoomed_Height) # (NE,SE) od HEIGHT (top i bottom)
-            bbox = (Media.Slike_Viewer.canvasx(0),  # get visible area of the canvas
-                    Media.Slike_Viewer.canvasy(0),
-                    Media.Slike_Viewer.canvasx(Media.Slike_Viewer.winfo_width()),
-                    Media.Slike_Viewer.canvasy(Media.Slike_Viewer.winfo_height()))
-            print(f'LRTB: {left,right,top,bottom}')
-            print(f'bbox: {bbox}')
-            #'''
 
-if __name__=='__main__':
-    pass
+    @staticmethod
+    def ajdust_About_logo(event):
+        canvas_width = event.width
+        canvas_height = event.height
+
+        resized_image = Media.AboutImage.resize((canvas_width, canvas_height), Image.LANCZOS)
+        tk_image = ImageTk.PhotoImage(resized_image)
+        
+        Media.AboutCanvas.image = tk_image 
+        Media.AboutCanvas.delete('all')
+        Media.AboutCanvas.create_image(0, 0, anchor=NW, image=tk_image)

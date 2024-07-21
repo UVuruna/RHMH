@@ -2,7 +2,7 @@ from A1_Variables import *
 from B1_GoogleDrive import GoogleDrive
 from B3_Media import Media
 from B4_Graph import Graph
-from B2_SQLite import RHMH,LOGS,Database
+from B2_SQLite import RHMH,Database,LOGS
 from C1_Controller import Controller
 
 
@@ -120,14 +120,6 @@ class SelectDB(Controller):
         return 'break'
 
     @staticmethod
-    def table_headings(treeview:tb.ttk.Treeview):
-        columns = treeview["columns"]
-        headings = []
-        for col in columns:
-            headings.append(col)
-        return headings
-
-    @staticmethod
     def search_bar_remove(event=None):
         to_remove = [k for k in Controller.SearchBar_widgets.keys() if int(k[-1]) == Controller.SearchBar_number]
         for key in to_remove:
@@ -204,17 +196,17 @@ class SelectDB(Controller):
     def search_options(n,event):
         search_option = Controller.SearchBar_widgets[f'search_option_{n}'].get()
 
-        if search_option in ['Datum Prijema', 'Datum Operacije', 'Datum Otpusta', 'ID Time']:
+        if search_option in ['Datum Prijema', 'Datum Operacije', 'Datum Otpusta', 'ID Time', 'Logged IN', 'Logged OUT']:
             for widget_type,widget in Controller.SearchBar_widgets.items():
                 if widget_type == f'search_sign_{n}':
                     widget:tb.Label # SAMO BETWEEN
                     widget.unbind('<ButtonRelease-1>')
-                    widget.configure(image=Controller.signimages[-1], text=SIGNS[-1])
+                    widget.configure(image=Controller.signimages[-3:][::-1], text=SIGNS[-3:][::-1])
 
                 widget.grid() if widget_type in [f'date1_{n}',f'date2_{n}'] or ('search' in widget_type and widget_type[-1]==str(n))  \
                     else widget.grid_remove() if widget_type[-1]==str(n) else None
                     
-        elif search_option in ['Godište', 'Starost', 'Veličina', 'width', 'height', 'pixels']:
+        elif search_option in ['Godište', 'Starost', 'Veličina', 'width', 'height', 'pixels', 'Session']:
             for widget_type,widget in Controller.SearchBar_widgets.items():
                 if widget_type == f'search_sign_{n}':
                     widget:tb.Label
@@ -233,17 +225,17 @@ class SelectDB(Controller):
             for widget_type,widget in Controller.SearchBar_widgets.items():
                 if widget_type == f'search_sign_{n}':
                     widget:tb.Label
-                    images = Controller.signimages[:]
-                    signs = SIGNS[:]
-                    for out in [SIGNS.index('BETWEEN'),SIGNS.index('LIKE')]:
-                        images.pop(out)
-                        signs.pop(out)
+                    images = Controller.signimages[:3]
+                    signs = SIGNS[:3]
+                    out = SIGNS.index('LIKE')
+                    images.pop(out)
+                    signs.pop(out)
                     widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
                     widget.configure(image=images[0], text=signs[0])
 
                 if widget_type==f'combo_{n}':
                     widget:tb.Combobox
-                    values = LOGS.email if search_option=='Email' else \
+                    values = Database.email if search_option=='Email' else \
                                 RHMH.pol if search_option=='Pol' else \
                                     RHMH.opis_slike if search_option=='Opis' else \
                                         RHMH.format_slike if search_option=='Format' else None
@@ -255,13 +247,10 @@ class SelectDB(Controller):
             for widget_type,widget in Controller.SearchBar_widgets.items():
                 if widget_type == f'search_sign_{n}':
                     widget:tb.Label
-                    images = Controller.signimages[:]
-                    signs = SIGNS[:]
-                    out = signs.index('BETWEEN')
-                    images.pop(out)
-                    signs.pop(out)
+                    images = Controller.signimages[:-3]
+                    signs = SIGNS[:-3]
                     widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
-                    widget.configure(image=images[0], text=signs[0])
+                    widget.configure(image=images[1], text=signs[1])
 
                 widget.grid() if widget_type == f'entry1_{n}' or ('search' in widget_type and widget_type[-1]==str(n))  \
                     else widget.grid_remove() if widget_type[-1]==str(n) else None
@@ -372,8 +361,7 @@ class SelectDB(Controller):
         TITLE = f'{Y} - grupisan po {X1[0]}'
         if X2:
             TITLE += f' i {X2[0]}'
-        if FILTER:
-            print(Controller.SEARCH)
+
         Graph.initialize(width=widthinch, height=heightinch,
                          X=Graph.X_Groups[0], Y=VIEW, title=TITLE, X_label=X1[0], Y_label=Y, X2=X2Groups)
         
@@ -402,7 +390,7 @@ class SelectDB(Controller):
         COLOR = Controller.Graph_FormVariables['afterchoice']['color'][1].get()
         SelectDB.graph_type_create(PLOT,VALUES,COLOR)
 
-        response = Graph.Graph_SettingUp(Controller.SearchBar)
+        response = Graph.Graph_SettingUp(Controller.ROOT)
         if response == 'Show':
             SelectDB.Show_Graph_execute()
 
@@ -672,7 +660,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Zaposleni)
 
         elif TAB == 'Logs':
-            view = LOGS.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]))
+            view = Controller.GD_LOGS.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]))
  
             for item in Controller.Table_Logs.get_children():
                 Controller.Table_Logs.delete(item)
@@ -680,7 +668,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Logs)
         
         elif TAB == 'Session':
-            view = LOGS.execute_select(True,'session',*(Controller.TableSession_Columns[1:]))
+            view = Controller.GD_LOGS.execute_select(True,'session',*(Controller.TableSession_Columns[1:]))
 
             for item in Controller.Table_Session.get_children():
                 Controller.Table_Session.delete(item)
@@ -718,7 +706,7 @@ class SelectDB(Controller):
                 searchlocation:set = saving_location(sign) # DICT lokacija gde ce ubacivati vrednost
 
                 if sign == 'BETWEEN':
-                    if 'Datum' in option or option=='ID Time':
+                    if 'Datum' in option or option in ['ID Time','Logged IN','Logged OUT']:
                         fromdate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date1_{n}'])
                         todate = Controller.get_widget_value(Controller.SearchBar_widgets[f'date2_{n}'])
                         try:
@@ -770,7 +758,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_MKB)
 
         elif TAB == 'Logs':
-            view = LOGS.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]),**searching)
+            view = Controller.GD_LOGS.execute_select(True,'logs',*(Controller.TableLogs_Columns[1:]),**searching)
  
             for item in Controller.Table_Logs.get_children():
                 Controller.Table_Logs.delete(item)
@@ -778,7 +766,7 @@ class SelectDB(Controller):
                 SelectDB.fill_Tables_Other(view,Controller.Table_Logs)
 
         elif TAB == 'Session':
-            view = LOGS.execute_select(True,'session',*(Controller.TableSession_Columns[1:]),**searching)
+            view = Controller.GD_LOGS.execute_select(True,'session',*(Controller.TableSession_Columns[1:]),**searching)
 
             for item in Controller.Table_Session.get_children():
                 Controller.Table_Session.delete(item)
@@ -897,11 +885,136 @@ class SelectDB(Controller):
         try:
             time = Controller.Table_Logs.item(Controller.Table_Logs.focus())['values'][1]
             query = f'SELECT `Full Query`,`Full Error` from logs WHERE `ID Time` = "{time}"'
-            FullQuery,FullError = LOGS.execute_selectquery(query)[0]
+            FullQuery,FullError = Controller.GD_LOGS.execute_selectquery(query)[0]
             SelectDB.set_widget_value(Controller.Logs_FormVariables['Full Query'],FullQuery)
             SelectDB.set_widget_value(Controller.Logs_FormVariables['Full Error'],FullError)
         except IndexError:
             return
+
+    @staticmethod
+    def fill_SessionForm(event):
+        try:
+            email,loggedin,loggedout = Controller.Table_Session.item(Controller.Table_Session.focus())['values'][1:4]
+            COLUMN = Controller.SessionLabel.cget('text')
+
+            QUERY = f'SELECT {COLUMN} FROM session WHERE ' + \
+                f'Email = "{email}" AND `Logged IN` = "{loggedin}" AND `Logged OUT` = "{loggedout}"'
+            
+            blob_dict = Controller.GD_LOGS.execute_selectquery(QUERY,False)[0][0]
+            if not blob_dict:
+                SelectDB.empty_widget(Controller.Logs_FormVariables['Session'])
+                return
+            DICT = pickle.loads(blob_dict)
+            if not DICT:
+                SelectDB.empty_widget(Controller.Logs_FormVariables['Session'])
+                return
+            Controller.SessionReport = ''
+            SelectDB.Dict_To_String(DICT)
+            SelectDB.set_widget_value(Controller.Logs_FormVariables['Session'],Controller.SessionReport)
+            SelectDB.highlight_numbers(text_widget=Controller.Logs_FormVariables['Session'], decimal=True, stattype='average', verybig=1000, big=500, small=20)
+            SelectDB.highlight_numbers(text_widget=Controller.Logs_FormVariables['Session'], decimal=False, stattype='count', verybig=400, big=200, small=5)
+        except ValueError:
+            SelectDB.empty_widget(Controller.Logs_FormVariables['Session'])
+
+    @staticmethod
+    def methods_name_fix(method_name:str):
+        words = method_name.split('_')
+        result = []
+        for word in words:
+            word:str
+            if word == word.lower():
+                result.append(word.capitalize())
+            else:
+                result.append(word)
+        return ' '.join(result)
+
+    @staticmethod
+    def highlight_numbers(text_widget:tb.Text, decimal:bool, stattype:str, verybig:int, big:int, small:int):
+        text_widget.tag_configure('verybig', foreground=ThemeColors['danger'], font=font_medium('bold'))
+        text_widget.tag_configure('big', foreground=ThemeColors['warning'], font=font_medium('bold'))
+        text_widget.tag_configure('small', foreground=ThemeColors['success'], font=font_medium('bold'))
+
+        text_widget.tag_remove('highlight', '1.0', END)
+        # I deo: > \d{1,3} < digit od 1 do 3 cifre
+        # II deo: > (?:,\d{3})* < digit od 3 cifre posle zareza (neobavezan jer mogu da budu brojevi ispod 1000) 
+        # III deo: > \.\d{2} < digit od 2 cifre posle tacke predstavlja decimalni format
+        if decimal:
+            pattern = re.compile(rf'{re.escape(stattype)}: (\d{{1,3}}(?:,\d{{3}})*\.\d{{2}})')
+        else:
+            pattern = re.compile(rf'{re.escape(stattype)}: (\d{{1,3}}(?:,\d{{3}})*)')
+
+        for match in pattern.finditer(text_widget.get('1.0', END)):
+            number_str = match.group(1)
+            number = float(number_str.replace(',', ''))
+
+            start_index = f'1.0 + {match.start(1)}c' 
+            end_index = f'1.0 + {match.end(1)}c'
+            line_start = text_widget.index(f'{start_index} linestart')
+            line_end = text_widget.index(f'{end_index} lineend')
+
+            if number > verybig:
+                text_widget.tag_add('verybig', line_start, line_end)
+            elif number > big:
+                text_widget.tag_add('big', line_start, line_end)
+            elif number < small:
+                text_widget.tag_add('small', line_start, line_end)
+
+    @staticmethod
+    def Dict_To_String(d:dict, indent=0):
+        COUNT = 0
+        sorted_dict = dict(sorted(d.items()))
+        if 'Start' in sorted_dict:
+            Controller.SessionReport += '\t' * (indent) + f'Opening Application: {sorted_dict['Start']:,.3f} s\n'
+            del sorted_dict['Start']
+        for key, value in sorted_dict.items():
+            if isinstance(value, dict):
+                if key not in ['ProccessingTime','TotalTime','Total Time','Processing Time']:
+                    Controller.SessionReport += '\n'
+                Controller.SessionReport += '\t' * indent + SelectDB.methods_name_fix(key) + '\n'
+                SelectDB.Dict_To_String(value, indent+1)
+            else:
+                if key == 'count':
+                    COUNT = int(value)
+                    Controller.SessionReport += '\t' * (indent) + f'{key}: {value:,}\n'
+                elif key == 'time':
+                    Controller.SessionReport += '\t' * (indent) + f'{key}: {value:,.1f} ms\n'
+                    AVG = float(value)/COUNT
+                    Controller.SessionReport += '\t' * (indent) + f'average: {AVG:,.2f} ms\n'
+                else:
+                    Controller.SessionReport += '\t' * (indent) + f'{key}: {value}\n'
+
+    @staticmethod
+    def swapping_session_data(event, direction:int):
+        TABLE = LOGS.session[4:]
+        
+        current = Controller.SessionLabel.cget('text')
+        current_pos = TABLE.index(current)
+
+        POSITION = 0 if current_pos+direction == len(TABLE) else current_pos+direction
+
+        COLUMN = TABLE[POSITION]
+        Controller.SessionLabel.configure(text=COLUMN)
+
+        try:
+            email,loggedin,loggedout = Controller.Table_Session.item(Controller.Table_Session.focus())['values'][1:4]
+            QUERY = f'SELECT {COLUMN} FROM session WHERE ' + \
+                f'Email = "{email}" AND `Logged IN` = "{loggedin}" AND `Logged OUT` = "{loggedout}"'
+            
+            blob_dict = Controller.GD_LOGS.execute_selectquery(QUERY,False)[0][0]
+            if not blob_dict:
+                SelectDB.empty_widget(Controller.Logs_FormVariables['Session'])
+                return
+            DICT = pickle.loads(blob_dict)
+            if not DICT:
+                SelectDB.empty_widget(Controller.Logs_FormVariables['Session'])
+                return
+            Controller.SessionReport = ''
+            SelectDB.Dict_To_String(DICT)
+            SelectDB.set_widget_value(Controller.Logs_FormVariables['Session'],Controller.SessionReport)
+            SelectDB.highlight_numbers(Controller.Logs_FormVariables['Session'], decimal=True, stattype='average', verybig=1000, big=500, small=20)
+            SelectDB.highlight_numbers(Controller.Logs_FormVariables['Session'], decimal=False, stattype='count', verybig=400, big=200, small=5)
+        except ValueError:
+            SelectDB.empty_widget(Controller.Logs_FormVariables['Session'])
 
     @staticmethod
     def tab_change(event):
@@ -1114,6 +1227,3 @@ class SelectDB(Controller):
         else:
             Media.Blob_Data = blob_data
             showing_media()
-
-if __name__=='__main__':
-    pass

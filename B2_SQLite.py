@@ -3,6 +3,7 @@ from A1_Variables import *
 class Database:
     PatientQuery = str()
     LoggingQuery:str = None
+    email = list()
 
     LastQuery = {
             'pacijent': None,
@@ -20,10 +21,8 @@ class Database:
         self.lock = threading.Lock()
 
     def start_LOGS_db(self):
-        self.logs = self.show_columns('logs')[:-2]
+        self.logs = self.show_columns('logs')
         self.session = self.show_columns('session')
-
-        self.email = [i[0] for i in self.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')]
 
     def start_RHMH_db(self):
         
@@ -313,8 +312,8 @@ class Database:
 
                 logginquery = f'UPDATE {table} SET {loggin} WHERE {id[0]} = {id[1]}'
                 query = f'UPDATE {table} SET {settin} WHERE {id[0]} = ?'
-
                 Database.LoggingQuery = self.format_sql(logginquery)
+
                 self.cursor.execute(query,value)
                 self.connection.commit()
             finally:
@@ -460,14 +459,6 @@ class Database:
             finally:
                 self.close_connection()
 
-    def Vaccum_DB(self):
-        with self.lock:
-            try:
-                self.connect()
-                self.cursor.execute('VACUUM')
-            finally:
-                self.close_connection()
-
     @staticmethod
     def execute_Insert_Many( from_DB:'Database', to_DB:'Database', table, columns):
         COLUMNS = []
@@ -481,57 +472,20 @@ class Database:
 
         to_DB.connect()
         placeholders = ', '.join(['?'] * len(COLUMNS))
-        to_DB.cursor.executemany(f"INSERT INTO {table} ({', '.join(COLUMNS)}) VALUES ({placeholders})", rows)
+        to_DB.cursor.executemany(f"INSERT OR IGNORE INTO {table} ({', '.join(COLUMNS)}) VALUES ({placeholders})", rows)
         to_DB.connection.commit()
         
         from_DB.close_connection()
         to_DB.close_connection()
 
+    def Vaccum_DB(self):
+        with self.lock:
+            try:
+                self.connect()
+                self.cursor.execute('VACUUM')
+            finally:
+                self.close_connection()
+
 RHMH = Database(RHMH_dict['path'])
 LOGS = Database(LOGS_dict['path'])
-SLIKE = Database(os.path.join(directory,'SLIKE.db'))
-
-if __name__=='__main__':
-    LOGS.Vaccum_DB()
-
-    '''
-    RHMH.connect()
-    RHMH.cursor.execute('DROP TABLE logs')
-    RHMH.connection.commit()
-    RHMH.close_connection()
-    RHMH.Vaccum_DB()
-    
-
-    print(RHMH.show_columns('logs'))
-    
-    print(LOGS.show_columns('logs'))
-    print(LOGS.show_columns('session'))
-    print(RHMH.show_columns('session'))
-
-    #Database.execute_Insert_Many(RHMH,LOGS,'logs',RHMH.show_columns('logs'))
-
-    print('zavrseno')
-    logs = LOGS.execute_select(False,'logs','*')
-    print(len(logs))
-
-    def list_tables(database: str):
-        # Povezivanje na SQLite bazu podataka
-        connection = sqlite3.connect(database)
-        cursor = connection.cursor()
-
-        # Izvršavanje PRAGMA upita za dobijanje liste tabela
-        cursor.execute("PRAGMA table_list;")
-        tables = cursor.fetchall()
-
-        # Ispisivanje naziva tabela
-        for table in tables:
-            print(table)
-
-        # Zatvaranje konekcije
-        cursor.close()
-        connection.close()
-
-    list_tables('LOGS.db')
-    print('---')
-    list_tables('RHMH.db')
-    #'''
+#SLIKE = Database(os.path.join(directory,'SLIKE.db'))

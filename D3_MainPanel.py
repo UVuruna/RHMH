@@ -2,14 +2,14 @@ from A1_Variables import *
 from B2_SQLite import RHMH,LOGS
 from B3_Media import Media
 from B4_Graph import Graph
-from C1_Controller import Controller
+from C1_Controller import Controller,GodMode
 from C2_ManageDB import ManageDB
 from C3_SelectDB import SelectDB
 
 class MainPanel:
 
     @staticmethod
-    def initialize(root:Tk) -> None:
+    def initializeMP(root:Tk) -> None:
       
         Controller.FilterOptions = {'Datum Operacije':'Operisan' , 'Datum Otpusta':'Otpušten'}
 
@@ -76,13 +76,13 @@ class MainPanel:
 
             # NOTEBOOK Tab LOGS -- 4
         Controller.Table_Logs, Controller.FreeQuery_Frame = MainPanel.LogsTab_Create('Logs', SelectDB.fill_LogsForm)
-        Controller.TableLogs_Columns = tuple(['ID']+LOGS.logs)
+        Controller.TableLogs_Columns = tuple(['ID']+LOGS.logs[:4])
         SelectDB.selected_columns(Controller.TableLogs_Columns , Controller.Table_Logs , columnvar=False)
         Controller.NoteBook.hide(4)
 
             # NOTEBOOK Tab SESSION -- 5
-        Controller.Table_Session = MainPanel.SessionTab_Create('Session')
-        Controller.TableSession_Columns = tuple(['ID']+LOGS.session)
+        Controller.Table_Session = MainPanel.SessionTab_Create('Session', SelectDB.fill_SessionForm)
+        Controller.TableSession_Columns = tuple(['ID']+LOGS.session[:4])
         SelectDB.selected_columns(Controller.TableSession_Columns , Controller.Table_Session , columnvar=False)
         Controller.NoteBook.hide(5)
 
@@ -511,16 +511,28 @@ class MainPanel:
         freequery_frame.grid(row=0, column=0, columnspan=3, sticky=NSEW)
         freequery_frame.grid_columnconfigure(0, weight=1)
 
+        Controller.QueryDatabase = StringVar()
+        tb.Combobox(freequery_frame, values=['RHMH','LOGS'], textvariable=Controller.QueryDatabase, width=5,
+                    font=font_medium('normal'), state='readonly').grid(
+                        row=0, column=0, padx=padding_6, pady=padding_3, sticky=EW)
+
         Controller.FreeQuery = StringVar()
         tb.Entry(freequery_frame, font=font_default, textvariable=Controller.FreeQuery).grid(
-                    row=0, column=0, padx=padding_3_12, pady=padding_3, sticky=EW)
+                    row=0, column=1, padx=padding_6, pady=padding_3, sticky=EW)
         
         button = ctk.CTkButton(freequery_frame, text='Free\nQuery', width=buttonX, height=buttonY, corner_radius=10,
             font=font_medium(), fg_color=ThemeColors['danger'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-            command=ManageDB.FreeQuery_Execute)
-        button.grid(row=0, column=1, padx=padding_6, pady=padding_6)
+            command=GodMode.FreeQuery_Execute)
+        button.grid(row=0, column=2, padx=padding_6, pady=padding_6)
         freequery_frame.grid_remove()
         Controller.Buttons['Free Query'] = button
+
+        button = ctk.CTkButton(freequery_frame, text='Upload\nLOGS', width=buttonX, height=buttonY, corner_radius=10,
+            font=font_medium(), fg_color=ThemeColors['danger'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+            command=GodMode.upload_GD_LOGS)
+        button.grid(row=0, column=3, padx=padding_6, pady=padding_6)
+        freequery_frame.grid_remove()
+        Controller.Buttons['Upload LOGS'] = button
 
         # Left Table Panel
         scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
@@ -565,7 +577,7 @@ class MainPanel:
         parent_frame.grid_columnconfigure(0,weight=1)
 
     @staticmethod
-    def SessionTab_Create(tabname:str):
+    def SessionTab_Create(tabname:str, method:callable):
         notebook_frame = tb.Frame(Controller.NoteBook)
         Controller.NoteBook.add(notebook_frame, text=tabname)
 
@@ -575,6 +587,9 @@ class MainPanel:
         table = tb.ttk.Treeview(notebook_frame, columns=[], xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
         table.grid(row=0, column=0, sticky=NSEW)
         
+        for bindevent in ['<ButtonRelease-1>','<KeyRelease-Down>','<KeyRelease-Up>']:
+            table.bind(bindevent,method)
+
         scroll_x.grid(row=1, column=0, sticky=EW)
         scroll_y.grid(row=0, column=1, sticky=NS)
         scroll_x.config(command=table.xview)
@@ -594,12 +609,9 @@ class MainPanel:
     @staticmethod
     def Session_SideFrame(parent_frame:Frame):
 
-        def swapping_session_data(event):
-            pass
-
-        lbl1 = tb.Label(parent_frame,text='TESTING', anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, font=font_big('bold'))
-        lbl1.grid(row=0, column=1)
-        text1 = tb.Text(parent_frame, font=font_default)
+        Controller.SessionLabel = tb.Label(parent_frame,text='PC', anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, font=font_big('bold'))
+        Controller.SessionLabel.grid(row=0, column=1)
+        text1 = tb.Text(parent_frame, font=font_medium('normal'))
         text1.grid(row=1, column=0, columnspan=3, sticky=NSEW)
         Controller.Logs_FormVariables['Session'] = text1
 
@@ -607,13 +619,13 @@ class MainPanel:
 
         buttonleft = tb.Label(parent_frame, image=color_buttonleft)
         buttonleft.grid(row=0, column=0, sticky=W)
-        buttonleft.bind('<ButtonRelease-1>', swapping_session_data)
+        buttonleft.bind('<ButtonRelease-1>', lambda event,direction=-1: SelectDB.swapping_session_data(event, direction))
         buttonleft.bind('<Enter>', lambda event,img=darker_buttonleft: Media.hover_label_button(event,img))
         buttonleft.bind('<Leave>', lambda event,img=color_buttonleft: Media.hover_label_button(event,img))
 
         buttonright = tb.Label(parent_frame, image=color_buttonright)
         buttonright.grid(row=0, column=2, sticky=E)
-        buttonright.bind('<ButtonRelease-1>', swapping_session_data)
+        buttonright.bind('<ButtonRelease-1>', lambda event, direction=1: SelectDB.swapping_session_data(event, direction))
         buttonright.bind('<Enter>', lambda event,img=darker_buttonright: Media.hover_label_button(event,img))
         buttonright.bind('<Leave>', lambda event,img=color_buttonright: Media.hover_label_button(event,img))
 
@@ -722,8 +734,6 @@ class MainPanel:
 
         plotframe = Frame(notebook_frame, bd=3, relief=RAISED)
         plotframe.grid(row=1,column=0, sticky=NSEW)
-        
-
 
         return plotframe
 
@@ -832,10 +842,8 @@ class MainPanel:
                 'Thread cooldown': (5,100,'ms',5)
             }
 
-
             Controller.Settings_FormVariables['System'] = {} 
             
-
             for i,(txt,values) in enumerate(SYSTEM.items()):    
                 AMOUNT = SETTINGS['System'][txt]
                 STYLE = 'success' if i < 3 else 'warning' if i > 5 else 'info' 
@@ -892,18 +900,87 @@ class MainPanel:
         Title(1)
         MainTable(2)
         System(3)
-
         notebook_frame.grid_rowconfigure(3,weight=1)
         notebook_frame.grid_columnconfigure(0,weight=1)
-
         return notebook_frame
     
     @staticmethod
     def AboutTab_Create():
         notebook_frame = tb.Frame(Controller.NoteBook)
         Controller.NoteBook.add(notebook_frame, text='About')
+        notebook_frame.grid_rowconfigure(2,weight=1)
+        notebook_frame.grid_columnconfigure(1,weight=1)
 
+        def Top_Panel():
+            TEXT = 'MUVS - Rekonstruktivna hirurgija i Mikrohirurgija'
+            ABOUT = ('  Ova aplikacija napravljena je u naučne svrhe praćenja podataka o pacijentima '
+                    'na Kliničkom Centru na Klinici za Ortopedsku Hirurgiju i Traumatologiju '
+                    'za odeljenje Rekonstruktivne Hirurgije i Mikrohirurgije\n\n'
+                    '  Aplikacija je bazirana na SQL jeziku i radjena je u Python-u. '
+                    'Opremljena je Veštačkom Inteligencijom za izvlačenje teksta iz formulara i automatsko unošenje novih pacijenata '
+                    'Takođe je opremljena automatskim kreiranjem Grafikona na osnovu željenih parametara za praćenje ')
+
+            title = tb.Label(notebook_frame, text=TEXT, anchor=CENTER, font=font_big('bold'), wraplength=WIDTH//1.33, bootstyle='primary')
+            title.grid(row=0, column=0, columnspan=2, padx=padding_12, pady=(12,2), sticky=NSEW)
+
+            top_panel = tb.Label(notebook_frame, text=ABOUT, anchor=W, font=font_medium('normal'), wraplength=WIDTH//1.33, bootstyle=color_labeltext)
+            top_panel.grid(row=1, column=0, columnspan=2, padx=padding_3, pady=padding_3_12, sticky=NSEW)
+
+        def Left_Panel():
+
+            left_panel = tb.Frame(notebook_frame)
+            left_panel.grid(row=2, column=0, sticky=NSEW)
+
+            TEXT = dict()
+            TEXT['Product Manager:'] = ('Uroš Vuruna',)
+            TEXT['Project Manager:'] = ('Miloš Vuruna',)
+            TEXT['UI Developer:'] = ('Uroš Vuruna','Miloš Vuruna')
+            TEXT['UX Developer:'] = ('Uroš Vuruna','Miloš Vuruna')
+            TEXT['Backend Developer:'] = ('Uroš Vuruna',)
+            TEXT['MAC OS Adaptation:'] = ('Miloš Vuruna','Uroš Vuruna','Jovan Grčić')
+            TEXT['Database Administrator:'] = ('Miloš Vuruna','Uroš Vuruna')
+            left = len(max(TEXT.keys(),key=len))
+
+            for i,(role,developers) in enumerate(TEXT.items()):
+                role:str
+                frame = tb.Frame(left_panel)
+                frame.grid(row=i, column=0, columnspan=2, sticky=NSEW, padx=padding_3, pady=padding_3)
+                frame.grid_columnconfigure(1,weight=1)
+
+                label = tb.Label(frame, text=role, anchor=E, width=left+2, font=font_medium('bold'), bootstyle=color_labeltext)
+                label.grid(row=0, column=0, rowspan=len(developers), padx=padding_6, pady=padding_3, sticky=NE)
+                for j,developer in enumerate(developers):
+                    label = tb.Label(frame, text=developer, anchor=W, font=font_medium('normal'), bootstyle=color_labeltext)
+                    label.grid(row=j, column=1, padx=padding_6, pady=padding_3, sticky=W)
+
+
+            label1_l = tb.Label(left_panel, text='Technical support email: ', anchor=E, font=font_medium('normal'), bootstyle=color_labeltext)
+            label1_l.grid(row=i+1, column=0, padx=padding_6, pady=padding_3, sticky=E)
+            label1_r = tb.Label(left_panel, text='vurunam@gmail.com', anchor=W, font=font_medium('bold'), bootstyle='primary')
+            label1_r.grid(row=i+1, column=1, padx=padding_6, pady=padding_3, sticky=NSEW)
+            label1_r.bind("<Button-1>", lambda event, email='vurunam@gmail.com': Controller.open_email(event,email))
+
+            label2_l = tb.Label(left_panel, text='Git Code: ', anchor=E, font=font_medium('normal'), bootstyle=color_labeltext)
+            label2_l.grid(row=i+2, column=0, padx=padding_6, pady=padding_3, sticky=E)
+            label2_r = tb.Label(left_panel, text='https://github.com/UVuruna/RHMH', anchor=W, font=font_medium('bold'), bootstyle='primary')
+            label2_r.grid(row=i+2, column=1, padx=padding_6, pady=padding_3, sticky=NSEW)
+            label2_r.bind("<Button-1>", lambda event, link='https://github.com/UVuruna/RHMH': Controller.open_link(event,link))
+
+            label3 = tb.Label(left_panel, text='Copyright © 2024 MUVS Inc., Serbia', anchor=W, font=font_medium('normal'), bootstyle=color_labeltext)
+            label3.grid(row=i+3, column=0, columnspan=2, padx=padding_6, pady=padding_3, sticky=E)
+
+            left_panel.grid_rowconfigure([j for j in range(i+3)], weight=1)
+            
+        def Right_Panel():
+            image = IMAGES['MUVS'][0][0]
+            Media.AboutImage = Image.open(image)
+
+            Media.AboutCanvas = tb.Canvas(notebook_frame)
+            Media.AboutCanvas.grid(row=2, column=1, sticky=NSEW)
+
+            Media.AboutCanvas.bind('<Configure>' , Media.ajdust_About_logo)
+
+        Top_Panel()
+        Left_Panel()
+        Right_Panel()
         return notebook_frame
-    
-if __name__=='__main__':
-    pass

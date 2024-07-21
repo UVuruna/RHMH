@@ -105,16 +105,20 @@ class Graph:
 
     @staticmethod
     def save_and_open_graph_figure(event):
-        image_location = 'temporary/temp_image.png'
-        Graph.figure.savefig(image_location)
+        if not os.path.exists(os.path.join(directory,'temporary')):
+            os.makedirs(os.path.join(directory,'temporary'))
+        graph_image = os.path.join(directory,'temporary/temp_image.png')
+        Graph.figure.savefig(graph_image)
         
+        if not os.path.exists(graph_image):
+            return
         if os.name == 'nt':  # For Windows
-            os.startfile(os.path.abspath(image_location))
+            os.startfile(os.path.abspath(graph_image))
         elif os.name == 'posix':  # For macOS and Linux
             if os.uname().sysname == 'Darwin':  # macOS
-                subprocess.call(['open', os.path.abspath(image_location)])
+                subprocess.call(['open', os.path.abspath(graph_image)])
             else:  # Linux
-                subprocess.call(['xdg-open', os.path.abspath(image_location)])
+                subprocess.call(['xdg-open', os.path.abspath(graph_image)])
 
     @staticmethod
     def create_1D_bar( colors=0, values=0 ) -> None:
@@ -335,22 +339,22 @@ class Graph:
         return QUERY
 
     @staticmethod
-    def Graph_SettingUp(parent:Frame):
+    def Graph_SettingUp(PARENT:Tk):
 
-        def create_meter(parent,STYLE,text,ROW,COL,MIN,MAX,AMOUNT,unit,jump):
+        def create_meter(parent,STYLE,text,ROW,COL,MIN,MAX,AMOUNT):
             meter = tb.Meter(
                 master=parent,
                 metersize=150,
                 bootstyle=STYLE,
                 subtextstyle=STYLE,
                 subtext=text,
-                textright=unit,
+                textright='%',
                 padding=padding_6,
                 amountused=AMOUNT,
                 amountmin=MIN,
                 amounttotal=MAX,
-                stepsize=jump,
-                stripethickness=math.ceil(270/((MAX-MIN)/jump)),
+                stepsize=1,
+                stripethickness=math.ceil(270/(MAX-MIN)),
                 metertype="semi",
                 interactive=True,
             )
@@ -387,7 +391,9 @@ class Graph:
             result['action'] = 'Save'
             toplevel.destroy()
 
-        toplevel = Toplevel(parent)
+        toplevel = tb.Toplevel()
+        toplevel.iconify()
+
         toplevel.title('Graph - Configure')
         toplevel.grid_columnconfigure(0, weight=1)
         toplevel.grid_rowconfigure([0,1,2],weight=1)
@@ -402,45 +408,21 @@ class Graph:
         meter_frame.grid_columnconfigure([0,1],weight=1)
 
         left:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='primary',
-                            text='Left',
-                            ROW=0,
-                            COL=0,
-                            MIN=0,
-                            MAX=30,
-                            AMOUNT=int(Graph.Settings['left']*100),
-                            unit='%',
-                            jump=1)
+                            STYLE='primary', text='Left',
+                            ROW=0, COL=0, MIN=0, MAX=30,
+                            AMOUNT=int(Graph.Settings['left']*100)  )
         right:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='primary',
-                            text='Right',
-                            ROW=0,
-                            COL=1,
-                            MIN=70,
-                            MAX=100,
-                            AMOUNT=int(Graph.Settings['right']*100),
-                            unit='%',
-                            jump=1)
+                            STYLE='primary', text='Right',
+                            ROW=0, COL=1, MIN=70, MAX=100,
+                            AMOUNT=int(Graph.Settings['right']*100) )
         top:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='primary',
-                            text='Top',
-                            ROW=1,
-                            COL=0,
-                            MIN=70,
-                            MAX=100,
-                            AMOUNT=int(Graph.Settings['top']*100),
-                            unit='%',
-                            jump=1)
+                            STYLE='primary', text='Top',
+                            ROW=1, COL=0, MIN=70, MAX=100,
+                            AMOUNT=int(Graph.Settings['top']*100)   )
         bottom:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='primary',
-                            text='Bottom',
-                            ROW=1,
-                            COL=1,
-                            MIN=0,
-                            MAX=40,
-                            AMOUNT=int(Graph.Settings['bottom']*100),
-                            unit='%',
-                            jump=1)
+                            STYLE='primary', text='Bottom',
+                            ROW=1, COL=1, MIN=0, MAX=40,
+                            AMOUNT=int(Graph.Settings['bottom']*100))
 
         checkbutton_frame = Frame(toplevel)
         checkbutton_frame.grid(row=1, column=0, padx=12, pady=padding_6, sticky=NSEW)
@@ -469,9 +451,7 @@ class Graph:
                     fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
                     command=run_command).grid(row=0, column=1, padx=padding_6[0], pady=padding_6[1])
         
-        parent.wait_window(toplevel)
+        toplevel.deiconify()
+        toplevel.place_window_center()
+        PARENT.wait_window(toplevel)
         return result['action']
-
-
-if __name__=='__main__':
-    pass

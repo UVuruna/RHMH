@@ -65,7 +65,7 @@ class FormPanel:
     valid_zaposleni = None
 
     @staticmethod
-    def initialize(root:Tk) -> None:
+    def initializeFP(root:Tk) -> None:
         
         FormPanel.form_visible = BooleanVar()
         FormPanel.form_visible.set(True)
@@ -294,6 +294,3 @@ class FormPanel:
         elif FormPanel.AlternativeForm.winfo_ismapped():
             FormPanel.DefaultForm.grid()
             FormPanel.AlternativeForm.grid_remove()
-
-if __name__=='__main__':
-    pass

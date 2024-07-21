@@ -12,7 +12,7 @@ class TopPanel:
     title_txt = None
 
     @staticmethod
-    def initialize(root:Tk) -> None:
+    def initializeTP(root:Tk) -> None:
         
         try:
             image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = TITLE_IMAGE
@@ -51,6 +51,3 @@ class TopPanel:
         if Controller.Connected is False:
             Controller.Reconnect_window = Controller.Top_Frame.create_window(
                                                 new_width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
-
-if __name__=='__main__':
-    pass

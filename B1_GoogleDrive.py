@@ -1,4 +1,5 @@
 from A1_Variables import *
+from google.oauth2 import service_account
 
 class GoogleDrive:
     SCOPES = [ 'https://www.googleapis.com/auth/drive',
@@ -72,21 +73,6 @@ class GoogleDrive:
             'mimeType': file['mimeType']
         }
     
-    '''
-    @staticmethod
-    def get_video_dimensions(file_path):
-        ffmpeg_path = 'required_programs/ffprobe.exe'
-        os.environ['PATH'] += os.pathsep + os.path.dirname(ffmpeg_path)
-        probe = ffmpeg.probe(file_path)
-        video_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'video']
-        if video_streams:
-            width = video_streams[0]['width']
-            height = video_streams[0]['height']
-            return width, height
-        else:
-            return None, None
-    #'''
-
     @staticmethod
     def download_DB(file_id, destination:str):
         temp_destination = destination.split('.')[0] + '_progress.db'
@@ -148,17 +134,40 @@ class GoogleDrive:
         return True
 
     @staticmethod
-    def list_folder(folder_id):
+    def delete_trash(file_id):
+        GoogleDrive.connection.files().update(
+            fileId=file_id,
+            body={'trashed': True}
+        ).execute()
+        return True
+
+
+    @staticmethod
+    def find_logs(folder_id):
         results = GoogleDrive.connection.files().list(
             q=f"'{folder_id}' in parents",
             spaces='drive',
             fields='nextPageToken, files(id, name)'
         ).execute()
 
-        items = results.get('files', [])
+        return_dict = {}
+        for file in results.get('files', []):
+            
+            name:str = file['name']
+            if name.startswith('LOG - '):
+                return_dict[name] = file['id']
 
-if __name__ == '__main__':
-    GoogleDrive.setup_connection()
-    #GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
-    #GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
-    GoogleDrive.upload_UpdateFile(LOGS_dict['id'],LOGS_dict['path'],LOGS_dict['mime'])
+        return return_dict
+
+    @staticmethod
+    def add_permission_to_folder(folder_id, user_email):
+        permission = {
+            'type': 'user',
+            'role': 'writer',
+            'emailAddress': user_email
+        }
+        GoogleDrive.connection.permissions().create(
+            fileId=folder_id,
+            body=permission,
+            fields='id'
+        ).execute()

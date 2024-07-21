@@ -32,7 +32,6 @@ import psutil
 import GPUtil
 import cpuinfo
 
-#import ffmpeg
 import webbrowser
 import httplib2
 import pickle
@@ -114,6 +113,8 @@ IMAGES = {
            (os.path.join(directory,'Slike/sign_equal.png'),42,28),
            (os.path.join(directory,'Slike/sign_like.png'),42,28),
            (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
+           (os.path.join(directory,'Slike/sign_greater.png'),42,28),
+           (os.path.join(directory,'Slike/sign_less.png'),42,28),
            (os.path.join(directory,'Slike/sign_between.png'),42,28)
        ],
        'Themes': [
@@ -151,7 +152,7 @@ TITLE_IMAGE = TITLE_IMAGE if not isinstance(TITLE_IMAGE,tuple) else TITLE_IMAGE[
 
 
 
-UserSession = {'Email':'offline_admin@gmail.com','PC':{},'GUI':{},'GoogleDrive':{},'Database':{},
+UserSession = {'Email':SETTINGS['Email'],'PC':{},'GUI':{},'GoogleDrive':{},'Database':{},
                'AI':{},'Media':{},'Graph':{},'Controller':{},'ManageDB':{},'SelectDB':{}}
 app_name = 'Restruktivna Hirurgija Ortopedije'
 form_name = 'Pacijent'
@@ -273,9 +274,7 @@ LogsTable = {
        'ID Time': { 'table':'\nID Time' , 'column_width':F_SIZE*16, 'column_anchor':W },
        'Email': { 'table':'\nEmail' , 'column_width':F_SIZE*16, 'column_anchor':W },
        'Query': { 'table':'\nQuery' , 'column_width':F_SIZE*16, 'column_anchor':W },
-       'Error': { 'table':'\nError' , 'column_width':F_SIZE*27, 'column_anchor':W },
-       'Full Query': { 'table':'Full Query' , 'column_width':0, 'column_anchor':W },
-       'Full Error': { 'table':'Full Error' , 'column_width':0, 'column_anchor':W }
+       'Error': { 'table':'\nError' , 'column_width':F_SIZE*27, 'column_anchor':W }
        }
 
 SessionTable = {
@@ -284,21 +283,10 @@ SessionTable = {
        'Email': { 'table':'\nEmail' , 'column_width':0, 'column_anchor':W} ,
        'Logged IN': { 'table':'\nLogged IN' , 'column_width':F_SIZE*16, 'column_anchor':W },
        'Logged OUT': { 'table':'\nLogged OUT' , 'column_width':F_SIZE*16, 'column_anchor':W },
-       'Session': { 'table':'\nSession' , 'column_width':F_SIZE*16, 'column_anchor':W },
-       'PC': { 'table':'PC' , 'column_width':0, 'column_anchor':W },
-       'GUI': { 'table':'GUI' , 'column_width':0, 'column_anchor':W },
-       'GoogleDrive': { 'table':'GoogleDrive' , 'column_width':0, 'column_anchor':W },
-       'Database': { 'table':'Database' , 'column_width':0, 'column_anchor':W },
-       'AI': { 'table':'AI' , 'column_width':0, 'column_anchor':W },
-       'Media': { 'table':'Media' , 'column_width':0, 'column_anchor':W },
-       'Graph': { 'table':'Graph' , 'column_width':0, 'column_anchor':W },
-       'Controller': { 'table':'Controller' , 'column_width':0, 'column_anchor':W },
-       'ManageDB': { 'table':'ManageDB' , 'column_width':0, 'column_anchor':W },
-       'SelectDB': { 'table':'SelectDB' , 'column_width':0, 'column_anchor':W },
-       
+       'Session': { 'table':'\nSession' , 'column_width':F_SIZE*16, 'column_anchor':W }
        }
 
-SIGNS = [ 'EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN' ]
+SIGNS = [ 'EQUAL', 'LIKE', 'NOT LIKE' , 'GREATER', 'LESS', 'BETWEEN' ]
 
 Image_buttons = [   ('ADD\nImage',None),
                     ('EDIT\nImage',None),
@@ -338,6 +326,9 @@ RHMH_dict = {
     'mime':'application/x-sqlite3'}
 LOGS_dict = {
     'path':os.path.join(directory,'LOGS.db'),
+    'mime':'application/x-sqlite3'}
+GD_LOGS_dict = {
+    'path':os.path.join(directory,'GD_LOGS.db'),
     'id':'1uvz-BN2DI4_7xcs7-dwJmfz-Z7jrpMU2',
     'mime':'application/x-sqlite3'}
 
@@ -353,5 +344,3 @@ MIME = {'PNG' : 'image/png',
         'HEIC' : 'image/heic',
         'MP4': 'video/mp4',
         'MOV': 'video/quicktime'}
-
-
