@@ -17,6 +17,19 @@ class GoogleDrive:
         GoogleDrive.connection = build('drive', 'v3', credentials=GoogleDrive.creds)
 
     @staticmethod
+    def create_new_token() -> None:
+        creds = None
+        token_path = os.path.join(directory,'www_token.pickle')
+        creds_path = os.path.join(directory,'www_credentials.json')
+        flow = InstalledAppFlow.from_client_secrets_file(creds_path, GoogleDrive.SCOPES)
+        creds = flow.run_local_server(port=0)
+        
+        with open(token_path, 'wb') as token:
+            pickle.dump(creds, token)
+        GoogleDrive.creds = creds
+        GoogleDrive.connection = build('drive', 'v3', credentials=GoogleDrive.creds)
+
+    @staticmethod
     def authenticate_google_drive():
         creds = None
         token_path = os.path.join(directory,'www_token.pickle')
@@ -74,8 +87,9 @@ class GoogleDrive:
         }
     
     @staticmethod
-    def download_DB(file_id, destination:str):
-        temp_destination = destination.split('.')[0] + '_progress.db'
+    def download_File(file_id, destination:str):
+        file_name,extension = destination.split('.')
+        temp_destination = file_name + f'_progress.{extension}'
         request = GoogleDrive.connection.files().get_media(fileId=file_id)
         with open(temp_destination, 'wb') as f:
             downloader = MediaIoBaseDownload(f, request)
@@ -84,7 +98,7 @@ class GoogleDrive:
                 status, done = downloader.next_chunk()
         os.remove(destination)
         os.rename(temp_destination, destination)
-    
+
     @staticmethod
     def download_BLOB(file_id):
         try:
@@ -141,7 +155,6 @@ class GoogleDrive:
         ).execute()
         return True
 
-
     @staticmethod
     def find_logs(folder_id):
         results = GoogleDrive.connection.files().list(
@@ -171,3 +184,7 @@ class GoogleDrive:
             body=permission,
             fields='id'
         ).execute()
+
+if __name__ == '__main__':
+    GoogleDrive.setup_connection()
+    #GoogleDrive.upload_UpdateFile(DEFAULT_dict['id'],DEFAULT_dict['path'],DEFAULT_dict['mime'])

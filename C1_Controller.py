@@ -1,80 +1,110 @@
 from A1_Variables import *
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH,LOGS, Database
-from B3_Media import Media
+from B3_Media import Media,Loading_Splash
 
 
-class GodMode(simpledialog.Dialog):
-
-    def __init__(self, parent, title):
-        self.password = None
-        self.eye_image = None
-        super().__init__(parent, title)
-
-    def body(self, master):
-        self.eye_image = Media.label_ImageLoad(IMAGES['Password'])
-        lbl = tb.Label(master, image=self.eye_image)
-        lbl.grid(row=0, column=0, padx=6, pady=6, sticky=NSEW)
-        self.password_entry = tb.Entry(master, show='*')
-        self.password_entry.grid(row=1, column=0, padx=13, pady=13)
-        return self.password_entry
-
-    def apply(self):
-        self.password = self.password_entry.get()
+class GodMode:
+    password = None
+    TopLevel: tb.Toplevel = None
+    eye_image:Image.Image = None
 
     @staticmethod
-    def money():
-        message = '    MUVS\n'
-        message += f'{(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).total_seconds()//13*13:,.0f} $\n'
-        message += f'{(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).days//13*13:,.0f} Million $'
-        return message
+    def Admin_Unlocking(PARENT:Tk):
+        result = dict()
+        def ok_command():
+            result['Ok'] = password.get()
+            toplevel.destroy()
+        def hint_command():
+            if 'Hint' not in result:
+                report = 'There are 3 different valid passwords\n' +\
+                            'Two of those unlock Super-Admin mode - "GodMode"\n' +\
+                            'The easiest One unlocks Admin mode\n' +\
+                            'All of the passwords are hidden inside LOGO visible in About Page'
+                result['Hint'] = report
+            Messagebox.show_info(message=report, title='Password Hint',
+                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+            toplevel.lift()
+            toplevel.focus_force()
+
+        toplevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['GodMode'])
+        toplevel.transient(Controller.ROOT)
+        toplevel.place_window_center()
+        toplevel.title('Privileges - unlocking')
+        toplevel.grid_columnconfigure(0, weight=1)
+        toplevel.resizable(False,False)
+        
+        if GodMode.eye_image == None:
+            GodMode.eye_image = Media.label_ImageLoad(IMAGES['Password'])
+        lbl = tb.Label(toplevel, image=GodMode.eye_image)
+        lbl.grid(row=0, column=0, columnspan=2, padx=padding_6, pady=padding_6, sticky=NSEW)
+
+        password = tb.Entry(toplevel, show='*')
+        password.grid(row=1, column=0, columnspan=2, padx=padding_12, pady=padding_12, sticky=EW)
+        password.focus_set()
+
+        butt_color = ThemeColors['info']
+        ctk.CTkButton(toplevel, text='Get\nHint', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=hint_command).grid(row=2, column=0, padx=padding_6, pady=padding_6)
+
+        butt_color = ThemeColors['primary']
+        ctk.CTkButton(toplevel, text='Activate', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=ok_command).grid(row=2, column=1, padx=padding_6, pady=padding_6)
+        
+        toplevel.bind('<Return>', lambda event: ok_command())
+        toplevel.attributes('-alpha', 0.93)
+        PARENT.wait_window(toplevel)
+        return result
 
     @staticmethod
     def GodMode_Password(event):
-        dialog = GodMode(Controller.SearchBar, 'Privileges Unlocking...')
-        if dialog.password=='63636':
-            info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
-                    f'\n{GodMode.money()}'
-            title = 'Admin unlocked'
-        elif dialog.password in ['C12-Si28-C13-Si28-C12','C12-Li3-C13-Li3-C12']:
-            Controller.FreeQuery_Frame.grid()
-            info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
-                    'New button:\n\t-Free Query\n\t-Upload LOGS\n' +\
-                    f'\n{GodMode.money()}'
-            title = 'God Mode unlocked' 
-        else:
-            return
-        Messagebox.show_info(message=info, title=title,
-                                position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
-        GodMode.JoiningLogs()
-        Controller.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
-        Controller.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
+        response = GodMode.Admin_Unlocking(Controller.ROOT)
+        if 'Ok' in response:
+            if response['Ok'] == '63636':
+                info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
+                        f'\n{GodMode.money()}'
+                title = 'Admin unlocked'
+            elif response['Ok'] in ['C12-Si28-C13-Si28-C12','C12-Li3-C13-Li3-C12']:
+                Controller.FreeQuery_Frame.grid()
+                info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
+                        'New button:\n\t-Free Query\n\t-Upload LOGS\n' +\
+                        f'\n{GodMode.money()}'
+                title = 'God Mode unlocked' 
+            else:
+                return
+            Messagebox.show_info(message=info, title=title,
+                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+            GodMode.JoiningLogs()
+            Controller.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
+            Controller.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
 
     @staticmethod
     def ProgressBar_JoiningLogs(count:int):
-        toplevel = tb.Toplevel()
-        toplevel.iconify()
+        GodMode.TopLevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['GodMode'])
+        GodMode.TopLevel.place_window_center()
+        GodMode.TopLevel.title(f'Joining Logs...')
+        GodMode.TopLevel.grid_columnconfigure(0, weight=1)
+        GodMode.TopLevel.resizable(False,False)
+        GodMode.TopLevel.attributes('-topmost', True)
 
-        toplevel.title(f'Joining Logs...')
-        toplevel.grid_columnconfigure(0, weight=1)
-        toplevel.resizable(False,False)
-        toplevel.attributes('-topmost', True)
-
-        tb.Label(toplevel, text=f'Importing {count} Online Logs', anchor=CENTER, justify=CENTER, font=font_medium()).grid(
-            row=0, column=0, pady=24, sticky=NSEW)
+        tb.Label(GodMode.TopLevel, text=f'Importing {count} Online Logs', anchor=CENTER, justify=CENTER, font=font_medium()).grid(
+            row=0, column=0, pady=padding_12, sticky=NSEW)
        
-        text_widget = tb.Text(toplevel, wrap=NONE, height=10, width=40, font=font_default)
+        text_widget = tb.Text(GodMode.TopLevel, wrap=NONE, height=10, width=40, font=font_default)
         text_widget.grid(row=1, column=0, sticky=NSEW)
 
-        scrollbar = tb.Scrollbar(toplevel, orient=VERTICAL, command=text_widget.yview)
+        scrollbar = tb.Scrollbar(GodMode.TopLevel, orient=VERTICAL, command=text_widget.yview)
         scrollbar.grid(row=1, column=1, sticky=NS)
         text_widget.configure(yscrollcommand=scrollbar.set)
 
-        bar = tb.Floodgauge(toplevel, mode='indeterminate', bootstyle='primary', mask='Downloading...', font=font_default)
-        bar.grid(row=2, column=0, padx=24, pady=24, sticky=EW)
+        bar = tb.Floodgauge(GodMode.TopLevel, mode='indeterminate', bootstyle='primary', mask='Downloading...', font=font_default)
+        bar.grid(row=2, column=0, padx=padding_12, pady=padding_12, sticky=EW)
 
-        toplevel.deiconify()
-        toplevel.place_window_center()
+        GodMode.TopLevel.attributes('-alpha', 0.93)
         return bar,text_widget
 
     @staticmethod
@@ -87,7 +117,7 @@ class GodMode(simpledialog.Dialog):
 
         def join_logs():
             floodgauge.start()
-            GoogleDrive.download_DB(GD_LOGS_dict['id'],GD_LOGS_dict['path'])
+            GoogleDrive.download_File(GD_LOGS_dict['id'],GD_LOGS_dict['path'])
             Controller.GD_LOGS = Database(GD_LOGS_dict['path'])
 
             floodgauge['mask'] = 'Joining...'
@@ -100,7 +130,7 @@ class GodMode(simpledialog.Dialog):
                 tempbase.connect()
                 tempbase.close_connection()
 
-                GoogleDrive.download_DB(log_id,path)
+                GoogleDrive.download_File(log_id,path)
                 Database.execute_Insert_Many(tempbase,Controller.GD_LOGS,'logs',tempbase.show_columns('logs'))
                 Database.execute_Insert_Many(tempbase,Controller.GD_LOGS,'session',tempbase.show_columns('session'))
 
@@ -115,9 +145,10 @@ class GodMode(simpledialog.Dialog):
                 floodgauge['mask'] = 'Uploading...'
                 GoogleDrive.upload_UpdateFile(GD_LOGS_dict['id'],GD_LOGS_dict['path'],GD_LOGS_dict['mime'])
                 Database.email = [i[0] for i in Controller.GD_LOGS.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')]
-                floodgauge.configure(bootstyle='success', mode='determinate', maximum=100, value=100, mask='Finished')
-                floodgauge.update_idletasks()
                 floodgauge.stop()
+                floodgauge.configure(bootstyle='success', mode='determinate', maximum=100, value=100, mask='Finished')
+                Controller.ROOT.after(1000,GodMode.TopLevel.destroy)
+                
         thread = threading.Thread(target=join_logs)
         thread.start()
 
@@ -144,7 +175,18 @@ class GodMode(simpledialog.Dialog):
             DATABASE.connection.commit()
             DATABASE.close_connection()
 
+    @staticmethod
+    def money():
+        message = '    MUVS\n'
+        message += f'{(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).total_seconds()//13*13:,.0f} $\n'
+        message += f'{(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).days//13*13:,.0f} Million $'
+        return message
+
+
 class Controller:
+    Gif = {}
+    queue = queue.Queue()
+
     ROOT:Tk = None
     GD_LOGS:Database = None
     
@@ -214,9 +256,8 @@ class Controller:
     
         # FORM
     PatientFocus_ID = None
-
-    FormTitle = None
-    PatientInfo = None
+    FormTitle:tb.Label = None
+    PatientInfo:tb.Label = None
     MainTable_IDS = list()
 
         # VALIDATION FORM
@@ -245,9 +286,37 @@ class Controller:
         return decorator
 
     @staticmethod
+    def toplevel_buttons(frame,commands:list):
+        butt_color = ThemeColors['info']
+        ctk.CTkButton(frame, text='RESTORE\nDefault', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=commands[0]).grid(row=0, column=0, padx=padding_6, pady=padding_6)
+
+        butt_color = ThemeColors['primary']
+        ctk.CTkButton(frame, text='SAVE\nDefault', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=commands[1]).grid(row=0, column=1, padx=padding_6, pady=padding_6)
+        
+        butt_color = ThemeColors['success']
+        ctk.CTkButton(frame, text='RUN', width=buttonX-4, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=commands[2]).grid(row=0, column=2, padx=padding_6, pady=padding_6)
+
+    @staticmethod
+    def load_loading_GIF():
+        for gif in ['AI','Graph','GodMode','Web','MUVS']:
+            folder = os.path.join(directory,f'Slike/gif_{gif}')
+            def load_gif():
+                Controller.Gif[gif] = Loading_Splash(folder=folder)
+            Controller.queue.put((Controller.ROOT.after, (WAIT, load_gif)))
+
+    @staticmethod
     def starting_application():
         def message_success():
-            report = 'Connection successfull\nOnline mode'
+            report = f'Connection successful\nOnline mode\nHello {UserSession['Email']}'
             Messagebox.show_info(title='Connect',message=report,
                                     position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
         def message_fail():
@@ -270,14 +339,16 @@ class Controller:
                 if email and email != SETTINGS['Email']:
                     UserSession['Email'] = email
                     SETTINGS['Email'] = email
-                    json_data = json.dumps(SETTINGS, indent=4)
-                    with open(os.path.join(directory,'Settings.json'), 'w') as file:
+                    json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+                    with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
                         file.write(json_data)
 
-                GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
-                GoogleDrive.download_DB(SETTINGS_dict['id'],SETTINGS_dict['path'])
-
-                with open(os.path.join(directory,'Default.json'), 'r') as file:
+                GoogleDrive.download_File(RHMH_dict['id'],RHMH_dict['path'])
+                try:
+                    GoogleDrive.download_File(DEFAULT_dict['id'],DEFAULT_dict['path'])
+                except Exception:
+                    pass
+                with open(os.path.join(directory,'Default.json'), 'r', encoding='utf-8') as file:
                     Controller.DEFAULT = json.load(file)
 
                 Controller.Connected = True
@@ -294,6 +365,28 @@ class Controller:
             Controller.ROOT.after(WAIT,message_fail)
             width = Controller.Top_Frame.winfo_width()
             Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
+    
+    @staticmethod
+    def create_new_user():
+        def message_success():
+            report = f'User changed\nHello {UserSession['Email']}'
+            Messagebox.show_info(title='Changing User',message=report,
+                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+        def message_fail():
+                report = f'User unchanged\nOld User: {UserSession['Email']}'
+                Messagebox.show_error(title='Changing User',message=report,
+                                        position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+        try:
+            GoogleDrive.create_new_token()
+            email = GoogleDrive.get_UserEmail()
+            UserSession['Email'] = email
+            SETTINGS['Email'] = email
+            json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+            with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
+                file.write(json_data)
+            Controller.ROOT.after(WAIT,message_success)    
+        except Exception:
+            Controller.ROOT.after(WAIT,message_fail)    
 
     @staticmethod
     def update_settings():
@@ -307,18 +400,20 @@ class Controller:
                     except AttributeError:
                         v:tb.Meter
                         SETTINGS[col][c] = v.amountusedvar.get()
-        json_data = json.dumps(SETTINGS, indent=4)
-        with open(os.path.join(directory,'Settings.json'), 'w') as file:
+        json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+        with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
             file.write(json_data)
+        Messagebox.show_info(message='Saving Settings successful', title='Saving Settings',
+                                position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
 
     @staticmethod
     def restore_default_settings() -> None:
         for k,v in Controller.DEFAULT.items():
-            if k=='Version':
+            if k in ['Version','Reader','Graph']:
                 continue
             SETTINGS[k] = v
         for col,val in SETTINGS.items():
-            if col in ['Email','Version']:
+            if col in ['Email','Version','Version','Reader','Graph']:
                 continue
             if not isinstance(val,dict):
                 Controller.Settings_FormVariables[col].set(val)
@@ -328,13 +423,13 @@ class Controller:
                         Controller.Settings_FormVariables[col][column].set(value)
                     except AttributeError:
                         Controller.Settings_FormVariables[col][column].amountusedvar.set(value)
-                    except KeyError:
-                        continue
+        Messagebox.show_info(message='Restoring Default Settings successful', title='Restore Settings',
+                                position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
 
     @staticmethod
     def Upload_RHMH() -> None:
         def message_success():
-            Messagebox.show_info(title='Upload',message='Upload Database successfull',
+            Messagebox.show_info(title='Upload',message='Upload Database successful',
                                     position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
         def message_fail():
             Messagebox.show_error(title='Upload',message='Upload Database failed',
@@ -380,8 +475,11 @@ class Controller:
 
     @staticmethod
     def Clear_Form():
+        parent_name = Controller.FormTitle.winfo_parent()
+        parent:Frame = Controller.FormTitle.nametowidget(parent_name)
+
         Controller.PatientFocus_ID = None
-        Controller.FormTitle[0].configure(bootstyle=Controller.FormTitle[1])
+        Controller.FormTitle.configure(bootstyle=color_labeltext)
         Controller.PatientInfo.config(text='\n')
         for table_groups in Controller.Patient_FormVariables.values():
             for widget in table_groups.values():

@@ -1,4 +1,6 @@
 from A1_Variables import *
+from B3_Media import Media
+from C1_Controller import Controller
 
 pillow_heif.register_heif_opener()
 
@@ -19,23 +21,19 @@ class AI:
     torch.set_default_device(device)
     ReaderSetup = easyocr.Reader(['rs_latin','en'], gpu=(device != torch.device("cpu"))) # ovo pravi True/False za device
 
-    OperacionaChoice = {
-        'Datum Operacije': None,
-        'Dg Latinski': None,
-        'Glavna Operativna dijagnoza': None,
-        'Sporedna Operativna dijagnoza':  None,
-        'Operator':  None,
-        'Asistent':  None,
-        'Anesteziolog':  None,
-        'Anestetičar':  None,
-        'Instrumentarka':  None,
-        'Gostujući Specijalizant':  None,
-    }
+    OperacionaChoice = dict()
 
     Settings = {}
-    Settings['Type'] = SETTINGS['Reader']['Type']
-    Settings['VRAM'] = SETTINGS['Reader']['VRAM']
-    Settings['Zoom'] = SETTINGS['Reader']['Zoom']/100
+    for k,v in SETTINGS['Reader'].items():
+        if k == 'Zoom':
+            Settings[k] = v/100
+        else:
+            if isinstance(v,dict):
+                Settings[k] = {}
+                for col,val in v.items():
+                    Settings[k][col] = val
+            else:
+                Settings[k] = v
     
     @staticmethod
     def initialize():
@@ -134,6 +132,7 @@ class AI:
             AI.Settings['VRAM'] = ram.amountusedvar.get()
             AI.Settings['Zoom'] = zoom.amountusedvar.get()/100
             AI.Settings['Type'] = combobox.get()
+            
             result['action'] = 'Run'
             toplevel.destroy()
 
@@ -145,29 +144,60 @@ class AI:
             SETTINGS['Reader']['Zoom'] = zoom.amountusedvar.get()
             SETTINGS['Reader']['Type'] = AI.Settings['Type']
 
-            json_data = json.dumps(SETTINGS, indent=4)
-            with open(os.path.join(directory,'Settings.json'), 'w') as file:
-                file.write(json_data)
-            result['action'] = 'Save'
-            toplevel.destroy()
+            for column,boolvar in AI.OperacionaChoice.items():
+                boolvar:BooleanVar
+                SETTINGS['Reader']['Entry'][column] = boolvar.get()
+                AI.Settings['Entry'][column] = boolvar.get()
 
-        toplevel = tb.Toplevel()
-        toplevel.iconify()
-        
+            json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+            with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
+                file.write(json_data)
+            Messagebox.show_info(message='Saving Settings successful', title='Saving Settings',
+                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+            toplevel.lift()
+            toplevel.focus_force()
+
+        def restoredefault_command():
+            for k,v in Controller.DEFAULT['Reader'].items():
+                if k == 'Zoom':
+                    AI.Settings[k] = v/100
+                    zoom.amountusedvar.set(v)
+                    SETTINGS['Reader'][k] = v
+                else:
+                    if isinstance(v,dict):
+                        for col,val in v.items():
+                            AI.Settings[k][col] = val
+                            AI.OperacionaChoice[col].set(val)
+                            SETTINGS['Reader'][k][col] = val
+                    else:
+                        AI.Settings[k] = v
+                        if k == 'VRAM':
+                            ram.amountusedvar.set(v)
+                        elif k == 'Type':
+                            combobox.set(v)
+                        SETTINGS['Reader'][k] = v
+
+            json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+            with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
+                file.write(json_data)
+            Messagebox.show_info(message='Restoring Default Settings successful', title='Restore Settings',
+                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+            toplevel.lift()
+            toplevel.focus_force()
+
+        toplevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['AI'])
+        toplevel.transient(Controller.ROOT)
+        toplevel.place_window_center()
         toplevel.title('Reader - Configure')
         toplevel.grid_columnconfigure(0, weight=1)
         toplevel.resizable(False,False)
-        if os.name == 'nt':  # Windows
-            toplevel.attributes('-toolwindow', True)
-        else:  # macOS/Linux
-            toplevel.attributes('-type', 'dialog')
 
         titletxt = ' - Choose your settings for new AI Reading of document.\n'+\
                     ' - You can save your settings as default values for future readings.'
         title = tb.Label(toplevel, text=titletxt, anchor=W, wraplength=310)
-        title.grid(row=0, column=0, padx=10, pady=(24,0)) 
+        title.grid(row=0, column=0, padx=padding_12, pady=padding_12) 
         titleframe = Frame(toplevel)
-        titleframe.grid(row=1, column=0, padx=10, sticky=W)
+        titleframe.grid(row=1, column=0, padx=padding_12, sticky=W)
         titlelabels = [ (' Slower ','High Zoom and Less Ram','danger'),
                         (' Faster ','Low Zoom and More Ram','success'),
                         (' Precision ','Change Zoom and AI Type','primary') ]
@@ -176,11 +206,11 @@ class AI:
             tb.Label(titleframe, anchor=W, justify=LEFT, text=txt2, wraplength=310).grid(row=i, column=1, padx=0)
 
         label = tb.Label(toplevel, text=f'Image Reader Type', anchor=CENTER, justify=CENTER)
-        label.grid(row=2, column=0, padx=12, pady=(24,6)) 
+        label.grid(row=2, column=0, padx=padding_12, pady=padding_12) 
         values = ['AI-Line Reader', 'AI-Paragraph Reader']
         combobox = tb.Combobox(toplevel, values=values, state='readonly')
         combobox.set(values[0])
-        combobox.grid(row=3, column=0, padx=12, pady=6)
+        combobox.grid(row=3, column=0, padx=padding_12, pady=padding_6)
 
         meter_frame = Frame(toplevel)
         meter_frame.grid(row=4,column=0,sticky=NSEW)
@@ -199,57 +229,56 @@ class AI:
                             unit='MB', jump=100)
 
         checkbutton_frame = Frame(toplevel)
-        checkbutton_frame.grid(row=6, column=0, padx=12, pady=padding_6, sticky=NSEW)
+        checkbutton_frame.grid(row=6, column=0, padx=padding_12, pady=padding_6, sticky=NSEW)
         checkbutton_frame.grid_columnconfigure(1,weight=1)
    
         col = 0
         row = 0
-        for check in list(AI.OperacionaChoice.keys()):
-            txt = check.split(' ')
+        
+        for column in list(AI.Settings['Entry'].keys()):
+            txt = column.split(' ')
             txt = ' '.join(txt) if len(txt)!=3 else ' '.join(txt[:2])
             if col==2:
                 col = 0
                 row += 1
-            tb.Checkbutton()
-            cb = tb.Checkbutton(checkbutton_frame, text=txt, bootstyle=style_checkbutton)
-            AI.OperacionaChoice[check] = IntVar()
-            cb.configure(variable=AI.OperacionaChoice[check])
-            if row>1:
-                AI.OperacionaChoice[check].set(1)
-            cb.grid(row=row, column=col, padx=padding_12, pady=padding_6, sticky=W)
+            try:
+                AI.OperacionaChoice[column].set(AI.Settings['Entry'][column])
+            except KeyError:
+                AI.OperacionaChoice[column] = BooleanVar()
+                AI.OperacionaChoice[column].set(AI.Settings['Entry'][column])
+
+            tb.Checkbutton(checkbutton_frame, text=txt, bootstyle=style_checkbutton, variable=AI.OperacionaChoice[column]).grid(
+                row=row, column=col, padx=padding_12, pady=padding_6, sticky=W)
             col += 1
 
         button_frame = Frame(toplevel)
-        button_frame.grid(row=7, column=0, padx=12, pady=(24, 6), sticky=E)
+        button_frame.grid(row=7, column=0, padx=padding_12, pady=padding_6, sticky=E)
+        Controller.toplevel_buttons(button_frame,[restoredefault_command,savedefault_command,run_command])
 
-        ctk.CTkButton(button_frame, text='SAVE\nDEFAULT', width=buttonX-2, height=buttonY, corner_radius=12, font=font_medium(),
-                    fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                    command=savedefault_command).grid(row=0, column=0, padx=padding_6[0], pady=padding_6[1])
-        
-        ctk.CTkButton(button_frame, text='RUN', width=buttonX-4, height=buttonY, corner_radius=12, font=font_medium(),
-                    fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                    command=run_command).grid(row=0, column=1, padx=padding_6[0], pady=padding_6[1])
-
-        toplevel.deiconify()
-        toplevel.place_window_center()
+        toplevel.bind('<Return>', lambda event: run_command())
+        toplevel.bind('<Command-s>', lambda event: savedefault_command())
+        toplevel.bind('<Control-s>', lambda event: savedefault_command())
+        toplevel.bind('<Command-r>', lambda event: restoredefault_command())
+        toplevel.bind('<Control-r>', lambda event: restoredefault_command())
+        toplevel.attributes('-alpha', 0.93)
         PARENT.wait_window(toplevel)
         return result['action']
 
     @staticmethod
     def Operaciona_Reader(image):
         if AI.Settings['Type'] == 'AI-Line Reader':
-            return AI.Operaciona_LineReader(image)
+            result = AI.ReaderSetup.readtext(image, detail=0, mag_ratio=AI.Settings['Zoom'], batch_size=AI.Settings['VRAM'])
+            return AI.Operaciona_LineReader(result)
         elif AI.Settings['Type'] == 'AI-Paragraph Reader':
-            return AI.Operacion_ParagraphReader(image)
+            result = AI.ReaderSetup.readtext(image, detail=0, mag_ratio=AI.Settings['Zoom'], batch_size=AI.Settings['VRAM'], paragraph=True)
+            AI.Operacion_ParagraphReader(result)
 
     @staticmethod
-    def Operacion_ParagraphReader(image):
-        pass
+    def Operacion_ParagraphReader(result):
+        print(result)
 
     @staticmethod
-    def Operaciona_LineReader(image):
-        result = AI.ReaderSetup.readtext(image, detail=0, mag_ratio=AI.Settings['Zoom'], batch_size=AI.Settings['VRAM'])
-
+    def Operaciona_LineReader(result):
         def extend_variable(i, variable, searchlist, image_text):
             j = i + 1
             while j < len(image_text) and not any((image_text[j]).startswith(prefix) for prefix in searchlist):
@@ -258,7 +287,7 @@ class AI:
             return variable
 
         OUTPUT = {}
-        var:IntVar
+        var:BooleanVar
         for col,var in AI.OperacionaChoice.items():
             if var.get() == True:
                 OUTPUT[col] = None if col in ['Datum Operacije','Dg Latinski'] else list()

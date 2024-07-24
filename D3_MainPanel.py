@@ -10,8 +10,9 @@ class MainPanel:
 
     @staticmethod
     def initializeMP(root:Tk) -> None:
-      
-        Controller.FilterOptions = {'Datum Operacije':'Operisan' , 'Datum Otpusta':'Otpušten'}
+        MainPanel.disabled_txtcolor = ThemeColors['secondary']
+        MainPanel.txtcolor = ThemeColors['bg']
+        Controller.FilterOptions = {'Datum Operacije':'Operisan', 'Datum Otpusta':'Otpušten'}
 
         # PARENT FRAME for RIGHT PANEL
         notebookROW = 9
@@ -100,8 +101,10 @@ class MainPanel:
             cb = tb.Checkbutton(parent_frame, text=txt, variable=Controller.FilterOptions[col][1], bootstyle='success, round-toggle')
             cb.grid(row=0, column=i, padx=padding_6, pady=(0,3))
 
+            butt_color = ThemeColors['info']
             butt = ctk.CTkButton(parent_frame, text='FILTER', width=buttonX, height=buttonY//2, corner_radius=10,
-                            font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'],text_color_disabled=ThemeColors['secondary'],
+                            font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+                            text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
                                 command=lambda column=col: SelectDB.filter_data(column))
             butt.grid(row=1, column=i, padx=padding_6, pady=(0,3))
             Controller.Buttons['Filter Patient'] += [cb,butt]
@@ -125,8 +128,10 @@ class MainPanel:
 
         MainPanel.Roundbutton_Create(filterFrame)
 
+        butt_color = ThemeColors['info']
         butf = ctk.CTkButton(filterFrame, text='FILTER\nBOTH', width=buttonX, height=buttonY, corner_radius=10,
-                        font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                        font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+                        text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
                             command=lambda column=['Datum Operacije','Datum Otpusta']: SelectDB.filter_data(column))
         butf.grid(row=0, column=2, rowspan=Controller.max_SearchBars,
                 padx=(padding_6[0],33), pady=padding_6, sticky=SE)
@@ -137,15 +142,18 @@ class MainPanel:
                                           row=0, col=0, rowspan=Controller.max_SearchBars, sticky=SE)
 
             # BUTTONS for SEARCH and SHOWALL
+        butt_color = ThemeColors['primary']
         buts = ctk.CTkButton(Controller.SearchBar, text='SEARCH', width=buttonX, height=buttonY, corner_radius=10,
-                        font=font_medium(), fg_color=ThemeColors['primary'],  text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                        font=font_medium('bold'), fg_color=butt_color,  text_color=MainPanel.txtcolor,
+                        text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
                         command=SelectDB.search_data)
         buts.grid(row=0, column=searchButtonROW+3, rowspan=Controller.max_SearchBars,
                 padx=padding_6, pady=padding_6, sticky=SE)
         Controller.Buttons['Search'] = buts
 
         buta = ctk.CTkButton(Controller.SearchBar, text='SHOW ALL', width=buttonX, height=buttonY, corner_radius=10,
-                        font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                        font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+                        text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
                         command=SelectDB.showall_data)
         buta.grid(row=0, column=searchButtonROW+4, rowspan=Controller.max_SearchBars,
                 padx=padding_6, pady=padding_6, sticky=SE)
@@ -263,14 +271,14 @@ class MainPanel:
     def Checkbutton_Create(parent_frame:Frame, settings:bool):
         swap = False
         grouping = [None, -1, 0]
-        var:StringVar
+        var:BooleanVar
 
         if settings is True:
             Controller.Settings_FormVariables['Columns'] = {}
         for orig_name,dicty in MainTablePacijenti.items():
             if orig_name not in ['Ime','Prezime','id_pacijent','ID']:
                 if settings is True:
-                    Controller.Settings_FormVariables['Columns'][orig_name] = StringVar()
+                    Controller.Settings_FormVariables['Columns'][orig_name] = BooleanVar()
                     var = Controller.Settings_FormVariables['Columns'][orig_name]
                 else:
                     var = Controller.Pacijenti_ColumnVars[orig_name]
@@ -335,12 +343,18 @@ class MainPanel:
             Controller.Slike_FormVariables['ID'] = ID
 
             for i,butt in enumerate(Image_buttons):
+                butt_color = ThemeColors['primary']
                 button = ctk.CTkButton(button_frame, text=butt[0], width=buttonX, height=buttonY, corner_radius=10,
-                                font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                                font=font_medium('bold'), text_color=MainPanel.txtcolor, text_color_disabled=MainPanel.disabled_txtcolor,
                                 command=button_cmd[i])
                 button.grid(row=0, column=i+1, padx=padding_6, pady=padding_6, sticky=E)
                 if butt[1]:
-                    button.configure(fg_color=ThemeColors[butt[1]])
+                    butt_color = ThemeColors[butt[1]]
+                    button.configure(fg_color=butt_color, hover_color=Media.darken_color(butt_color))
+                else:
+                    butt_color = ThemeColors['primary']
+                    button.configure(fg_color=butt_color, hover_color=Media.darken_color(butt_color))
+
                 Controller.Buttons[butt[0].replace('\n',' ')] = button
 
         def InputSlike_Create(parent, row, column):
@@ -471,12 +485,17 @@ class MainPanel:
                         frame.grid_columnconfigure([i for i in range(len(values)-1)], weight=1)
                         frame.grid_rowconfigure(0, weight=1)
                     else:
+                        
                         button = ctk.CTkButton(frame, text=butt[0], width=buttonX, height=buttonY, corner_radius=10,
-                            font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                            font=font_medium('bold'), text_color=MainPanel.txtcolor, text_color_disabled=MainPanel.disabled_txtcolor,
                             command=buttons[j-1])
                         button.grid(row=0, column=j-1, padx=padding_6, pady=padding_6)
                         if butt[1]:
-                            button.configure(fg_color=ThemeColors[butt[1]])
+                            butt_color = ThemeColors[butt[1]]
+                            button.configure(fg_color=butt_color, hover_color=Media.darken_color(butt_color))
+                        else:
+                            butt_color = ThemeColors['primary']
+                            button.configure(fg_color=butt_color, hover_color=Media.darken_color(butt_color))
                         Controller.Buttons[butt[0].replace('\n',' ')] = button
                         
             else:
@@ -520,15 +539,18 @@ class MainPanel:
         tb.Entry(freequery_frame, font=font_default, textvariable=Controller.FreeQuery).grid(
                     row=0, column=1, padx=padding_6, pady=padding_3, sticky=EW)
         
+        butt_color = ThemeColors['danger']
         button = ctk.CTkButton(freequery_frame, text='Free\nQuery', width=buttonX, height=buttonY, corner_radius=10,
-            font=font_medium(), fg_color=ThemeColors['danger'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+            font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+            text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
             command=GodMode.FreeQuery_Execute)
         button.grid(row=0, column=2, padx=padding_6, pady=padding_6)
         freequery_frame.grid_remove()
         Controller.Buttons['Free Query'] = button
 
         button = ctk.CTkButton(freequery_frame, text='Upload\nLOGS', width=buttonX, height=buttonY, corner_radius=10,
-            font=font_medium(), fg_color=ThemeColors['danger'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+            font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+            text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
             command=GodMode.upload_GD_LOGS)
         button.grid(row=0, column=3, padx=padding_6, pady=padding_6)
         freequery_frame.grid_remove()
@@ -697,16 +719,20 @@ class MainPanel:
                 radio.grid_remove()
 
         def showgraph_button(col):
+            butt_color = ThemeColors['primary']
             button = ctk.CTkButton(optionsframe, text='SHOW\nGraph', width=buttonX, height=buttonY, corner_radius=10,
-                font=font_medium(), fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+                text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
                 command=SelectDB.Show_Graph)
             button.grid(row=0, column=col, rowspan=2, padx=padding_3_12, pady=padding_3, sticky=E)
             Controller.Buttons['SHOW Graph'] = button
             button.configure(state=DISABLED)
         
         def configure_button(col):
+            butt_color = ThemeColors['info']
             button = ctk.CTkButton(optionsframe, text='CONFIGURE\nGraph', width=buttonX, height=buttonY, corner_radius=10,
-                font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+                text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
                 command=SelectDB.Configure_Graph)
             button.grid(row=0, column=col, rowspan=2, padx=padding_6, pady=padding_3, sticky=E)
             Controller.Buttons['CONFIGURE Graph'] = button
@@ -883,13 +909,17 @@ class MainPanel:
 
             cols = len(SYSTEM)
 
+            butt_color = ThemeColors['info']
             restore = ctk.CTkButton(options_frame, text='RESTORE\nDefault', width=buttonX, height=buttonY, corner_radius=10,
-                    font=font_medium(), fg_color=ThemeColors['info'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                    font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+                    text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
                     command=Controller.restore_default_settings)
             restore.grid(row=0, column=cols, rowspan=2, padx=padding_6, pady=padding_6, sticky=SE)
 
+            butt_color = ThemeColors['success']
             save = ctk.CTkButton(options_frame, text='SAVE\nSettings', width=buttonX, height=buttonY, corner_radius=10,
-                    font=font_medium(), fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+                    font=font_medium('bold'), fg_color=butt_color, text_color=MainPanel.txtcolor,
+                    text_color_disabled=MainPanel.disabled_txtcolor, hover_color=Media.darken_color(butt_color),
                     command=Controller.update_settings)
             save.grid(row=0, column=cols+1, rowspan=2, padx=padding_6, pady=padding_6, sticky=SE)
 

@@ -20,10 +20,10 @@ from D3_MainPanel import MainPanel
 from D4_Window import GUI
 
 def start():
-    root = Tk()
+    root = tb.Window(size=(WIDTH,HEIGHT), hdpi=False, alpha=0, iconphoto=IMAGES['icon']['RHMH']['png'])
     style = tb.Style(theme=THEME)
+    root.place_window_center()
 
-    # CUVA u dicty BOJE iz TEME
     for color_label in Colors.label_iter():
         color = style.colors.get(color_label)
         ThemeColors[color_label] = color
@@ -35,9 +35,9 @@ def start():
                                         ('!selected', ThemeColors['fg'])])
     style.configure('Treeview', rowheight=int(F_SIZE*2.2))
     style.map('Treeview.Heading', background=[('active',ThemeColors['primary'])])
+    style.map('Treeview.Heading', foreground=[('active',ThemeColors['selectfg'])])
     style.configure('Treeview.Heading',font=font_medium('normal'), padding=(0 , 2 , 0 , int(2.2*F_SIZE)))
 
-    # Menja samo FONT SIZE za TABLE i DATAENTRY
     default_font = nametofont('TkDefaultFont')
     entry_font = nametofont('TkTextFont')
     default_font.configure(size=F_SIZE)
@@ -53,7 +53,6 @@ def start():
     Classes_Decorating([GoogleDrive,Database,Media,Graph,AI,Controller,GodMode,ManageDB,SelectDB,TopPanel,FormPanel,MainPanel,GUI])
 
     GUI.initialize(root)
-    
     if os.name == 'nt': 
         if getattr(sys,'frozen',False):
             pyi_splash.close()
@@ -62,4 +61,5 @@ def start():
 if __name__=='__main__':
     import multiprocessing
     multiprocessing.freeze_support()
+    UserSession['GUI']['Loading Modules'] = (time.time_ns()-TIME_START)/10**9
     start()

@@ -25,7 +25,6 @@ class Database:
         self.session = self.show_columns('session')
 
     def start_RHMH_db(self):
-        
         self.pacijent = self.show_columns('pacijent')
         self.slike = self.show_columns('slike')[:-1]
         self.mkb10 = self.show_columns('mkb10')
@@ -79,7 +78,10 @@ class Database:
             elif sign == 'BETWEEN':
                 for val in value:
                     returnquery += f'( {column} {sign} "{val[0]}" AND "{val[1]}" ) OR '
-
+            elif sign in ['GREATER','LESS']:
+                SIGN = '<=' if sign=='LESS' else '>='
+                for val in value:
+                    returnquery += f'( {column} {SIGN} "{val}" ) OR '
 
         returnquery = returnquery.rstrip(' OR ')
         returnquery = returnquery.rstrip(' AND ')
@@ -370,7 +372,7 @@ class Database:
         with self.lock:
             try:
                 self.connect()
-                query = f'SELECT image_data FROM slike WHERE id_slike = {id}'
+                query = f'SELECT blob_data FROM slike WHERE id_slike = {id}'
                 Database.LoggingQuery = self.format_sql(query)
                 self.cursor.execute(query)
                 result = self.cursor.fetchone()
@@ -378,7 +380,6 @@ class Database:
                     return result[0]
             finally:
                 self.close_connection()
-                #'''
 
     def get_distinct_mkb(self,mkb=None,IDS=None):
         mkb = '' if not mkb else mkb

@@ -66,7 +66,7 @@ class ManageDB(Controller):
         save_directory = filedialog.askdirectory(title='Izaberite direktorijum za čuvanje slika')
 
         if save_directory:
-            text_widget,floodgauge = Media.ProgressBar_DownloadingImages('Downloading',imagesName,width)
+            text_widget,floodgauge = Media.ProgressBar_DownloadUpload('Downloading',imagesName,width)
             def download():
                 progress = 0
                 totalMB = sum(imageSize)
@@ -172,7 +172,7 @@ class ManageDB(Controller):
                 continue
             if isinstance(val,list):
                 VAL = ',\n'.join(val)
-                val = ' , '.join(val)
+                val = ', '.join(val)
             else:
                 VAL = val
             report += f' - {col}: {val}\n'
@@ -185,7 +185,7 @@ class ManageDB(Controller):
     @staticmethod
     def Add_Image():
         def message_success():
-            report = 'Add Image successfull\nImage added to Database and Google Drive'
+            report = 'Add Image successful\nImage added to Database and Google Drive'
             Messagebox.show_info(title='Add Image',message=report,
                                     position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
             SelectDB.refresh_tables(['Slike'])
@@ -214,52 +214,56 @@ class ManageDB(Controller):
                             ('MP4 files', '*.mp4'),
                             ('MOV files', '*.mov')
                         ]
-            file_path = filedialog.askopenfilename(
+            files = filedialog.askopenfilenames(
                 title='Select Media file',
                 initialdir='/',  # Početni direktorijum
                 filetypes=file_types)
-            return file_path
+            return files
         
-        file_path = open_file_dialog()
-        if file_path:
-
-            def execute_adding_media():
-                file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-
-                if file_path.lower().endswith(('.mp4', '.mov')):
-                    media = VideoFileClip(file_path)
-                    duration = media.duration
-                    width = media.size[0]
-                    height = media.size[1]
-                    
-                elif file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.heif', '.heic')):
-                    media = Image.open(file_path)
-                    width, height = media.size                    
-
-                mime = file_path.split('.')[-1]
-                FORMAT = MIME[mime.upper()]
-                dicty = {'id_pacijent':id_pacijent,
-                            'Naziv': '0_xxx_xxx.xx',
-                            'Opis':opis,
-                            'Format': FORMAT,
-                            'Veličina': file_size_mb,
-                            'width': width,
-                            'height': height,
-                            'pixels': width*height,
-                            'image_data': 'temp'}
-
-                id_slike = RHMH.execute_Insert('slike',**dicty)
-                Naziv = f'{id_slike}_{ime}_{opis}.{mime.lower()}'
+        files = open_file_dialog()
+        if files:
+            print(__name__)
+            for file_path in files:
+                #text_widget,floodgauge = Media.ProgressBar_DownloadUpload('Downloading',imagesName,width)
                 
-                BLOB = Media.image_to_blob(file_path)
-                try:
-                    GOOGLE_ID = GoogleDrive.upload_NewFile_asBLOB(file_name=Naziv,GoogleDrive_folder=GD_SLIKE, blob_data=BLOB, mime_type=FORMAT)
-                    RHMH.execute_Update('slike',('id_slike',id_slike),**{'Naziv':Naziv,'image_data':GOOGLE_ID})
-                    Controller.ROOT.after(WAIT,message_success)
-                except Exception:
-                    Controller.ROOT.after(WAIT,message_fail)
+                def execute_adding_media():
+                    file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
 
-            threading.Thread(target=execute_adding_media).start()
+                    if file_path.lower().endswith(('.mp4', '.mov')):
+                        media = VideoFileClip(file_path)
+                        duration = media.duration
+                        width = media.size[0]
+                        height = media.size[1]
+                        
+                    elif file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.heif', '.heic')):
+                        media = Image.open(file_path)
+                        width, height = media.size                    
+
+                    mime = file_path.split('.')[-1]
+                    FORMAT = MIME[mime.upper()]
+                    dicty = {'id_pacijent':id_pacijent,
+                                'Naziv': '0_xxx_xxx.xx',
+                                'Opis':opis,
+                                'Format': FORMAT,
+                                'Veličina': file_size_mb,
+                                'width': width,
+                                'height': height,
+                                'pixels': width*height,
+                                'image_data': 'temp'}
+
+                    id_slike = RHMH.execute_Insert('slike',**dicty)
+                    Naziv = f'{id_slike}_{ime}_{opis}.{mime.lower()}'
+                    
+                    BLOB = Media.image_to_blob(file_path)
+                    try:
+                        GOOGLE_ID = GoogleDrive.upload_NewFile_asBLOB(file_name=Naziv,GoogleDrive_folder=GD_SLIKE, blob_data=BLOB, mime_type=FORMAT)
+                        RHMH.execute_Update('slike',('id_slike',id_slike),**{'Naziv':Naziv,'image_data':GOOGLE_ID})
+                        Controller.ROOT.after(WAIT,message_success)
+                    except Exception:
+                        Controller.ROOT.after(WAIT,message_fail)
+
+                if __name__ == '__main__':
+                    multiprocessing.Process(target=execute_adding_media).start()
 
     @Controller.block_manageDB()
     @staticmethod
@@ -341,13 +345,13 @@ class ManageDB(Controller):
 
                     NEW = ' '.join(NEW.split()) # da se srede visak razmaka
                     OLD = ' '.join(OLD.split()) # mora str zbog int values
-                    NEW = ' , '.join([i.strip() for i in NEW.split(',')]) # da se srede visak razmaka
-                    OLD = ' , '.join([i.strip() for i in OLD.split(',')]) # mora str zbog int values
+                    NEW = ', '.join([i.strip() for i in NEW.split(',')]) # da se srede visak razmaka
+                    OLD = ', '.join([i.strip() for i in OLD.split(',')]) # mora str zbog int values
                     if NEW!=OLD:
                         report_Dict[col] = {'New':NEW,'Old':OLD}
                         if table in ['dijagnoza','operacija']:
-                            oldlist = OLD.split(' , ')
-                            newlist = NEW.split(' , ')
+                            oldlist = OLD.split(', ')
+                            newlist = NEW.split(', ')
                             INSERT = set(newlist)-set(oldlist) ; INSERT.remove('') if '' in INSERT else None
                             DELETE = set(oldlist)-set(newlist) ; DELETE.remove('') if '' in DELETE else None
                             if DELETE:
@@ -366,7 +370,7 @@ class ManageDB(Controller):
                     report += f' - {k}: {v['New']}\n'
 
                     if ',' in v:
-                        v = ',\n'.join(v.split(' , '))
+                        v = ',\n'.join(v.split(', '))
                     logging += f'\n - {k} (new):\n{v['New']}\n'
                     if v['Old']:
                         logging += f'\n - {k} (old):\n{v['Old']}\n'
@@ -416,7 +420,7 @@ class ManageDB(Controller):
                                 deleting = [('id_zaposleni', idzaposleni), ('id_pacijent', Controller.PatientFocus_ID), ('id_funkcija', idfunkcija)]
                                 RHMH.execute_Delete('operacija',deleting)
 
-                Messagebox.show_info(title=f'Updating successfull', message=PATIENT,
+                Messagebox.show_info(title=f'Updating successful', message=PATIENT,
                                         position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
                 
                 ManageDB.LoggingData(query_type='Update Patient',loggingdata=logging)
@@ -444,7 +448,7 @@ class ManageDB(Controller):
         old_naziv,old_opis = RHMH.execute_selectquery(f'SELECT Naziv,Opis FROM slike WHERE id_slike = {id_slike}')[0]
         naziv = old_naziv.replace(old_opis,opis)
         RHMH.execute_Update('slike',('id_slike',id_slike),**{'Naziv':naziv,'Opis':opis})
-        report = f'Editing successfull.\nImage id: {id_slike}\nNew Opis: {opis}'
+        report = f'Editing successful.\nImage id: {id_slike}\nNew Opis: {opis}'
         Messagebox.show_info(title='Edit Image',message=report,
                                 position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
         SelectDB.refresh_tables(['Slike'])
@@ -476,7 +480,7 @@ class ManageDB(Controller):
                         if confirmation == 'Yes':
                             RHMH.execute_Update(table='mkb10', id=('id_dijagnoza',ID), **{'MKB - šifra':mkb,'Opis Dijagnoze':opis})
 
-                            Messagebox.show_info(title=f'Updating successfull', message=report[:-1],
+                            Messagebox.show_info(title=f'Updating successful', message=report[:-1],
                                                     position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
                             
                             Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
@@ -509,7 +513,7 @@ class ManageDB(Controller):
                         if confirmation == 'Yes':
                             RHMH.execute_Update(table='zaposleni', id=('id_zaposleni',ID), **{'Zaposleni':name})
 
-                            Messagebox.show_info(title=f'Updating successfull', message=report[:-1],
+                            Messagebox.show_info(title=f'Updating successful', message=report[:-1],
                                                     position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
                             
                             Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
@@ -536,7 +540,7 @@ class ManageDB(Controller):
             RHMH.execute_Delete('pacijent',[('id_pacijent',Controller.PatientFocus_ID)])
             ManageDB.Clear_Form()
 
-            Messagebox.show_info(title=f'Deleting successfull', message=f'Deleted {patient}',
+            Messagebox.show_info(title=f'Deleting successful', message=f'Deleted {patient}',
                                     position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
             
             patient += '\n'
@@ -559,7 +563,7 @@ class ManageDB(Controller):
         if confirm == 'Yes':
             def message_success():
                 report = f'Deleted {selected_image_description}\nfrom Database and Google Drive'
-                Messagebox.show_info(title=f'Deleting successfull', message=report,
+                Messagebox.show_info(title=f'Deleting successful', message=report,
                                         position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
                 SelectDB.refresh_tables(['Slike'])
                 SelectDB.fill_PatientForm()
@@ -591,7 +595,7 @@ class ManageDB(Controller):
         if confirm=='Yes':
             try:
                 RHMH.execute_Delete('mkb10',[('id_dijagnoza',ID)])
-                Messagebox.show_info(title=f'Deleting successfull', message=f'Deleted {mkb}',
+                Messagebox.show_info(title=f'Deleting successful', message=f'Deleted {mkb}',
                                         position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
                 
                 logging = f' - MKB:\n{mkb}\n'
@@ -614,7 +618,7 @@ class ManageDB(Controller):
         if confirm=='Yes':
             try:
                 RHMH.execute_Delete('zaposleni',[('id_zaposleni',ID)])
-                Messagebox.show_info(title=f'Deleting successfull', message=f'Deleted {name}',
+                Messagebox.show_info(title=f'Deleting successful', message=f'Deleted {name}',
                                         position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
                 
                 Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
@@ -633,7 +637,7 @@ class ManageDB(Controller):
             for col,val in data.items():
                 if val:
                     if isinstance(val,list):
-                        val = ' , '.join(val) if col not in ['Asistent','Gostujući Specijalizant'] else ',\n'.join(val)
+                        val = ', '.join(val) if col not in ['Asistent','Gostujući Specijalizant'] else ',\n'.join(val)
                     for table in Controller.Patient_FormVariables.keys():
                         try:
                             widget = Controller.Patient_FormVariables[table][col]
@@ -675,7 +679,7 @@ class ManageDB(Controller):
                     thread = threading.Thread(target=Controller.get_image_fromGD,args=(GoogleID,))
                     thread.start()
 
-                response = AI.ImageReader_SettingUp(Controller.SearchBar)
+                response = AI.ImageReader_SettingUp(Controller.ROOT)
                 if response != 'Run':
                     Media.Downloading = False
                     return

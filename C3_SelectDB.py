@@ -199,10 +199,12 @@ class SelectDB(Controller):
         if search_option in ['Datum Prijema', 'Datum Operacije', 'Datum Otpusta', 'ID Time', 'Logged IN', 'Logged OUT']:
             for widget_type,widget in Controller.SearchBar_widgets.items():
                 if widget_type == f'search_sign_{n}':
-                    widget:tb.Label # SAMO BETWEEN
-                    widget.unbind('<ButtonRelease-1>')
-                    widget.configure(image=Controller.signimages[-3:][::-1], text=SIGNS[-3:][::-1])
-
+                    widget:tb.Label
+                    images = Controller.signimages[-3:][::-1]
+                    signs = SIGNS[-3:][::-1]
+                    widget.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event,images,signs,n))
+                    widget.configure(image=images[0], text=signs[0])
+                    
                 widget.grid() if widget_type in [f'date1_{n}',f'date2_{n}'] or ('search' in widget_type and widget_type[-1]==str(n))  \
                     else widget.grid_remove() if widget_type[-1]==str(n) else None
                     
@@ -263,17 +265,22 @@ class SelectDB(Controller):
             order.append(last_choice)
 
         widg_type:str ; widget:tb.Entry ; widget:widgets.DateEntry
+        WIDGET = None
         for widg_type,widget in Controller.SearchBar_widgets.items():
             if widg_type[-1]!=str(n):
                 continue
-            if 'BETWEEN' in signorder:
-                if widg_type == f'entry2_{n}':
-                    if signorder[0] != 'BETWEEN':
-                        widget.grid_remove()
-                        Controller.empty_widget(widget)
-                    else:
-                        widget.grid()
-                    break
+            if widg_type == f'entry1_{n}' and widget.winfo_ismapped():
+                WIDGET = 'Entry'
+            elif widg_type == f'date1_{n}' and widget.winfo_ismapped():
+                WIDGET = 'Date'
+            elif (widg_type == f'entry2_{n}' and WIDGET =='Entry') or \
+                    (widg_type == f'date2_{n}' and WIDGET =='Date'):
+                if signorder[0] != 'BETWEEN': # Ovo je da izbacuje drugi entry kada nije between
+                    widget.grid_remove()
+                    Controller.empty_widget(widget)
+                else:
+                    widget.grid()
+                break
 
         signlabel.configure(image=signimages[0], text=signorder[0])
         signlabel.bind('<ButtonRelease-1>', lambda event: SelectDB.search_options_swap(event, signimages, signorder, n))
@@ -428,7 +435,7 @@ class SelectDB(Controller):
         widget:tb.Combobox = Controller.Graph_FormVariables['X2-1'][0]
         lastchoice:StringVar = Controller.Graph_FormVariables['X1-1'][1].get()
         Values = list(Graph.X_options.keys())
-        vreme = ['Godina' , 'Mesec' , 'Dan' , 'Dan u Sedmici']
+        vreme = ['Godina', 'Mesec', 'Dan', 'Dan u Sedmici']
         dijagnoza = ['Trauma', 'MKB Grupe','MKB Pojedinačno']
         if lastchoice in vreme:
             if lastchoice in vreme[2:]:
@@ -533,7 +540,7 @@ class SelectDB(Controller):
         if option == 'Y':
             Values.append(list(Graph.X_options.keys()))
             if choice != 'Broj Pacijenata':
-                for val in ['Dan u Sedmici' , 'Dan']:
+                for val in ['Dan u Sedmici', 'Dan']:
                     Values[0].remove(val)
             Next_Names = ['X1-1']
             
@@ -596,7 +603,7 @@ class SelectDB(Controller):
         Controller.MainTable_IDS.clear()
         for i, row in enumerate(view):
             formatted_row = [i+1] + [datetime.strptime(cell,'%Y-%m-%d').strftime('%d-%b-%y') if SelectDB.is_DB_date(cell) \
-                                        else ' , '.join(cell.split(',')) if isinstance(cell,str) and ',' in cell \
+                                        else ', '.join(cell.split(',')) if isinstance(cell,str) and ',' in cell \
                                             else '' if str(cell)=='None' \
                                                 else cell for cell in row]
             Controller.MainTable_IDS.append(row[0])
@@ -623,6 +630,11 @@ class SelectDB(Controller):
 
     @staticmethod
     def showall_data(TAB=None):
+        widget = Controller.ROOT.focus_get()
+        print(widget)
+        print(type(widget))
+        print(widget==tb.Text)
+        print(isinstance(widget,Text))
         if TAB is None:
             focus = Controller.NoteBook.index(Controller.NoteBook.select())
             TAB = Controller.NoteBook.tab(focus,'text')
@@ -687,7 +699,6 @@ class SelectDB(Controller):
                 return searching[option][SIGN]
             
             searching = dict()
-
             for n in range(1,Controller.SearchBar_number+1):
                 column_widget:tb.Combobox = Controller.SearchBar_widgets[f'search_option_{n}']
                 if not column_widget.winfo_ismapped(): 
@@ -713,12 +724,24 @@ class SelectDB(Controller):
                             fromdate = datetime.strptime(fromdate,'%d-%b-%Y').strftime('%Y-%m-%d')
                             todate = datetime.strptime(todate,'%d-%b-%Y').strftime('%Y-%m-%d')
                         except Exception:
-                            pass
+                            raise
                         searchlocation.add( ( fromdate, todate ) )
                     else:
                         From = Controller.get_widget_value(Controller.SearchBar_widgets[f'entry1_{n}'])
                         To = Controller.get_widget_value(Controller.SearchBar_widgets[f'entry2_{n}'])
                         searchlocation.add( ( From,To ) )
+
+                elif sign in ['GREATER','LESS']:
+                    if 'Datum' in option or option in ['ID Time','Logged IN','Logged OUT']:
+                        date = Controller.get_widget_value(Controller.SearchBar_widgets[f'date1_{n}'])
+                        try:
+                            date = datetime.strptime(date,'%d-%b-%Y').strftime('%Y-%m-%d')
+                        except Exception:
+                            raise
+                        searchlocation.add( date )
+                    else:
+                        FromTo = Controller.get_widget_value(Controller.SearchBar_widgets[f'entry1_{n}'])
+                        searchlocation.add( FromTo )
 
                 elif sign in ['EQUAL','LIKE','NOT LIKE']:
                     if option in ['Pol', 'Format', 'Opis', 'Email']:
@@ -728,8 +751,13 @@ class SelectDB(Controller):
                     searchlocation.add( result )
             return searching
 
-        searching = searching_dict_create()
-        if not searching:
+        try:
+            searching = searching_dict_create()
+            if not searching:
+                return
+        except Exception:
+            Messagebox.show_error(title=f'Search failed!', message='Wrong Date format',
+                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
             return
         
         if TAB == 'Pacijenti':
@@ -866,7 +894,7 @@ class SelectDB(Controller):
                 for v in val:
                     fix.append(v.strip())
                 else:
-                    val = ' , '.join(fix) if col not in ['Asistent','Gostujući Specijalizant'] else ',\n'.join(fix)    
+                    val = ', '.join(fix) if col not in ['Asistent','Gostujući Specijalizant'] else ',\n'.join(fix)    
             SelectDB.set_widget_value(widget,val)
         TEXT = f'{patient['Ime']} {patient['Prezime']}'
         try:
@@ -874,7 +902,7 @@ class SelectDB(Controller):
         except KeyError:
             pass
         Controller.PatientInfo.config(text=TEXT)
-        Controller.FormTitle[0].configure(bootstyle='success')
+        Controller.FormTitle.configure(bootstyle='success')
 
         if event:
             Controller.Slike_FormVariables['ID'].configure(text=f'{Controller.PatientFocus_ID}/')
@@ -964,8 +992,13 @@ class SelectDB(Controller):
         COUNT = 0
         sorted_dict = dict(sorted(d.items()))
         if 'Start' in sorted_dict:
-            Controller.SessionReport += '\t' * (indent) + f'Opening Application: {sorted_dict['Start']:,.3f} s\n'
+            Controller.SessionReport += '\t' * (indent) + f'Opening Application: {sorted_dict['Start']:,.2f} s\n'
             del sorted_dict['Start']
+            try:
+                Controller.SessionReport += '\t' * (indent) + f'Loading Modules: {sorted_dict['Loading Modules']:,.2f} s\n'
+                del sorted_dict['Loading Modules']
+            except KeyError:
+                pass
         for key, value in sorted_dict.items():
             if isinstance(value, dict):
                 if key not in ['ProccessingTime','TotalTime','Total Time','Processing Time']:

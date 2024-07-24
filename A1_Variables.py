@@ -1,5 +1,6 @@
 import time
 TIME_START = time.time_ns()
+
 from datetime import datetime, date
 
 from tkinter import *
@@ -17,6 +18,7 @@ import sqlparse
 
 import math
 import os
+import multiprocessing
 import threading
 import queue
 import shutil
@@ -31,6 +33,7 @@ import torch
 import psutil
 import GPUtil
 import cpuinfo
+import platform
 
 import webbrowser
 import httplib2
@@ -53,13 +56,24 @@ import matplotlib.cm as cm
 from PIL import Image, ImageTk
 import pillow_heif
 import cv2
+from pathlib import Path
+from itertools import cycle
 from moviepy.editor import VideoFileClip
 
 directory = os.path.dirname(os.path.abspath(__file__))
 
 IMAGES = {
-    'icon' :    [os.path.join(directory,'Slike/RHMH.ico'),
-                     os.path.join(directory,'Slike/RHMH.png')] ,
+    'icon' :  {
+       'RHMH': {
+           'png': os.path.join(directory,'Slike/RHMH.png'),
+           'ico': os.path.join(directory,'Slike/RHMH.ico'),
+           'icns': os.path.join(directory,'Slike/RHMH.icns')
+              },
+       'GodMode': os.path.join(directory,'Slike/icon_GodMode.png'),
+       'Graph': os.path.join(directory,'Slike/icon_Graph.png'),
+       'AI': os.path.join(directory,'Slike/icon_AI.png'),
+       'Web': os.path.join(directory,'Slike/icon_Web.png')
+       },
     'Title': {
        'Creation':[
                os.path.join(directory,'Slike/GodHand.png') ,
@@ -113,8 +127,8 @@ IMAGES = {
            (os.path.join(directory,'Slike/sign_equal.png'),42,28),
            (os.path.join(directory,'Slike/sign_like.png'),42,28),
            (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
-           (os.path.join(directory,'Slike/sign_greater.png'),42,28),
            (os.path.join(directory,'Slike/sign_less.png'),42,28),
+           (os.path.join(directory,'Slike/sign_greater.png'),42,28),
            (os.path.join(directory,'Slike/sign_between.png'),42,28)
        ],
        'Themes': [
@@ -129,7 +143,7 @@ IMAGES = {
 }
 
 
-with open(os.path.join(directory,'Settings.json'), 'r') as file:
+with open(os.path.join(directory,'Settings.json'), 'r', encoding='utf-8') as file:
     SETTINGS = json.load(file)
 
 Theme_Names = ['Moon','Fruit','Sea','Sunrise','Night','Flower','Sunset']
@@ -160,7 +174,7 @@ ThemeColors = {}
 
 font_verybig = lambda weight='bold': (FONT, int(F_SIZE*3.7), weight)
 font_big = lambda weight='bold': (FONT, int(F_SIZE*1.8), weight)
-font_medium = lambda weight='bold': (FONT, int(F_SIZE*1.1), weight)
+font_medium = lambda weight='bold': (FONT, int(F_SIZE*1.2), weight)
 font_default = (FONT, F_SIZE)
 
 color_labeltext =   'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
@@ -179,7 +193,7 @@ padding_0_6 = (0,6)
 small_width = 7
 medium_width = 13
 large_width = 18
-verylarge_width = 22
+verylarge_width = 24
 
 buttonX = 80
 buttonY = 40
@@ -286,7 +300,7 @@ SessionTable = {
        'Session': { 'table':'\nSession' , 'column_width':F_SIZE*16, 'column_anchor':W }
        }
 
-SIGNS = [ 'EQUAL', 'LIKE', 'NOT LIKE' , 'GREATER', 'LESS', 'BETWEEN' ]
+SIGNS = [ 'EQUAL', 'LIKE', 'NOT LIKE' , 'LESS', 'GREATER', 'BETWEEN' ]
 
 Image_buttons = [   ('ADD\nImage',None),
                     ('EDIT\nImage',None),
@@ -332,9 +346,9 @@ GD_LOGS_dict = {
     'id':'1uvz-BN2DI4_7xcs7-dwJmfz-Z7jrpMU2',
     'mime':'application/x-sqlite3'}
 
-SETTINGS_dict = {
+DEFAULT_dict = {
     'path':os.path.join(directory,'Default.json'),
-    'id':'1h5n_FSEKEQQoed2yjJOsXMSaQYefP0cx',
+    'id':'18TRd2iPKNeVU-8G09AT6kN_BsqoQ_fg_',
     'mime':'application/json'}
 
 MIME = {'PNG' : 'image/png',

@@ -2,11 +2,71 @@ from A1_Variables import *
 
 pillow_heif.register_heif_opener()
 
+class Loading_Splash:
+    def __init__(self, folder, dimension=850, alpha=0.85, fps=12):
+        self.folder = folder
+        self.dimension = dimension
+        self.alpha = alpha
+        self.fps = fps
+
+        self.splash = None
+        self.images = []
+        for i in range(32):
+            file_path = Path(self.folder) / f"{i}.gif"
+            image = Image.open(file_path)
+            if self.dimension != 850:
+                image = image.resize((self.dimension, self.dimension), Image.LANCZOS)
+            self.images.append(ImageTk.PhotoImage(image))
+
+        self.image_cycle = None
+        self.framerate = 1000 // fps
+        self.animation_id = None
+        self.is_playing = False
+
+    def create_splash(self, widget=tb.Toplevel):
+        if self.splash is not None:
+            return
+        
+        if widget == tb.Toplevel:
+            self.splash = tb.Toplevel(size=(self.dimension,self.dimension), alpha=self.alpha)
+            self.splash.overrideredirect(True)
+            self.splash.place_window_center()
+        else:
+            self.splash = widget
+
+        if os.name == 'nt':
+            self.splash.wm_attributes('-transparentcolor', ThemeColors['bg'])
+
+        self.image_cycle = cycle(self.images)
+        self.img_container = tb.Label(self.splash, image=next(self.image_cycle))
+        self.img_container.pack(fill=BOTH, expand=TRUE)
+        self.play()
+
+    def play(self):
+        if not self.is_playing:
+            self.is_playing = True
+            self._animate()
+
+    def stop(self):
+        if self.is_playing:
+            self.is_playing = False
+            if self.animation_id:
+                self.splash.after_cancel(self.animation_id)
+                self.animation_id = None
+        if self.splash:
+            self.splash.destroy()
+            self.splash = None
+
+    def _animate(self):
+        if self.is_playing:
+            self.img_container.configure(image=next(self.image_cycle))
+            self.animation_id = self.splash.after(self.framerate, self._animate)
+
 class Media:
     TitleIcons = []
     ThemeIcons = []
-    TopLevel = None
-    Downloading = False
+    TopLevel:tb.Toplevel = None
+    Downloading:bool = False
     
     Slike_Viewer: Canvas = None
     Blob_Data = None
@@ -20,19 +80,15 @@ class Media:
     AboutCanvas:      Canvas = None
     
     @staticmethod
-    def ProgressBar_DownloadingImages(title:str, titletxt:list, width:int):
-        Media.TopLevel = tb.Toplevel()
-        Media.TopLevel.iconify()
+    def ProgressBar_DownloadUpload(title:str, titletxt:list, width:int):
+        Media.TopLevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['Web'])
+        Media.TopLevel.place_window_center()
         Media.TopLevel.title(f'{title}...')
         Media.TopLevel.grid_columnconfigure(0, weight=1)
         Media.TopLevel.resizable(False,False)
-        if os.name == 'nt':  # Windows
-            Media.TopLevel.attributes('-toolwindow', True)
-        else:  # macOS/Linux
-            Media.TopLevel.attributes('-type', 'dialog')
         
         tb.Label(Media.TopLevel, text=f'{title} selected Images', anchor=CENTER, justify=CENTER, font=font_medium()).grid(
-            row=0, column=0, columnspan=2, pady=24, sticky=NSEW)
+            row=0, column=0, columnspan=2, pady=padding_12, sticky=NSEW)
 
         text_widget = tb.Text(Media.TopLevel, wrap=NONE, height=10, width=width, font=font_default)
         text_widget.grid(row=1, column=0, sticky=NSEW)
@@ -49,10 +105,9 @@ class Media:
         text_widget.configure(state=DISABLED)
        
         bar = tb.Floodgauge(Media.TopLevel, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_big())
-        bar.grid(row=2, column=0, columnspan=2, padx=24, pady=24, sticky=EW)
+        bar.grid(row=2, column=0, columnspan=2, padx=padding_12, pady=padding_12, sticky=EW)
 
-        Media.TopLevel.deiconify()
-        Media.TopLevel.place_window_center()
+        Media.TopLevel.attributes('-alpha', 0.93)
         return text_widget,bar
 
     @staticmethod
@@ -69,6 +124,7 @@ class Media:
         label:tb.Label = event.widget
         label.config(image=img)
 
+    @staticmethod
     def image_to_blob(file_path):
         with open(file_path, 'rb') as f:
             blob_data = f.read()
@@ -80,7 +136,7 @@ class Media:
         return image
 
     @staticmethod
-    def resize_image(image, max_width, max_height, savescale=False):
+    def resize_image(image:Image.Image, max_width, max_height, savescale=False) -> Image.Image:
         width_ratio = max_width / image.width
         height_ratio = max_height / image.height
         scale_ratio = min(width_ratio, height_ratio)
@@ -209,3 +265,46 @@ class Media:
         Media.AboutCanvas.image = tk_image 
         Media.AboutCanvas.delete('all')
         Media.AboutCanvas.create_image(0, 0, anchor=NW, image=tk_image)
+
+    @staticmethod
+    def darken_color(hex_color, factor=0.75):
+        hex_color = hex_color[1:]
+        r = int(hex_color[:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+
+        r = int(r * factor)
+        g = int(g * factor)
+        b = int(b * factor)
+        darkened_hex_color = f'#{r:02x}{g:02x}{b:02x}'
+        return darkened_hex_color
+
+if __name__ == '__main__':
+    
+    def splash():
+        root = tb.Window()
+
+        style = tb.Style(theme='Sea')
+        for color_label in Colors.label_iter():
+            color = style.colors.get(color_label)
+            ThemeColors[color_label] = color
+
+        root.withdraw() 
+
+        s = time.time()
+        for gif in ['AI','Graph','GodMode','Web','MUVS']:
+            folder = os.path.join(directory,f'Slike/gif_{gif}')
+            Controller = Loading_Splash(folder=folder)
+        print(time.time()-s)
+        s = time.time()
+        splash.create_splash()
+        print(time.time()-s)
+
+        root.after(5000, splash.stop)
+        root.after(6000, root.destroy)
+
+        root.mainloop()
+    
+    
+    splash()
+    
