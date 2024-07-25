@@ -20,9 +20,9 @@ from D3_MainPanel import MainPanel
 from D4_Window import GUI
 
 def start():
-    root = tb.Window(size=(WIDTH,HEIGHT), hdpi=False, alpha=0, iconphoto=IMAGES['icon']['RHMH']['png'])
+    root = tb.Window(size=(WIDTH,HEIGHT), hdpi=False, iconphoto=IMAGES['icon']['RHMH']['png'])
+    root.withdraw()
     style = tb.Style(theme=THEME)
-    root.place_window_center()
 
     for color_label in Colors.label_iter():
         color = style.colors.get(color_label)

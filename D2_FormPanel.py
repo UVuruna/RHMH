@@ -86,6 +86,7 @@ class FormPanel:
             # DEFAULT FORM CREATE
         FormPanel.DefaultForm = Frame(FormPanel.Form_Frame)
         FormPanel.DefaultForm.grid(row=1, column=0, sticky=NSEW)
+        FormPanel.DefaultForm.bind('<Button-1>',Controller.lose_focus)
         
 
         FormPanel.FormPatient_Create(
@@ -105,6 +106,7 @@ class FormPanel:
             # ALTERNATIVE FORM CREATE
         FormPanel.AlternativeForm = Frame(FormPanel.Form_Frame)
         FormPanel.AlternativeForm.grid(row=1, column=0, sticky=NSEW)
+        FormPanel.AlternativeForm.bind('<Button-1>',Controller.lose_focus)
 
         FormPanel.FormPatient_Create(
             parent = FormPanel.AlternativeForm,

@@ -38,6 +38,7 @@ import platform
 import webbrowser
 import httplib2
 import pickle
+from concurrent.futures import ThreadPoolExecutor
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -333,6 +334,7 @@ Slike_Editor = {
 
 GD_SLIKE = ['1e-KyYcDIt_V2Gn79blz0gESZLpeV4xVn']
 GD_MAIN = ['1ybEVItyB75BParYUN2-ab_oVe2tBj1NW']
+GD_LOGS = ['1tMrmDUycApCo85qNGd5lcKzWkzxc-GzZ']
 
 RHMH_dict = {
     'path':os.path.join(directory,'RHMH.db'),
@@ -358,3 +360,5 @@ MIME = {'PNG' : 'image/png',
         'HEIC' : 'image/heic',
         'MP4': 'video/mp4',
         'MOV': 'video/quicktime'}
+
+GIF_SIZE = 330

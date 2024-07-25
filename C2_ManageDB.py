@@ -66,7 +66,7 @@ class ManageDB(Controller):
         save_directory = filedialog.askdirectory(title='Izaberite direktorijum za čuvanje slika')
 
         if save_directory:
-            text_widget,floodgauge = Media.ProgressBar_DownloadUpload('Downloading',imagesName,width)
+            text_widget,floodgauge,gif = Media.ProgressBar_DownloadUpload('Downloading',imagesName,width)
             def download():
                 progress = 0
                 totalMB = sum(imageSize)
@@ -86,6 +86,7 @@ class ManageDB(Controller):
                         if i!=(len(imageSize)-1):
                             floodgauge['mask'] = f'Downloading... {progress:.1f}%'
                         else:
+                            gif.stop()
                             floodgauge['mask'] = 'Download completed'
                             floodgauge.configure(bootstyle='success')
                         floodgauge['value'] = progress
@@ -95,10 +96,12 @@ class ManageDB(Controller):
 
                     except Exception:
                         if Media.TopLevel:
+                            gif.stop()
                             Media.TopLevel.destroy()
                         return # Ovo je da se prekine download na close 
             thread = threading.Thread(target=download)
             thread.start()
+            Controller.ROOT.revert_iconphoto()
 
     @Controller.block_manageDB()
     @staticmethod
@@ -680,6 +683,7 @@ class ManageDB(Controller):
                     thread.start()
 
                 response = AI.ImageReader_SettingUp(Controller.ROOT)
+                Controller.ROOT.revert_iconphoto()
                 if response != 'Run':
                     Media.Downloading = False
                     return

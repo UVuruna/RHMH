@@ -107,8 +107,7 @@ class Graph:
 
     @staticmethod
     def save_and_open_graph_figure(event):
-        if not os.path.exists(os.path.join(directory,'temporary')):
-            os.makedirs(os.path.join(directory,'temporary'))
+
         graph_image = os.path.join(directory,'temporary/temp_image.png')
         Graph.figure.savefig(graph_image)
         
@@ -416,9 +415,10 @@ class Graph:
             toplevel.lift()
             toplevel.focus_force()
 
-        toplevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['Graph'])
+        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['Graph'])
+        toplevel.withdraw()
         toplevel.transient(Controller.ROOT)
-        toplevel.place_window_center()
+        
         toplevel.title('Graph - Configure')
         toplevel.grid_columnconfigure(0, weight=1)
         toplevel.grid_rowconfigure([0,1,2],weight=1)
@@ -470,6 +470,8 @@ class Graph:
         toplevel.bind('<Control-s>', lambda event: savedefault_command())
         toplevel.bind('<Command-r>', lambda event: restoredefault_command())
         toplevel.bind('<Control-r>', lambda event: restoredefault_command())
-        toplevel.attributes('-alpha', 0.93)
+
+        toplevel.place_window_center()
+        toplevel.deiconify()
         PARENT.wait_window(toplevel)
         return result['action']

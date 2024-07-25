@@ -27,9 +27,10 @@ class GodMode:
             toplevel.lift()
             toplevel.focus_force()
 
-        toplevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['GodMode'])
+        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['GodMode'])
+        toplevel.withdraw()
         toplevel.transient(Controller.ROOT)
-        toplevel.place_window_center()
+        
         toplevel.title('Privileges - unlocking')
         toplevel.grid_columnconfigure(0, weight=1)
         toplevel.resizable(False,False)
@@ -41,7 +42,6 @@ class GodMode:
 
         password = tb.Entry(toplevel, show='*')
         password.grid(row=1, column=0, columnspan=2, padx=padding_12, pady=padding_12, sticky=EW)
-        password.focus_set()
 
         butt_color = ThemeColors['info']
         ctk.CTkButton(toplevel, text='Get\nHint', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
@@ -56,20 +56,26 @@ class GodMode:
                     command=ok_command).grid(row=2, column=1, padx=padding_6, pady=padding_6)
         
         toplevel.bind('<Return>', lambda event: ok_command())
-        toplevel.attributes('-alpha', 0.93)
+
+        toplevel.place_window_center()
+        toplevel.deiconify()
+        password.focus_set()
         PARENT.wait_window(toplevel)
         return result
 
     @staticmethod
     def GodMode_Password(event):
         response = GodMode.Admin_Unlocking(Controller.ROOT)
+        Controller.ROOT.revert_iconphoto()
         if 'Ok' in response:
             if response['Ok'] == '63636':
                 info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
                         f'\n{GodMode.money()}'
                 title = 'Admin unlocked'
             elif response['Ok'] in ['C12-Si28-C13-Si28-C12','C12-Li3-C13-Li3-C12']:
-                Controller.FreeQuery_Frame.grid()
+                for frame in Controller.FreeQuery_Frame:
+                    frame:Frame
+                    frame.grid()
                 info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
                         'New button:\n\t-Free Query\n\t-Upload LOGS\n' +\
                         f'\n{GodMode.money()}'
@@ -84,15 +90,16 @@ class GodMode:
 
     @staticmethod
     def ProgressBar_JoiningLogs(count:int):
-        GodMode.TopLevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['GodMode'])
-        GodMode.TopLevel.place_window_center()
+        GodMode.TopLevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['GodMode'])
+        GodMode.TopLevel.withdraw()
+
         GodMode.TopLevel.title(f'Joining Logs...')
         GodMode.TopLevel.grid_columnconfigure(0, weight=1)
         GodMode.TopLevel.resizable(False,False)
         GodMode.TopLevel.attributes('-topmost', True)
 
-        tb.Label(GodMode.TopLevel, text=f'Importing {count} Online Logs', anchor=CENTER, justify=CENTER, font=font_medium()).grid(
-            row=0, column=0, pady=padding_12, sticky=NSEW)
+        label = tb.Label(GodMode.TopLevel, text=f'Importing Online Logs - {count} left', anchor=CENTER, justify=CENTER, font=font_medium())
+        label.grid(row=0, column=0, columnspan=2, pady=padding_12, sticky=NSEW)
        
         text_widget = tb.Text(GodMode.TopLevel, wrap=NONE, height=10, width=40, font=font_default)
         text_widget.grid(row=1, column=0, sticky=NSEW)
@@ -102,16 +109,24 @@ class GodMode:
         text_widget.configure(yscrollcommand=scrollbar.set)
 
         bar = tb.Floodgauge(GodMode.TopLevel, mode='indeterminate', bootstyle='primary', mask='Downloading...', font=font_default)
-        bar.grid(row=2, column=0, padx=padding_12, pady=padding_12, sticky=EW)
+        bar.grid(row=2, column=0, columnspan=2, padx=padding_12, pady=padding_12, sticky=EW)
 
-        GodMode.TopLevel.attributes('-alpha', 0.93)
-        return bar,text_widget
+        frame = Frame(GodMode.TopLevel)
+        frame.grid(row=3, column=0, columnspan=2, sticky=NSEW)
+        gif:Loading_Splash = Media.Gif['GodMode']
+        gif.create_splash(frame,1)
+
+        GodMode.TopLevel.place_window_center()
+        GodMode.TopLevel.deiconify()
+        return bar,text_widget,label,gif
 
     @staticmethod
     def JoiningLogs():
+        start = time.time()
         gd_logs_ids = GoogleDrive.find_logs(GD_MAIN[0])
+        gd_logs_ids.update(GoogleDrive.find_logs(GD_LOGS[0]))
         TOTAL = len(gd_logs_ids)
-        floodgauge,text_widget = GodMode.ProgressBar_JoiningLogs(TOTAL)
+        floodgauge,text_widget,label,gif = GodMode.ProgressBar_JoiningLogs(TOTAL)
         text_widget.tag_configure('success', foreground=ThemeColors['success'])
         text_widget.tag_configure('fail', foreground=ThemeColors['danger'])
 
@@ -137,35 +152,54 @@ class GodMode:
                 text_widget.insert(f'{i+1}.0', f'{i+1}. {name}\n')
                 try:
                     GoogleDrive.delete_file(log_id)
-                    text_widget.tag_add('success', f'{i+1}.0', END)
+                    text_widget.tag_add('success', f'{i+1}.0', f'{i+1}.end')
                 except Exception:
-                    text_widget.tag_add('fail', f'{i+1}.0', END)
+                    text_widget.tag_add('fail', f'{i+1}.0', f'{i+1}.end')
                 text_widget.update_idletasks()
+                label.configure(text=f'Importing Online Logs - {TOTAL-(i+1)} left')
+                label.update_idletasks()
             else:
                 floodgauge['mask'] = 'Uploading...'
                 GoogleDrive.upload_UpdateFile(GD_LOGS_dict['id'],GD_LOGS_dict['path'],GD_LOGS_dict['mime'])
                 Database.email = [i[0] for i in Controller.GD_LOGS.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')]
-                floodgauge.stop()
-                floodgauge.configure(bootstyle='success', mode='determinate', maximum=100, value=100, mask='Finished')
-                Controller.ROOT.after(1000,GodMode.TopLevel.destroy)
+                floodgauge.grid_forget()
+                gif.stop()
+                print(time.time()-start)
                 
-        thread = threading.Thread(target=join_logs)
-        thread.start()
+        threading.Thread(target=join_logs).start()
+        Controller.ROOT.revert_iconphoto()
 
     @staticmethod
     def upload_GD_LOGS():
         confirm = Messagebox.yesno(title=f'Uploading...', message=f'Are you sure you want to Upload Google Drive LOGS?', alert=True,
                                     position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
         if confirm == 'Yes':
-            GoogleDrive.upload_UpdateFile(GD_LOGS_dict['id'],GD_LOGS_dict['path'],GD_LOGS_dict['mime'])
+            def message_success():
+                Messagebox.show_info(message='Uploading LOGS successful', title='Uploading LOGS',
+                                        position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+            def message_fail():
+                Messagebox.show_info(message='Uploading LOGS failed', title='Uploading LOGS',
+                                        position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+            def upload():
+                try:
+                    gif:Loading_Splash = Media.Gif['GodMode']
+                    gif.create_splash(Controller.ROOT,0.7)
+                    GoogleDrive.upload_UpdateFile(GD_LOGS_dict['id'],GD_LOGS_dict['path'],GD_LOGS_dict['mime'])
+                    gif.stop()
+                    Controller.ROOT.after(WAIT,message_success)
+                except Exception:
+                    gif.stop()
+                    Controller.ROOT.after(WAIT,message_fail)
+            threading.Thread(target=upload).start()
 
     @staticmethod
-    def FreeQuery_Execute(DB:str):
+    def FreeQuery_Execute():
+        DB = Controller.QueryDatabase.get()
         DATABASE = RHMH if DB == 'RHMH' else Controller.GD_LOGS if DB == 'LOGS' else None
         query = Controller.FreeQuery.get()
         if not query:
             return
-        report = f'{DATABASE.__qualname__}\n' +\
+        report = f'{DB}\n' +\
                 DATABASE.format_sql(query)
         response = Messagebox.yesno(title='Free Query executing...', message=report,
                                         position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
@@ -184,10 +218,10 @@ class GodMode:
 
 
 class Controller:
-    Gif = {}
+    
     queue = queue.Queue()
 
-    ROOT:Tk = None
+    ROOT:tb.Window = None
     GD_LOGS:Database = None
     
     Connected:bool = False
@@ -198,7 +232,7 @@ class Controller:
     SessionReport           = ''
     SessionLabel:tb.Label   = None
     QueryDatabase:StringVar = None
-    FreeQuery_Frame:Frame   = None
+    FreeQuery_Frame:list    = list()
     FreeQuery:StringVar     = None
 
         # TOP - Title Frame
@@ -307,11 +341,22 @@ class Controller:
 
     @staticmethod
     def load_loading_GIF():
-        for gif in ['AI','Graph','GodMode','Web','MUVS']:
+        for gif in ['AI','Graph','GodMode','Web']:
             folder = os.path.join(directory,f'Slike/gif_{gif}')
-            def load_gif():
-                Controller.Gif[gif] = Loading_Splash(folder=folder)
-            Controller.queue.put((Controller.ROOT.after, (WAIT, load_gif)))
+            def load_gif(GIF,FOLDER):
+                Media.Gif[GIF] = Loading_Splash(folder=FOLDER, dimension=GIF_SIZE)
+            threading.Thread(target=lambda gif_key=gif, folder_path=folder: Controller.queue.put((Controller.ROOT.after, (WAIT, lambda: load_gif(gif_key, folder_path))))).start()
+            #Controller.queue.put((Controller.ROOT.after, (WAIT, lambda gif=gif,folder=folder: load_gif(gif,folder))))
+
+    @staticmethod
+    def process_queue():
+        try:
+            while True:
+                func, args = Controller.queue.get_nowait()
+                Controller.ROOT.after_idle(func, *args)
+                Controller.queue.task_done()
+        except queue.Empty:
+            Controller.ROOT.after(100, Controller.process_queue)
 
     @staticmethod
     def starting_application():
@@ -365,6 +410,10 @@ class Controller:
             Controller.ROOT.after(WAIT,message_fail)
             width = Controller.Top_Frame.winfo_width()
             Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
+        finally:
+            UserSession['Logged IN'] = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+            UserSession['GUI']['Start'] = (time.time_ns()-TIME_START)/10**9
+            print((time.time_ns()-TIME_START)/10**9)
     
     @staticmethod
     def create_new_user():
@@ -463,7 +512,7 @@ class Controller:
                                          'ManageDB':pickle.dumps(UserSession['ManageDB']),'SelectDB':pickle.dumps(UserSession['SelectDB'])})
         if inserted:
             filename = f'LOG - {email} {logged_in}'
-            driveID = GoogleDrive.upload_NewFile_asFile(file_name=filename, GoogleDrive_folder=GD_MAIN,
+            driveID = GoogleDrive.upload_NewFile_asFile(file_name=filename, GoogleDrive_folder=GD_LOGS,
                                           file_path=LOGS_dict['path'], mime_type=LOGS_dict['mime'])
             if driveID:
                 LOGS.connect()
@@ -582,7 +631,7 @@ class Controller:
 
     @staticmethod
     def lose_focus(event):
-        event.widget.focus()
+        Controller.ROOT.focus_set()
         Controller.Table_Pacijenti.selection_set('')
         Controller.Table_Slike.selection_set('')
         Controller.Table_MKB.selection_set('')

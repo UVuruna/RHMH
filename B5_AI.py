@@ -185,9 +185,10 @@ class AI:
             toplevel.lift()
             toplevel.focus_force()
 
-        toplevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['AI'])
+        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['AI'])
+        toplevel.withdraw()
         toplevel.transient(Controller.ROOT)
-        toplevel.place_window_center()
+        
         toplevel.title('Reader - Configure')
         toplevel.grid_columnconfigure(0, weight=1)
         toplevel.resizable(False,False)
@@ -260,7 +261,9 @@ class AI:
         toplevel.bind('<Control-s>', lambda event: savedefault_command())
         toplevel.bind('<Command-r>', lambda event: restoredefault_command())
         toplevel.bind('<Control-r>', lambda event: restoredefault_command())
-        toplevel.attributes('-alpha', 0.93)
+
+        toplevel.place_window_center()
+        toplevel.deiconify()
         PARENT.wait_window(toplevel)
         return result['action']
 

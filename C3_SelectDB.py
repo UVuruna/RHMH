@@ -398,9 +398,10 @@ class SelectDB(Controller):
         SelectDB.graph_type_create(PLOT,VALUES,COLOR)
 
         response = Graph.Graph_SettingUp(Controller.ROOT)
+        Controller.ROOT.revert_iconphoto()
         if response == 'Show':
             SelectDB.Show_Graph_execute()
-
+        
     @staticmethod
     def Show_Graph_execute():   
         if Controller.graph_canvas is not None:
@@ -630,11 +631,6 @@ class SelectDB(Controller):
 
     @staticmethod
     def showall_data(TAB=None):
-        widget = Controller.ROOT.focus_get()
-        print(widget)
-        print(type(widget))
-        print(widget==tb.Text)
-        print(isinstance(widget,Text))
         if TAB is None:
             focus = Controller.NoteBook.index(Controller.NoteBook.select())
             TAB = Controller.NoteBook.tab(focus,'text')

@@ -301,6 +301,8 @@ class Window(tkinter.Tk):
 
     position_center = place_window_center # alias
 
+    def revert_iconphoto(self):
+        self.iconphoto(True, self._icon)
 
 class Toplevel(tkinter.Toplevel):
     """A class that wraps the tkinter.Toplevel class in order to
@@ -488,20 +490,20 @@ class Toplevel(tkinter.Toplevel):
         w_width = self.winfo_width()
         s_height = self.winfo_screenheight()
         s_width = self.winfo_screenwidth()
-        xpos = (s_width - w_width) // 3 # PROMENJENO
-        ypos = (s_height - w_height) // 3 # PROMENJENO
+        xpos = (s_width - w_width) // 2
+        ypos = (s_height - w_height) // 2
         self.geometry(f'+{xpos}+{ypos}')
 
     position_center = place_window_center # alias
 
 if __name__ == "__main__":
 
-    root = Window(themename="superhero", alpha=0.5, size=(1000, 1000))
+    root = Window(themename="superhero", alpha=1, size=(1000, 1000))
     #root.withdraw()
     root.place_window_center()
     #root.deiconify()
 
-    top = Toplevel(title="My Toplevel", alpha=0.4, size=(1000, 1000))
+    top = Toplevel(title="My Toplevel", alpha=0.7, size=(1000, 1000))
     top.place_window_center()
 
     root.mainloop()

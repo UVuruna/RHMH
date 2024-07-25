@@ -76,16 +76,18 @@ class MainPanel:
         Controller.Graph_Canvas = MainPanel.GraphTab_Create()
 
             # NOTEBOOK Tab LOGS -- 4
-        Controller.Table_Logs, Controller.FreeQuery_Frame = MainPanel.LogsTab_Create('Logs', SelectDB.fill_LogsForm)
+        Controller.Table_Logs,freequery  = MainPanel.LogsTab_Create('Logs', SelectDB.fill_LogsForm)
         Controller.TableLogs_Columns = tuple(['ID']+LOGS.logs[:4])
         SelectDB.selected_columns(Controller.TableLogs_Columns , Controller.Table_Logs , columnvar=False)
         Controller.NoteBook.hide(4)
+        Controller.FreeQuery_Frame.append(freequery)
 
             # NOTEBOOK Tab SESSION -- 5
-        Controller.Table_Session = MainPanel.SessionTab_Create('Session', SelectDB.fill_SessionForm)
+        Controller.Table_Session,freequery = MainPanel.SessionTab_Create('Session', SelectDB.fill_SessionForm)
         Controller.TableSession_Columns = tuple(['ID']+LOGS.session[:4])
         SelectDB.selected_columns(Controller.TableSession_Columns , Controller.Table_Session , columnvar=False)
         Controller.NoteBook.hide(5)
+        Controller.FreeQuery_Frame.append(freequery)
 
             # SETTINGS TAB -- 6
         Controller.Settings_Tab = MainPanel.SettingsTab_Create()
@@ -521,21 +523,20 @@ class MainPanel:
                     frame.grid_rowconfigure(0,weight=1) # Ovo mora jer je Opis Dijagnoze u 2 reda da bi se rasirio prvi label          
 
     @staticmethod
-    def LogsTab_Create(tabname:str, method:callable):      
-        notebook_frame = tb.Frame(Controller.NoteBook)
-        Controller.NoteBook.add(notebook_frame, text=tabname)
-
+    def free_query_panel(parent):
         # Top FreeQuery Panel
-        freequery_frame = Frame(notebook_frame)
+        freequery_frame = Frame(parent)
         freequery_frame.grid(row=0, column=0, columnspan=3, sticky=NSEW)
-        freequery_frame.grid_columnconfigure(0, weight=1)
+        freequery_frame.grid_columnconfigure(1, weight=1)
 
-        Controller.QueryDatabase = StringVar()
+        if Controller.QueryDatabase == None:
+            Controller.QueryDatabase = StringVar()
         tb.Combobox(freequery_frame, values=['RHMH','LOGS'], textvariable=Controller.QueryDatabase, width=5,
                     font=font_medium('normal'), state='readonly').grid(
                         row=0, column=0, padx=padding_6, pady=padding_3, sticky=EW)
 
-        Controller.FreeQuery = StringVar()
+        if Controller.FreeQuery == None:
+            Controller.FreeQuery = StringVar()
         tb.Entry(freequery_frame, font=font_default, textvariable=Controller.FreeQuery).grid(
                     row=0, column=1, padx=padding_6, pady=padding_3, sticky=EW)
         
@@ -555,6 +556,15 @@ class MainPanel:
         button.grid(row=0, column=3, padx=padding_6, pady=padding_6)
         freequery_frame.grid_remove()
         Controller.Buttons['Upload LOGS'] = button
+
+        return freequery_frame
+
+    @staticmethod
+    def LogsTab_Create(tabname:str, method:callable):      
+        notebook_frame = tb.Frame(Controller.NoteBook)
+        Controller.NoteBook.add(notebook_frame, text=tabname)
+
+        freequery_frame = MainPanel.free_query_panel(notebook_frame)
 
         # Left Table Panel
         scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
@@ -603,30 +613,32 @@ class MainPanel:
         notebook_frame = tb.Frame(Controller.NoteBook)
         Controller.NoteBook.add(notebook_frame, text=tabname)
 
+        freequery_frame = MainPanel.free_query_panel(notebook_frame)
+
         scroll_x = tb.Scrollbar(notebook_frame, orient=HORIZONTAL, bootstyle=f'{style_scrollbar}-round')
         scroll_y = tb.Scrollbar(notebook_frame, orient=VERTICAL, bootstyle=f'{style_scrollbar}-round')
 
         table = tb.ttk.Treeview(notebook_frame, columns=[], xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
-        table.grid(row=0, column=0, sticky=NSEW)
+        table.grid(row=1, column=0, sticky=NSEW)
         
         for bindevent in ['<ButtonRelease-1>','<KeyRelease-Down>','<KeyRelease-Up>']:
             table.bind(bindevent,method)
 
-        scroll_x.grid(row=1, column=0, sticky=EW)
-        scroll_y.grid(row=0, column=1, sticky=NS)
+        scroll_x.grid(row=2, column=0, sticky=EW)
+        scroll_y.grid(row=1, column=1, sticky=NS)
         scroll_x.config(command=table.xview)
         scroll_y.config(command=table.yview)
 
 
         side_panel = Frame(notebook_frame, bd=2, relief=RAISED)
-        side_panel.grid(row=0, column=2, rowspan=2, sticky=NSEW)
+        side_panel.grid(row=1, column=2, rowspan=2, sticky=NSEW)
         MainPanel.Session_SideFrame(side_panel)
 
-        notebook_frame.grid_rowconfigure(0, weight=1)
+        notebook_frame.grid_rowconfigure(1, weight=1)
         notebook_frame.grid_columnconfigure(0, weight=1)
         notebook_frame.grid_columnconfigure(2, weight=4)
         Controller.Table_Names[tabname] = table
-        return table
+        return table,freequery_frame
 
     @staticmethod
     def Session_SideFrame(parent_frame:Frame):

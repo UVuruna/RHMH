@@ -22,15 +22,17 @@ class GUI:
         RHMH.start_RHMH_db()
         Controller.ROOT = GUI.root
         threading.Thread(target=Controller.load_loading_GIF).start()
+        GUI.root.after(WAIT,Controller.process_queue)
         threading.Thread(target=GUI.get_PC_info).start()
+        threading.Thread(target=Controller.starting_application).start()
         
         Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
         Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
         
-        
         TopPanel.initializeTP(GUI.root)
         FormPanel.initializeFP(GUI.root)
         MainPanel.initializeMP(GUI.root)
+        GUI.root.after(WAIT,GUI.root.place_window_center)
         GUI.Buttons_SpamStopper()
         
         GUI.menu = GUI.RootMenu_Create()
@@ -43,8 +45,8 @@ class GUI:
             GUI.root.bind('<Control-a>', SelectDB.selectall_tables)
             GUI.root.bind('<Control-s>', lambda event: Controller.Upload_RHMH())
 
-        GUI.root.bind('<Return>', lambda event: SelectDB.showall_data())
-        GUI.root.bind('<space>', lambda event: SelectDB.search_data())
+        GUI.root.bind('<Return>', lambda event: GUI.show_bind(event,True))
+        GUI.root.bind('<space>', lambda event: GUI.show_bind(event,False))
         GUI.root.bind('\u004D\u0055\u0056\u0031\u0033', GodMode.GodMode_Password)
         GUI.root.protocol('WM_DELETE_WINDOW',GUI.EXIT)
         
@@ -56,26 +58,29 @@ class GUI:
             root.iconphoto(True, icon)
         GUI.root.grid_rowconfigure(1, weight=1)
         GUI.root.grid_columnconfigure(1, weight=1)
+        GUI.root.deiconify()
 
-        threading.Thread(target=Controller.starting_application).start()
-        UserSession['Logged IN'] = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
-        UserSession['GUI']['Start'] = (time.time_ns()-TIME_START)/10**9
-        print((time.time_ns()-TIME_START)/10**9)
-        GUI.root.attributes('-alpha', 1)
+    @staticmethod
+    def show_bind(event,showall):
+        focus = GUI.root.focus_get()
+        if not (isinstance(focus,Text) or \
+                    isinstance(focus,Entry) or \
+                            isinstance(focus,widgets.DateEntry)):
+            if showall is True:
+                SelectDB.showall_data()
+            else:
+                SelectDB.search_data()
 
     @staticmethod
     def get_PC_info() -> None:
         cpu = PC.get_cpu_info()
         gpu = PC.get_gpu_info()
         ram = PC.get_ram_info()
-        system = platform.system()
-        version = platform.version()
-        if system == 'Windows':
-            UserSession['PC']['OS'] = f"Windows - {version}"
-        elif system == 'Darwin':
-            UserSession['PC']['OS'] = f"macOS - {version}"
-        else:
-            UserSession['PC']['OS'] = f"{system} - {version}"
+        pc = platform.uname()
+
+        UserSession['PC']['User'] = {'User': pc.node,
+                                     'OS': f'{pc.system} {pc.release}', 
+                                     'Version': pc.version}
         UserSession['PC']['CPU'] = cpu
         UserSession['PC']['GPU'] = gpu
         UserSession['PC']['RAM'] = ram

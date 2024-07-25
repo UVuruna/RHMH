@@ -3,43 +3,53 @@ from A1_Variables import *
 pillow_heif.register_heif_opener()
 
 class Loading_Splash:
-    def __init__(self, folder, dimension=850, alpha=0.85, fps=12):
+    def __init__(self, folder, dimension=850,  fps=12):
         self.folder = folder
         self.dimension = dimension
-        self.alpha = alpha
         self.fps = fps
 
         self.splash = None
-        self.images = []
+        self.images = [None for _ in range(32)]
+        threads = []
+        self.lock = threading.Lock()
         for i in range(32):
-            file_path = Path(self.folder) / f"{i}.gif"
-            image = Image.open(file_path)
-            if self.dimension != 850:
-                image = image.resize((self.dimension, self.dimension), Image.LANCZOS)
-            self.images.append(ImageTk.PhotoImage(image))
+            threads.append(threading.Thread(target=self.load_image, args=(i,)))
+
+        for t in threads:
+            t:threading.Thread
+            t.start()
 
         self.image_cycle = None
         self.framerate = 1000 // fps
         self.animation_id = None
         self.is_playing = False
 
-    def create_splash(self, widget=tb.Toplevel):
+    def load_image(self,i):
+        file_path = Path(self.folder) / f"{i}.gif"
+        image = Image.open(file_path)
+        if self.dimension != 850:
+            image = image.resize((self.dimension, self.dimension), Image.LANCZOS)
+        image_tk = ImageTk.PhotoImage(image)
+        with self.lock:
+            self.images[i] = image_tk
+
+    def create_splash(self, widget, alpha=1):
         if self.splash is not None:
             return
         
-        if widget == tb.Toplevel:
-            self.splash = tb.Toplevel(size=(self.dimension,self.dimension), alpha=self.alpha)
-            self.splash.overrideredirect(True)
+        if isinstance(widget, tb.Window):
+            self.splash = tb.Toplevel(size=(self.dimension,self.dimension), alpha=alpha)
             self.splash.place_window_center()
+            self.splash.transient(widget)
+            if os.name == 'nt':
+                self.splash.wm_attributes('-transparentcolor', ThemeColors['bg'])
+            self.splash.overrideredirect(True)
         else:
             self.splash = widget
 
-        if os.name == 'nt':
-            self.splash.wm_attributes('-transparentcolor', ThemeColors['bg'])
-
         self.image_cycle = cycle(self.images)
-        self.img_container = tb.Label(self.splash, image=next(self.image_cycle))
-        self.img_container.pack(fill=BOTH, expand=TRUE)
+        self.img_container = tb.Label(self.splash, image=next(self.image_cycle), anchor=CENTER)
+        self.img_container.pack(fill=BOTH, expand=YES)
         self.play()
 
     def play(self):
@@ -48,6 +58,7 @@ class Loading_Splash:
             self._animate()
 
     def stop(self):
+        print('odradio stop')
         if self.is_playing:
             self.is_playing = False
             if self.animation_id:
@@ -63,6 +74,8 @@ class Loading_Splash:
             self.animation_id = self.splash.after(self.framerate, self._animate)
 
 class Media:
+    Gif = {}
+
     TitleIcons = []
     ThemeIcons = []
     TopLevel:tb.Toplevel = None
@@ -81,8 +94,7 @@ class Media:
     
     @staticmethod
     def ProgressBar_DownloadUpload(title:str, titletxt:list, width:int):
-        Media.TopLevel = tb.Toplevel(alpha=0, iconphoto=IMAGES['icon']['Web'])
-        Media.TopLevel.place_window_center()
+        Media.TopLevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['Web'])
         Media.TopLevel.title(f'{title}...')
         Media.TopLevel.grid_columnconfigure(0, weight=1)
         Media.TopLevel.resizable(False,False)
@@ -107,8 +119,14 @@ class Media:
         bar = tb.Floodgauge(Media.TopLevel, maximum=100, mode='determinate', value=0, bootstyle='primary', mask='Downloading...', font=font_big())
         bar.grid(row=2, column=0, columnspan=2, padx=padding_12, pady=padding_12, sticky=EW)
 
-        Media.TopLevel.attributes('-alpha', 0.93)
-        return text_widget,bar
+        frame = Frame(Media.TopLevel)
+        frame.grid(row=3, column=0, columnspan=2, sticky=NSEW)
+        gif:Loading_Splash = Media.Gif['Web']
+        gif.create_splash(frame,1)
+        
+        Media.TopLevel.place_window_center()
+        Media.TopLevel.deiconify()
+        return text_widget,bar,gif
 
     @staticmethod
     def label_ImageLoad(images_list):
@@ -149,8 +167,7 @@ class Media:
 
     @staticmethod
     def create_video_thumbnail(video_data):
-        if not os.path.exists(os.path.join(directory,'temporary')):
-            os.makedirs(os.path.join(directory,'temporary'))
+
         video_file = os.path.join(directory,'temporary/temp_video.mp4')
         with open(video_file, 'wb') as f:
             f.write(video_data)
@@ -187,9 +204,7 @@ class Media:
 
     @staticmethod
     def open_image(event,image_data):
-        # Save video data to a temporary file
-        if not os.path.exists(os.path.join(directory,'temporary')):
-            os.makedirs(os.path.join(directory,'temporary'))
+
         image_file = os.path.join(directory,'temporary/temp_image.png')
         with open(image_file, 'wb') as f:
             f.write(image_data)
@@ -282,26 +297,18 @@ class Media:
 if __name__ == '__main__':
     
     def splash():
-        root = tb.Window()
+        root = tb.Window(size=(1200,1200))
 
         style = tb.Style(theme='Sea')
         for color_label in Colors.label_iter():
             color = style.colors.get(color_label)
             ThemeColors[color_label] = color
 
-        root.withdraw() 
+        folder = os.path.join(directory,f'Slike/gif_GodMode')
+        gif = Loading_Splash(folder=folder, dimension=850)
+        gif.create_splash(root)
 
-        s = time.time()
-        for gif in ['AI','Graph','GodMode','Web','MUVS']:
-            folder = os.path.join(directory,f'Slike/gif_{gif}')
-            Controller = Loading_Splash(folder=folder)
-        print(time.time()-s)
-        s = time.time()
-        splash.create_splash()
-        print(time.time()-s)
-
-        root.after(5000, splash.stop)
-        root.after(6000, root.destroy)
+        root.after(5000, gif.stop)
 
         root.mainloop()
     
