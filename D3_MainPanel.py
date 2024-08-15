@@ -9,7 +9,7 @@ from C3_SelectDB import SelectDB
 class MainPanel:
 
     @staticmethod
-    def initializeMP(root:Tk) -> None:
+    def initializeMP(root:tb.Window) -> None:
         MainPanel.disabled_txtcolor = ThemeColors['secondary']
         MainPanel.txtcolor = ThemeColors['bg']
         Controller.FilterOptions = {'Datum Operacije':'Operisan', 'Datum Otpusta':'Otpušten'}
@@ -421,7 +421,7 @@ class MainPanel:
 
     @staticmethod
     def Slike_SideFrame(parent_frame:Frame):
-        Media.Slike_Viewer = Canvas(parent_frame)
+        Media.Slike_Viewer = tb.Canvas(parent_frame)
         Media.Slike_Viewer.pack(side=LEFT, fill=BOTH, expand=True)
 
         MainPanel.scroll_y = tb.Scrollbar(Media.Slike_Viewer, orient=VERTICAL, command=Media.Slike_Viewer.yview)
@@ -587,8 +587,8 @@ class MainPanel:
         MainPanel.Log_SideFrame(text_frame)
 
         notebook_frame.grid_rowconfigure(1, weight=1)
-        notebook_frame.grid_columnconfigure(0, weight=2)
-        notebook_frame.grid_columnconfigure(2, weight=1)
+        notebook_frame.grid_columnconfigure(0, weight=5)
+        notebook_frame.grid_columnconfigure(2, weight=2)
         Controller.Table_Names[tabname] = table
         return table,freequery_frame
 
@@ -635,8 +635,8 @@ class MainPanel:
         MainPanel.Session_SideFrame(side_panel)
 
         notebook_frame.grid_rowconfigure(1, weight=1)
-        notebook_frame.grid_columnconfigure(0, weight=1)
-        notebook_frame.grid_columnconfigure(2, weight=4)
+        notebook_frame.grid_columnconfigure(0, weight=5)
+        notebook_frame.grid_columnconfigure(2, weight=3)
         Controller.Table_Names[tabname] = table
         return table,freequery_frame
 
@@ -645,7 +645,7 @@ class MainPanel:
 
         Controller.SessionLabel = tb.Label(parent_frame,text='PC', anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, font=font_big('bold'))
         Controller.SessionLabel.grid(row=0, column=1)
-        text1 = tb.Text(parent_frame, font=font_medium('normal'))
+        text1 = ScrolledText(parent_frame, font=font_medium('normal'), autohide=True)
         text1.grid(row=1, column=0, columnspan=3, sticky=NSEW)
         Controller.Logs_FormVariables['Session'] = text1
 
@@ -775,24 +775,43 @@ class MainPanel:
 
         return plotframe
 
+
+    @staticmethod
+    def adapt_frame_size(event, frame_list:list):
+        scrollframe: ScrolledFrame = event.widget
+        WIDTH = scrollframe.winfo_width()
+        HEIGHT = scrollframe.winfo_height()
+        if WIDTH <= 1 or HEIGHT <= 1:
+            return
+        frame: Frame
+        for frame in frame_list:
+            height = frame.winfo_height()
+            frame.configure(width=WIDTH-4, height=height)
+            frame.grid_propagate(False)
+
+
     @staticmethod
     def SettingsTab_Create():
         notebook_frame = tb.Frame(Controller.NoteBook)
         Controller.NoteBook.add(notebook_frame, text='Settings')
 
+        scroll_frame = ScrolledFrame(notebook_frame, autohide=True)
+        scroll_frame.pack(expand=TRUE, fill=BOTH)
+        
         setting_width = int(WIDTH/1.4)
-
+        ChildrenFrames = []
         def create_setting_title(row, text, buffer=True):
-            frame = Frame(notebook_frame, bd=2, relief=SUNKEN)
+            frame = Frame(scroll_frame, bd=2, relief=SUNKEN)
             frame.grid(row=row, column=0, sticky=NSEW)
             frame.grid_columnconfigure(0, weight=1)
             frame.grid_rowconfigure(1,weight=1)
+            ChildrenFrames.append(frame)
 
             tb.Label(frame, text=text, anchor=W, font=font_big('normal'), bootstyle=color_labeltext).grid(
                 row=0, column=0, padx=33, pady=padding_6, sticky=NSEW)
             
             options_frame = Frame(frame)
-            options_frame.grid(row=1,column=0, sticky=NSEW)
+            options_frame.grid(row=1,column=0, padx=(0,8), sticky=NSEW)
 
             if buffer is True:
                 Frame(frame).grid(row=2,column=0,pady=6) # Spacing
@@ -942,8 +961,7 @@ class MainPanel:
         Title(1)
         MainTable(2)
         System(3)
-        notebook_frame.grid_rowconfigure(3,weight=1)
-        notebook_frame.grid_columnconfigure(0,weight=1)
+        scroll_frame.bind('<Configure>', lambda event, framelist=ChildrenFrames: MainPanel.adapt_frame_size(event,framelist))
         return notebook_frame
     
     @staticmethod

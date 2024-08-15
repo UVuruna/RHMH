@@ -98,9 +98,7 @@ if __name__ == '__main__':
         gif.create_splash(root)
 
         root.after(5000, gif.stop)
-        root.after(5000,root.destroy)
         print(time.time()-start)
         root.mainloop()
-    
-    
+
     splash()

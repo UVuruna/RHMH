@@ -105,7 +105,7 @@ class AI:
         return mkb
 
     @staticmethod
-    def ImageReader_SettingUp(PARENT:Tk):
+    def ImageReader_SettingUp(PARENT:tb.Window):
 
         def create_meter(parent,STYLE,text,ROW,COL,MIN,MAX,AMOUNT,unit,jump):
             meter = tb.Meter(
@@ -153,7 +153,7 @@ class AI:
             with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
                 file.write(json_data)
             Messagebox.show_info(message='Saving Settings successful', title='Saving Settings',
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
             toplevel.lift()
             toplevel.focus_force()
 
@@ -181,13 +181,13 @@ class AI:
             with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
                 file.write(json_data)
             Messagebox.show_info(message='Restoring Default Settings successful', title='Restore Settings',
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
             toplevel.lift()
             toplevel.focus_force()
 
-        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['AI'])
+        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['AI'], windowposition=App.get_window_center())
         toplevel.withdraw()
-        toplevel.transient(Controller.ROOT)
+        toplevel.transient(App.ROOT)
         
         toplevel.title('Reader - Configure')
         toplevel.grid_columnconfigure(0, weight=1)

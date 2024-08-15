@@ -1,6 +1,3 @@
-# TTKBOOSTRAP TopLevel  -- place_window_center
-# C:\Users\vurun\AppData\Local\Programs\Python\Python312\Lib\site-packages\ttkbootstrap
-
 """
     This module contains a class of the same name that wraps the 
     tkinter.Tk and ttkbootstrap.style.Style classes to provide a more
@@ -336,6 +333,7 @@ class Toplevel(tkinter.Toplevel):
         topmost=False,
         toolwindow=False,
         alpha=1.0,
+        windowposition=(0,0),
         **kwargs,
     ):
         """
@@ -477,6 +475,8 @@ class Toplevel(tkinter.Toplevel):
                 self.wait_visibility(self)
             self.attributes("-alpha", alpha)
 
+        self.windowposition = windowposition
+
     @property
     def style(self):
         """Return a reference to the `ttkbootstrap.style.Style` object."""
@@ -488,10 +488,11 @@ class Toplevel(tkinter.Toplevel):
         self.update_idletasks()
         w_height = self.winfo_height()
         w_width = self.winfo_width()
-        s_height = self.winfo_screenheight()
-        s_width = self.winfo_screenwidth()
-        xpos = (s_width - w_width) // 2
-        ypos = (s_height - w_height) // 2
+
+        root_center_x,root_center_y = self.windowposition
+        xpos = root_center_x - w_width // 2
+        ypos = root_center_y - w_height // 2
+
         self.geometry(f'+{xpos}+{ypos}')
 
     position_center = place_window_center # alias

@@ -397,8 +397,8 @@ class SelectDB(Controller):
         COLOR = Controller.Graph_FormVariables['afterchoice']['color'][1].get()
         SelectDB.graph_type_create(PLOT,VALUES,COLOR)
 
-        response = Graph.Graph_SettingUp(Controller.ROOT)
-        Controller.ROOT.revert_iconphoto()
+        response = Graph.Graph_SettingUp(App.ROOT)
+        App.ROOT.revert_iconphoto()
         if response == 'Show':
             SelectDB.Show_Graph_execute()
         
@@ -753,7 +753,7 @@ class SelectDB(Controller):
                 return
         except Exception:
             Messagebox.show_error(title=f'Search failed!', message='Wrong Date format',
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
             return
         
         if TAB == 'Pacijenti':
@@ -984,9 +984,8 @@ class SelectDB(Controller):
                 text_widget.tag_add('small', line_start, line_end)
 
     @staticmethod
-    def Dict_To_String(d:dict, indent=0):
+    def Dict_To_String(sorted_dict:dict, indent=0):
         COUNT = 0
-        sorted_dict = dict(sorted(d.items()))
         if 'Start' in sorted_dict:
             Controller.SessionReport += '\t' * (indent) + f'Opening Application: {sorted_dict['Start']:,.2f} s\n'
             del sorted_dict['Start']
@@ -1033,12 +1032,13 @@ class SelectDB(Controller):
             if not blob_dict:
                 SelectDB.empty_widget(Controller.Logs_FormVariables['Session'])
                 return
-            DICT = pickle.loads(blob_dict)
+            DICT:dict = pickle.loads(blob_dict)
             if not DICT:
                 SelectDB.empty_widget(Controller.Logs_FormVariables['Session'])
                 return
             Controller.SessionReport = ''
-            SelectDB.Dict_To_String(DICT)
+            sorted_dict = dict(sorted(DICT.items(), key=lambda x: x[0].casefold()))
+            SelectDB.Dict_To_String(sorted_dict)
             SelectDB.set_widget_value(Controller.Logs_FormVariables['Session'],Controller.SessionReport)
             SelectDB.highlight_numbers(Controller.Logs_FormVariables['Session'], decimal=True, stattype='average', verybig=1000, big=500, small=20)
             SelectDB.highlight_numbers(Controller.Logs_FormVariables['Session'], decimal=False, stattype='count', verybig=400, big=200, small=5)
@@ -1141,7 +1141,7 @@ class SelectDB(Controller):
                 SelectDB.Show_Image(BLOB=BLOB)
         Controller.NoteBook.select(1)
 
-        Controller.ROOT.after(WAIT,execute)
+        App.ROOT.after(WAIT,execute)
 
     @staticmethod
     def Show_Image(event=None,ID=False,BLOB=False):
@@ -1181,7 +1181,7 @@ class SelectDB(Controller):
         events = ['<Button-1>','<Double-1>','<MouseWheel>','<Button-4>','<Button-5>','<ButtonPress-1','<B1-Motion>']
         for event in events:
             Media.Slike_Viewer.unbind(event)
-        Controller.ROOT.update() # CEKA SREDJIVANJE WIDGET
+        App.ROOT.update() # CEKA SREDJIVANJE WIDGET
 
         width = Media.Slike_Viewer.winfo_width()
         height = Media.Slike_Viewer.winfo_height()
@@ -1195,11 +1195,11 @@ class SelectDB(Controller):
         
         # AFTER LOADING.. png Actual Image
         if BLOB is False:
-            Controller.ROOT.after(WAIT,
+            App.ROOT.after(WAIT,
                             lambda ID=google_ID,mediatype=media_type: 
                             SelectDB.Show_Image_execute(ID=ID,MediaType=mediatype))
         else:
-            Controller.ROOT.after(WAIT,
+            App.ROOT.after(WAIT,
                             lambda mediatype='image',blob=BLOB: 
                             SelectDB.Show_Image_execute(MediaType=mediatype,blob_data=blob))
 
@@ -1214,10 +1214,10 @@ class SelectDB(Controller):
                 Media.Downloading = False
                 showing_media()
             except queue.Empty:
-                Controller.ROOT.after(50,check_queue)
+                App.ROOT.after(50,check_queue)
             except Exception:
                 Media.Blob_Data = Media.image_to_blob('Slike/muvs.png')
-                Controller.ROOT.after(WAIT*2,showing_media)
+                App.ROOT.after(WAIT*2,showing_media)
 
         def showing_media():   
             width = Media.Slike_Viewer.winfo_width()

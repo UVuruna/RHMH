@@ -12,7 +12,7 @@ class TopPanel:
     title_txt = None
 
     @staticmethod
-    def initializeTP(root:Tk) -> None:
+    def initializeTP(root:tb.Canvas) -> None:
         
         try:
             image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = TITLE_IMAGE

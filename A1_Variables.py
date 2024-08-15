@@ -3,12 +3,14 @@ TIME_START = time.time_ns()
 
 from datetime import datetime, date
 
-from tkinter import *
+from tkinter import Widget,Menu,Frame,Label,StringVar,BooleanVar,IntVar
 from tkinter import simpledialog,messagebox
 from tkinter.font import nametofont
 from tkinter import filedialog
 import ttkbootstrap as tb
+from ttkbootstrap.constants import *
 from ttkbootstrap import widgets
+from ttkbootstrap.scrolled import ScrolledFrame,ScrolledText
 from ttkbootstrap.dialogs.dialogs import Messagebox
 from ttkbootstrap.style import Colors
 import customtkinter as ctk
@@ -60,6 +62,15 @@ import cv2
 from pathlib import Path
 from itertools import cycle
 from moviepy.editor import VideoFileClip
+
+class App:
+    ROOT:tb.Window = None
+
+    @staticmethod
+    def get_window_center():
+        x = (App.ROOT.winfo_width() // 2) + App.ROOT.winfo_rootx()
+        y = (App.ROOT.winfo_height() // 2) + App.ROOT.winfo_rooty()
+        return (x,y)
 
 directory = os.path.dirname(os.path.abspath(__file__))
 

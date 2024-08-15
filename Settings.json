@@ -25,12 +25,12 @@
     "Title": "Egypt",
     "System": {
         "Language": "English",
-        "Font": "Georgia",
+        "Font": "Arial",
         "Font Size": 11,
-        "Button cooldown": 250,
-        "Thread cooldown": 5,
-        "Width": 1800,
-        "Height": 990,
+        "Button cooldown": 500,
+        "Thread cooldown": 10,
+        "Width": 1720,
+        "Height": 930,
         "Title Height": 18
     },
     "Reader": {

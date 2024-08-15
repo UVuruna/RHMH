@@ -10,7 +10,7 @@ class GodMode:
     eye_image:Image.Image = None
 
     @staticmethod
-    def Admin_Unlocking(PARENT:Tk):
+    def Admin_Unlocking(PARENT:tb.Window):
         result = dict()
         def ok_command():
             result['Ok'] = password.get()
@@ -23,13 +23,13 @@ class GodMode:
                             'All of the passwords are hidden inside LOGO visible in About Page'
                 result['Hint'] = report
             Messagebox.show_info(message=report, title='Password Hint',
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
             toplevel.lift()
             toplevel.focus_force()
 
-        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['GodMode'])
+        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['GodMode'], windowposition=App.get_window_center())
         toplevel.withdraw()
-        toplevel.transient(Controller.ROOT)
+        toplevel.transient(App.ROOT)
         
         toplevel.title('Privileges - unlocking')
         toplevel.grid_columnconfigure(0, weight=1)
@@ -65,8 +65,8 @@ class GodMode:
 
     @staticmethod
     def GodMode_Password(event):
-        response = GodMode.Admin_Unlocking(Controller.ROOT)
-        Controller.ROOT.revert_iconphoto()
+        response = GodMode.Admin_Unlocking(App.ROOT)
+        App.ROOT.revert_iconphoto()
         if 'Ok' in response:
             if response['Ok'] == '63636':
                 info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
@@ -83,14 +83,14 @@ class GodMode:
             else:
                 return
             Messagebox.show_info(message=info, title=title,
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
             GodMode.JoiningLogs()
-            Controller.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
-            Controller.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
+            App.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
+            App.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
 
     @staticmethod
     def ProgressBar_JoiningLogs(count:int):
-        GodMode.TopLevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['GodMode'])
+        GodMode.TopLevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['GodMode'], windowposition=App.get_window_center())
         GodMode.TopLevel.withdraw()
 
         GodMode.TopLevel.title(f'Joining Logs...')
@@ -165,31 +165,31 @@ class GodMode:
                 floodgauge.grid_forget()
                 gif.stop()
                 print(time.time()-start)
+                App.ROOT.revert_iconphoto()
                 
         threading.Thread(target=join_logs).start()
-        Controller.ROOT.revert_iconphoto()
 
     @staticmethod
     def upload_GD_LOGS():
         confirm = Messagebox.yesno(title=f'Uploading...', message=f'Are you sure you want to Upload Google Drive LOGS?', alert=True,
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
         if confirm == 'Yes':
             def message_success():
                 Messagebox.show_info(message='Uploading LOGS successful', title='Uploading LOGS',
-                                        position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                        position=App.get_window_center())
             def message_fail():
                 Messagebox.show_info(message='Uploading LOGS failed', title='Uploading LOGS',
-                                        position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                        position=App.get_window_center())
             def upload():
                 try:
                     gif:Loading_Splash = Media.Gif['GodMode']
-                    gif.create_splash(Controller.ROOT,0.7)
+                    gif.create_splash(App.ROOT,0.7)
                     GoogleDrive.upload_UpdateFile(GD_LOGS_dict['id'],GD_LOGS_dict['path'],GD_LOGS_dict['mime'])
                     gif.stop()
-                    Controller.ROOT.after(WAIT,message_success)
+                    App.ROOT.after(WAIT,message_success)
                 except Exception:
                     gif.stop()
-                    Controller.ROOT.after(WAIT,message_fail)
+                    App.ROOT.after(WAIT,message_fail)
             threading.Thread(target=upload).start()
 
     @staticmethod
@@ -202,7 +202,7 @@ class GodMode:
         report = f'{DB}\n' +\
                 DATABASE.format_sql(query)
         response = Messagebox.yesno(title='Free Query executing...', message=report,
-                                        position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                        position=App.get_window_center())
         if response == 'Yes':
             DATABASE.connect()
             DATABASE.cursor.execute(query)
@@ -220,8 +220,6 @@ class GodMode:
 class Controller:
     
     queue = queue.Queue()
-
-    ROOT:tb.Window = None
     GD_LOGS:Database = None
     
     Connected:bool = False
@@ -236,7 +234,7 @@ class Controller:
     FreeQuery:StringVar     = None
 
         # TOP - Title Frame
-    Top_Frame: Canvas = None
+    Top_Frame: tb.Canvas = None
     Reconnect_window = None
     Reconnect_Button: ctk.CTkButton = None
 
@@ -313,7 +311,7 @@ class Controller:
                     report += 'Managing Database is forbidden in Offline mode\n'
                     report += f'Please Reconnect if you want to "{func.__name__}"\n'
                     Messagebox.show_warning(title=f'{func.__name__} failed!', message=report,
-                                position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                position=App.get_window_center())
                 else:
                     func(*args, **kwargs)
             return wrapper
@@ -345,34 +343,34 @@ class Controller:
             folder = os.path.join(directory,f'Slike/gif_{gif}')
             def load_gif(GIF,FOLDER):
                 Media.Gif[GIF] = Loading_Splash(folder=FOLDER, dimension=GIF_SIZE)
-            threading.Thread(target=lambda gif_key=gif, folder_path=folder: Controller.queue.put((Controller.ROOT.after, (WAIT, lambda: load_gif(gif_key, folder_path))))).start()
-            #Controller.queue.put((Controller.ROOT.after, (WAIT, lambda gif=gif,folder=folder: load_gif(gif,folder))))
+            threading.Thread(target=lambda gif_key=gif, folder_path=folder: Controller.queue.put((App.ROOT.after, (WAIT, lambda: load_gif(gif_key, folder_path))))).start()
+            #Controller.queue.put((App.ROOT.after, (WAIT, lambda gif=gif,folder=folder: load_gif(gif,folder))))
 
     @staticmethod
     def process_queue():
         try:
             while True:
                 func, args = Controller.queue.get_nowait()
-                Controller.ROOT.after_idle(func, *args)
+                App.ROOT.after_idle(func, *args)
                 Controller.queue.task_done()
         except queue.Empty:
-            Controller.ROOT.after(100, Controller.process_queue)
+            App.ROOT.after(100, Controller.process_queue)
 
     @staticmethod
     def starting_application():
         def message_success():
             report = f'Connection successful\nOnline mode\nHello {UserSession['Email']}'
             Messagebox.show_info(title='Connect',message=report,
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
         def message_fail():
                 report = 'Connection failed\nOffline mode'
                 Messagebox.show_error(title='Connect',message=report,
-                                        position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                        position=App.get_window_center())
         def update_message():
             report = 'Please Download latest version from Google Drive\n' + \
                 'Unzip files and copy them into directory of RHMH app'
             download = Messagebox.show_question(title='New Version', message=report, buttons=['Skip:warning','Download:success'],
-                                                position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                                position=App.get_window_center())
             if download == 'Download':
                 Controller.open_link(link=r'https://drive.google.com/drive/folders/1yvDczxK01aBO3xdm-Vlkr38hP8DGD2g0')
 
@@ -400,14 +398,14 @@ class Controller:
                 if Controller.Reconnect_window:
                     Controller.Top_Frame.delete(Controller.Reconnect_window)
                     Controller.Reconnect_window = None
-                    Controller.ROOT.update()
+                    App.ROOT.update()
 
                 if SETTINGS['Version'] != Controller.DEFAULT['Version']:
-                    Controller.ROOT.after(WAIT,update_message)
+                    App.ROOT.after(WAIT,update_message)
                 else:
-                    Controller.ROOT.after(WAIT,message_success)
+                    App.ROOT.after(WAIT,message_success)
         except Exception as e:
-            Controller.ROOT.after(WAIT,message_fail)
+            App.ROOT.after(WAIT,message_fail)
             width = Controller.Top_Frame.winfo_width()
             Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
         finally:
@@ -420,11 +418,11 @@ class Controller:
         def message_success():
             report = f'User changed\nHello {UserSession['Email']}'
             Messagebox.show_info(title='Changing User',message=report,
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
         def message_fail():
                 report = f'User unchanged\nOld User: {UserSession['Email']}'
                 Messagebox.show_error(title='Changing User',message=report,
-                                        position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                        position=App.get_window_center())
         try:
             GoogleDrive.create_new_token()
             email = GoogleDrive.get_UserEmail()
@@ -433,9 +431,9 @@ class Controller:
             json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
             with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
                 file.write(json_data)
-            Controller.ROOT.after(WAIT,message_success)    
+            App.ROOT.after(WAIT,message_success)    
         except Exception:
-            Controller.ROOT.after(WAIT,message_fail)    
+            App.ROOT.after(WAIT,message_fail)    
 
     @staticmethod
     def update_settings():
@@ -453,7 +451,7 @@ class Controller:
         with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
             file.write(json_data)
         Messagebox.show_info(message='Saving Settings successful', title='Saving Settings',
-                                position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                position=App.get_window_center())
 
     @staticmethod
     def restore_default_settings() -> None:
@@ -473,24 +471,24 @@ class Controller:
                     except AttributeError:
                         Controller.Settings_FormVariables[col][column].amountusedvar.set(value)
         Messagebox.show_info(message='Restoring Default Settings successful', title='Restore Settings',
-                                position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                position=App.get_window_center())
 
     @staticmethod
     def Upload_RHMH() -> None:
         def message_success():
             Messagebox.show_info(title='Upload',message='Upload Database successful',
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
         def message_fail():
             Messagebox.show_error(title='Upload',message='Upload Database failed',
-                                    position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                    position=App.get_window_center())
 
         rhmh = GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
 
         if rhmh:
-            Controller.ROOT.after(WAIT,message_success)  # Message
+            App.ROOT.after(WAIT,message_success)  # Message
             return True
         else:
-            Controller.ROOT.after(WAIT,message_fail)  # Message
+            App.ROOT.after(WAIT,message_fail)  # Message
             return False
 
     @staticmethod
@@ -543,7 +541,7 @@ class Controller:
             widget.delete(0,END)
         elif isinstance(widget, widgets.DateEntry):
             widget.entry.delete(0,END)
-        elif isinstance(widget, Text):
+        elif isinstance(widget, tb.Text) or isinstance(widget, ScrolledText):
             widget.delete('1.0', END)
         elif isinstance(widget,tb.Label) and widget.cget('text') not in SIGNS:
             widget.config(text='')
@@ -561,7 +559,7 @@ class Controller:
             return widget.entry.get()
         elif isinstance(widget,tb.Label):
             return widget.cget('text')
-        elif isinstance(widget, Text):
+        elif isinstance(widget, tb.Text) or isinstance(widget, ScrolledText):
             return widget.get('1.0', END).strip()
         else:
             return None
@@ -575,7 +573,7 @@ class Controller:
             value = datetime.strptime(str(value),'%Y-%m-%d').strftime('%d-%b-%Y')
         if isinstance(widget, StringVar):
             widget.set(value)
-        elif isinstance(widget, Text):
+        elif isinstance(widget, tb.Text) or isinstance(widget, ScrolledText):
             widget.delete('1.0', END)
             widget.insert('1.0', value)
         elif isinstance(widget, widgets.DateEntry):
@@ -600,20 +598,20 @@ class Controller:
             def execute():
                 LOGS.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
                                                 'Query':query_type,'Full Query':loggingdata})
-            Controller.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
+            App.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
             return
         if result:
             def execute():
                 LOGS.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
                                                 'Query':query_type,'Full Query':LOGS.LoggingQuery})
-            Controller.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
+            App.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
         return result
     
     @staticmethod
     def get_image_fromGD(GoogleID,queue=None):
         def message_download_fail():
             Messagebox.show_error(title='Downloading failed',message='Can`t connect to Google Drive',
-                                position=(Controller.ROOT.winfo_width()//2,Controller.ROOT.winfo_height()//2))
+                                position=App.get_window_center())
         try:
             Media.Downloading = True
             Media.Blob_Data = GoogleDrive.download_BLOB(GoogleID)
@@ -623,7 +621,7 @@ class Controller:
             Media.Downloading = False
             if Media.TopLevel:
                 Media.TopLevel.destroy()
-            Controller.ROOT.after(WAIT,message_download_fail)
+            App.ROOT.after(WAIT,message_download_fail)
             if queue:
                 queue.put((None, e))
             else:
@@ -631,7 +629,7 @@ class Controller:
 
     @staticmethod
     def lose_focus(event):
-        Controller.ROOT.focus_set()
+        App.ROOT.focus_set()
         Controller.Table_Pacijenti.selection_set('')
         Controller.Table_Slike.selection_set('')
         Controller.Table_MKB.selection_set('')

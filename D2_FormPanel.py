@@ -65,7 +65,7 @@ class FormPanel:
     valid_zaposleni = None
 
     @staticmethod
-    def initializeFP(root:Tk) -> None:
+    def initializeFP(root:tb.Window) -> None:
         
         FormPanel.form_visible = BooleanVar()
         FormPanel.form_visible.set(True)
@@ -99,7 +99,7 @@ class FormPanel:
             form_id = 'Default'
             )
         
-        Controller.ROOT.update_idletasks()
+        App.ROOT.update_idletasks()
         default_width = FormPanel.Form_Frame.winfo_width()
         FormPanel.DefaultForm.grid_remove()
 
@@ -118,7 +118,7 @@ class FormPanel:
             form_id = 'Alternative'
             )
 
-        Controller.ROOT.update_idletasks()
+        App.ROOT.update_idletasks()
         alternative_width = FormPanel.Form_Frame.winfo_width()
         max_width = default_width if default_width>alternative_width else alternative_width
         FormPanel.Form_Frame.grid_propagate(False)

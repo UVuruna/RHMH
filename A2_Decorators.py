@@ -1,7 +1,7 @@
 from A1_Variables import *
 from B2_SQLite import RHMH,LOGS
 
-def spam_stopper(button:ctk.CTkButton,root:Tk):
+def spam_stopper(button:ctk.CTkButton, root:tb.Window):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

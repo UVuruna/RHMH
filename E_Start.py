@@ -8,7 +8,7 @@ from A1_Variables import *
 from A2_Decorators import method_efficency,error_catcher
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import Database
-from B3_Media import Media
+from B3_Media import Media,Loading_Splash
 from B4_Graph import Graph
 from B5_AI import AI
 from C1_Controller import Controller,GodMode
@@ -22,8 +22,8 @@ from D4_Window import GUI
 def start():
     root = tb.Window(size=(WIDTH,HEIGHT), hdpi=False, iconphoto=IMAGES['icon']['RHMH']['png'])
     root.withdraw()
-    style = tb.Style(theme=THEME)
 
+    style = tb.Style(theme=THEME)
     for color_label in Colors.label_iter():
         color = style.colors.get(color_label)
         ThemeColors[color_label] = color
@@ -63,3 +63,4 @@ if __name__=='__main__':
     multiprocessing.freeze_support()
     UserSession['GUI']['Loading Modules'] = (time.time_ns()-TIME_START)/10**9
     start()
+    

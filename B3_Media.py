@@ -38,7 +38,7 @@ class Loading_Splash:
             return
         
         if isinstance(widget, tb.Window):
-            self.splash = tb.Toplevel(size=(self.dimension,self.dimension), alpha=alpha)
+            self.splash = tb.Toplevel(size=(self.dimension,self.dimension), alpha=alpha, windowposition=App.get_window_center())
             self.splash.place_window_center()
             self.splash.transient(widget)
             if os.name == 'nt':
@@ -81,7 +81,7 @@ class Media:
     TopLevel:tb.Toplevel = None
     Downloading:bool = False
     
-    Slike_Viewer: Canvas = None
+    Slike_Viewer: tb.Canvas = None
     Blob_Data = None
     Image_Active: Image.Image = None
     Image_Scale: int = 1
@@ -90,11 +90,11 @@ class Media:
     delta = 1.18
 
     AboutImage:  Image.Image = None
-    AboutCanvas:      Canvas = None
+    AboutCanvas:   tb.Canvas = None
     
     @staticmethod
     def ProgressBar_DownloadUpload(title:str, titletxt:list, width:int):
-        Media.TopLevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['Web'])
+        Media.TopLevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['Web'], windowposition=App.get_window_center())
         Media.TopLevel.title(f'{title}...')
         Media.TopLevel.grid_columnconfigure(0, weight=1)
         Media.TopLevel.resizable(False,False)
