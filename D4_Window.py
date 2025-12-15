@@ -1,5 +1,5 @@
 from A1_Variables import *
-from A2_Decorators import spam_stopper,PC,print_dict
+from A2_Decorators import spam_stopper,PC
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import RHMH,LOGS
 from B5_AI import AI
@@ -11,59 +11,76 @@ from D2_FormPanel import FormPanel
 from D3_MainPanel import MainPanel
 
 class GUI:
-    root:Tk = None
+    root:tb.Window = None
     menu:Menu = None
-
     title_visible:BooleanVar = None
 
     @staticmethod
-    def initialize(root:Tk) -> None:
-        GUI.root = root
+    def initialize(root:tb.Window) -> None:
+        App.ROOT = root
         LOGS.start_LOGS_db()
         RHMH.start_RHMH_db()
+
+        threading.Thread(target=Controller.load_loading_GIF).start()
+        App.ROOT.after(WAIT,Controller.process_queue)
         threading.Thread(target=GUI.get_PC_info).start()
+        threading.Thread(target=Controller.starting_application).start()
         
         Controller.MKB_validation_LIST = [i[0] for i in RHMH.execute_select(False,'mkb10',*('MKB - šifra',))]
         Controller.Zaposleni_validation_LIST = [i[0] for i in RHMH.execute_select(False,'zaposleni',*('Zaposleni',))]
         
-        Controller.ROOT = GUI.root
-        TopPanel.initialize(GUI.root)
-        FormPanel.initialize(GUI.root)
-        MainPanel.initialize(GUI.root)
+        TopPanel.initializeTP(App.ROOT)
+        FormPanel.initializeFP(App.ROOT)
+        MainPanel.initializeMP(App.ROOT)
+        App.ROOT.after(WAIT,App.ROOT.place_window_center)
         GUI.Buttons_SpamStopper()
-
         
         GUI.menu = GUI.RootMenu_Create()
         if os.name == 'posix' and os.uname().sysname == 'Darwin':  # macOS
-            GUI.root.bind('<Button-2>', GUI.do_popup)
+            App.ROOT.bind('<Button-2>', GUI.do_popup)
+            App.ROOT.bind('<Command-a>', SelectDB.selectall_tables)
+            App.ROOT.bind('<Command-s>', lambda event: Controller.Upload_RHMH())
         else:
-            GUI.root.bind('<Button-3>', GUI.do_popup)
-        GUI.root.bind('<Button-3>', GUI.do_popup)
-        GUI.root.bind('<Control-a>', SelectDB.selectall_tables)
-        GUI.root.bind('<Command-a>', SelectDB.selectall_tables)
-        GUI.root.bind('\u004D\u0055\u0056\u0031\u0033', GodMode.GodMode_Password)
-        GUI.root.protocol('WM_DELETE_WINDOW',GUI.EXIT)
-        
-        GUI.root.title(app_name)
-        if os.name == 'nt':  # Windows
-            root.iconbitmap(IMAGES['icon'][0])
-        elif os.name == 'posix':  # macOS i Linux
-            icon = PhotoImage(file=IMAGES['icon'][1])
-            root.iconphoto(True, icon)
-        GUI.root.grid_rowconfigure(1, weight=1)
-        GUI.root.grid_columnconfigure(1, weight=1)
+            App.ROOT.bind('<Button-3>', GUI.do_popup)
+            App.ROOT.bind('<Control-a>', SelectDB.selectall_tables)
+            App.ROOT.bind('<Control-s>', lambda event: Controller.Upload_RHMH())
 
-        threading.Thread(target=Controller.starting_application).start()
-        UserSession['Logged IN'] = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
-        starting = (time.time_ns()-TIME_START)/10**9
-        UserSession['GUI']['Start'] = starting
-        GUI.root.geometry(f'{WIDTH}x{HEIGHT}')
+        App.ROOT.bind('<Return>', lambda event: GUI.show_bind(event,True))
+        App.ROOT.bind('<space>', lambda event: GUI.show_bind(event,False))
+        App.ROOT.bind('\u004D\u0055\u0056\u0031\u0033', GodMode.GodMode_Password)
+        App.ROOT.protocol('WM_DELETE_WINDOW',GUI.EXIT)
+        
+        App.ROOT.title(app_name)
+        if os.name == 'nt':  # Windows
+            root.iconbitmap(IMAGES['icon']['RHMH']['ico'])
+        elif os.name == 'posix':  # macOS i Linux
+            icon = PhotoImage(file=IMAGES['icon']['RHMH']['png'])
+            root.iconphoto(True, icon)
+        App.ROOT.grid_rowconfigure(1, weight=1)
+        App.ROOT.grid_columnconfigure(1, weight=1)
+        App.ROOT.deiconify()
+
+    @staticmethod
+    def show_bind(event,showall):
+        focus = App.ROOT.focus_get()
+        if not (isinstance(focus, tb.Text) or \
+                    isinstance(focus, tb.Entry) or \
+                            isinstance(focus,widgets.DateEntry)):
+            if showall is True:
+                SelectDB.showall_data()
+            else:
+                SelectDB.search_data()
 
     @staticmethod
     def get_PC_info() -> None:
         cpu = PC.get_cpu_info()
         gpu = PC.get_gpu_info()
         ram = PC.get_ram_info()
+        pc = platform.uname()
+
+        UserSession['PC']['User'] = {'User': pc.node,
+                                     'OS': f'{pc.system} {pc.release}', 
+                                     'Version': pc.version}
         UserSession['PC']['CPU'] = cpu
         UserSession['PC']['GPU'] = gpu
         UserSession['PC']['RAM'] = ram
@@ -76,32 +93,34 @@ class GUI:
                 continue
             if not isinstance(button,list):
                 last_cmd = button.cget('command')
-                button.configure(command=spam_stopper(button,GUI.root)(last_cmd))
+                button.configure(command=spam_stopper(button,App.ROOT)(last_cmd))
             else:
                 for filterbutton in button:
                     if isinstance(filterbutton,tb.Checkbutton):
                         continue
                     last_cmd = filterbutton.cget('command')
-                    filterbutton.configure(command=spam_stopper(filterbutton,GUI.root)(last_cmd))
+                    filterbutton.configure(command=spam_stopper(filterbutton,App.ROOT)(last_cmd))
 
     @staticmethod
     def EXIT() -> None:
-        response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'])
+        response = Messagebox.show_question('Do you want to save the changes before exiting?', 'Close', buttons=['Exit:secondary','Save:success'],
+                                            position=App.get_window_center())
         if response == 'Save':
-            upload = Controller.uploading_to_GoogleDrive()
+            upload = Controller.Upload_RHMH()
             try:
-                Controller.uploading_LOGS()
+                Controller.Upload_local_LOGS()
             finally:
                 if upload is True:
-                    GUI.root.after(1500,GUI.root.destroy)
+                    App.ROOT.destroy()
                 else:
                     report = 'Uploading Failed\nConnection problems\nTry again or EXIT without Saving'
-                    Messagebox.show_warning(parent=Controller.SearchBar,title='Upload',message=report)
+                    Messagebox.show_warning(title='Upload',message=report,
+                                            position=App.get_window_center())
         if response == 'Exit':
             try:
-                Controller.uploading_LOGS()
+                Controller.Upload_local_LOGS()
             finally:
-                GUI.root.destroy()
+                App.ROOT.destroy()
 
     @staticmethod
     def show_form_frame() -> None:
@@ -131,7 +150,7 @@ class GUI:
 
     @staticmethod
     def RootMenu_Create() -> Menu:
-        m = Menu(GUI.root, tearoff = 0) 
+        m = Menu(App.ROOT, tearoff = 0) 
         GUI.title_visible = BooleanVar()
         GUI.title_visible.set(True)
         m.add_checkbutton(label='Show Title', variable=GUI.title_visible, command=GUI.show_title_frame)
@@ -145,7 +164,8 @@ class GUI:
         m.add_command(label ='Settings', command= lambda: SelectDB.NoteBook.select(6))
         m.add_command(label ='About', command= lambda: SelectDB.NoteBook.select(7))
         m.add_separator()
-        m.add_command(label ='Upload to Drive', command= Controller.uploading_to_GoogleDrive)
+        m.add_command(label ='New User Authorization', command= Controller.create_new_user)
+        m.add_command(label ='Upload to Drive', command= Controller.Upload_RHMH)
         return m
     
 if __name__=='__main__':

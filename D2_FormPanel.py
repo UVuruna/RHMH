@@ -49,7 +49,7 @@ class FormPanel:
             'Instrumentarka': ('Instrumentarka', 'Validate', verylarge_width),
             'Gostujući Specijalizant': ('Gostujući\nSpecijalizant', 'Text', verylarge_width),
             'Slike':('','Slike'),
-            'Opis':('Opis','StringVar',verylarge_width-4)
+            'Opis':('Opis','StringVar',large_width)
         }
     }
 
@@ -65,7 +65,7 @@ class FormPanel:
     valid_zaposleni = None
 
     @staticmethod
-    def initialize(root:Tk) -> None:
+    def initializeFP(root:tb.Window) -> None:
         
         FormPanel.form_visible = BooleanVar()
         FormPanel.form_visible.set(True)
@@ -79,12 +79,15 @@ class FormPanel:
         FormPanel.Form_Frame = Frame(root, bd=4, relief=RIDGE)
         FormPanel.Form_Frame.grid(row=1, column=0, padx=padding_6, pady=padding_0_6, sticky=NSEW)
         FormPanel.Form_Frame.grid_rowconfigure(1,weight=1)
+        FormPanel.Form_Frame.grid_columnconfigure(0,weight=1)
 
-        Controller.FormTitle = (FormPanel.Form_TopLabel(form_name),color_labeltext)
+        Controller.FormTitle = FormPanel.Form_TopLabel(form_name)
 
             # DEFAULT FORM CREATE
         FormPanel.DefaultForm = Frame(FormPanel.Form_Frame)
-        FormPanel.DefaultForm.grid(row=1, column=0, columnspan=4, sticky=NSEW)
+        FormPanel.DefaultForm.grid(row=1, column=0, sticky=NSEW)
+        FormPanel.DefaultForm.bind('<Button-1>',Controller.lose_focus)
+        
 
         FormPanel.FormPatient_Create(
             parent = FormPanel.DefaultForm,
@@ -96,10 +99,14 @@ class FormPanel:
             form_id = 'Default'
             )
         
+        App.ROOT.update_idletasks()
+        default_width = FormPanel.Form_Frame.winfo_width()
+        FormPanel.DefaultForm.grid_remove()
+
             # ALTERNATIVE FORM CREATE
         FormPanel.AlternativeForm = Frame(FormPanel.Form_Frame)
-        FormPanel.AlternativeForm.grid(row=1, column=0, columnspan=4, sticky=NSEW)
-        FormPanel.AlternativeForm.grid_remove()
+        FormPanel.AlternativeForm.grid(row=1, column=0, sticky=NSEW)
+        FormPanel.AlternativeForm.bind('<Button-1>',Controller.lose_focus)
 
         FormPanel.FormPatient_Create(
             parent = FormPanel.AlternativeForm,
@@ -111,24 +118,36 @@ class FormPanel:
             form_id = 'Alternative'
             )
 
+        App.ROOT.update_idletasks()
+        alternative_width = FormPanel.Form_Frame.winfo_width()
+        max_width = default_width if default_width>alternative_width else alternative_width
+        FormPanel.Form_Frame.grid_propagate(False)
+        FormPanel.Form_Frame.configure(width=max_width)
+        FormPanel.AlternativeForm.grid_remove()
+        FormPanel.DefaultForm.grid()
+
     @staticmethod
     def Form_TopLabel(formname):
+        frame = Frame(FormPanel.Form_Frame)
+        frame.grid(row=0, column=0, sticky=NSEW)
+        frame.grid_columnconfigure(1,weight=1)
+
         gray_swap, color_swap, gray_hide, color_hide = Media.label_ImageLoad(IMAGES['Swap']+IMAGES['Hide'])
 
-        swap = tb.Label(FormPanel.Form_Frame, image=gray_swap)
+        swap = tb.Label(frame, image=gray_swap)
         swap.grid(row=0, column=0, sticky =NW)
         swap.bind('<ButtonRelease-1>',FormPanel.swap_forms)
         swap.bind('<Enter>', lambda event,img=color_swap: Media.hover_label_button(event,img))
         swap.bind('<Leave>', lambda event,img=gray_swap: Media.hover_label_button(event,img))
 
-        hide = tb.Label(FormPanel.Form_Frame, image=gray_hide)
-        hide.grid(row=0, column=3, sticky=NE)
+        lbl = tb.Label(frame, anchor=CENTER, bootstyle=color_labeltext, text=formname, font=font_big())
+        lbl.grid(row=0, column=1, padx=0, pady=padding_6, sticky=NSEW)
+
+        hide = tb.Label(frame, image=gray_hide)
+        hide.grid(row=0, column=2, sticky=NE)
         hide.bind('<ButtonRelease-1>',FormPanel.remove_form_frame)
         hide.bind('<Enter>', lambda event,img=color_hide: Media.hover_label_button(event,img))
         hide.bind('<Leave>', lambda event,img=gray_hide: Media.hover_label_button(event,img))
-
-        lbl = tb.Label(FormPanel.Form_Frame, anchor=CENTER, bootstyle=color_labeltext, text=formname, font=font_big())
-        lbl.grid(row=0, column=1, columnspan=2, padx=0, pady=padding_6, sticky=NSEW)
 
         swap.bind('<Button-1>', ManageDB.Validation_Method)
         return lbl
@@ -180,6 +199,7 @@ class FormPanel:
 
     @staticmethod
     def FormPatient_Create( parent:Frame, form_id:str):
+        parent.grid_columnconfigure(1,weight=1)
         n=1
         group_names = []
         group_childs = []
@@ -194,7 +214,7 @@ class FormPanel:
             if i in group_childs:
                 lbl = tb.Label(parent, anchor=CENTER, justify=CENTER,
                                 bootstyle=color_labeltext, text=group_names[n-1], font=font_big('normal'))
-                lbl.grid(row=i+n, column=0, columnspan=4, pady=padding_3, sticky=NSEW)
+                lbl.grid(row=i+n, column=0, columnspan=2, pady=padding_3, sticky=NSEW)
                 n +=1
 
             if txt in RHMH.pacijent:
@@ -207,7 +227,8 @@ class FormPanel:
                 table = 'slike'
 
             lbl = tb.Label(parent, anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, text=data[0], font=font_medium('normal'))
-            lbl.grid(row=i+n, column=0, columnspan=2, padx=padding_3_12, sticky=NSEW)
+            lbl.grid(row=i+n, column=0, padx=padding_3_12, sticky=NSEW)
+
 
             if data[1] in ['StringVar','Combobox','Validate']:
                 Controller.Patient_FormVariables[table][txt] = StringVar()
@@ -230,7 +251,7 @@ class FormPanel:
             elif data[1] == 'Text':
                 height = 3 if txt=='Dg Latinski' else 2
                 frame = Frame(parent, highlightbackground=ThemeColors[color_highlight], highlightcolor=ThemeColors['primary'], highlightthickness=1)
-                frame.grid(row=i+n, column=2, columnspan=2, padx=padding_3_12, pady=padding_3, sticky='nsw')
+                frame.grid(row=i+n, column=1, padx=padding_3, pady=padding_3, sticky=NSEW)
 
                 ent = tb.Text(frame, width=data[2], height=height, font=font_default)
                 ent.pack(fill=BOTH, expand=True)
@@ -247,45 +268,48 @@ class FormPanel:
                 Controller.Patient_FormVariables[table][txt] = ent
             elif data[1] == 'Info':
                 ent = tb.Label(parent, anchor=CENTER, justify=CENTER, bootstyle=color_labeltext, text='\n', font=font_medium())
-                ent.grid(row=i+n, column=0, columnspan=4,  padx=padding_3_12, pady=padding_3, sticky=NSEW)
+                ent.grid(row=i+n, column=0, columnspan=2,  padx=padding_3, pady=padding_3, sticky=NSEW)
                 Controller.PatientInfo = ent
                 ent = None
             elif data[1] == 'Slike':
                 ent = Frame(parent)
-                ent.grid(row=i+n, column=0, columnspan=4,  padx=(12,0), pady=padding_3, sticky=NSEW)
+                ent.grid(row=i+n, column=0, columnspan=2,  padx=padding_3, pady=padding_3, sticky=NSEW)
                 parent.grid_rowconfigure(i+n, weight=1)
                 sliketable = FormPanel.Images_MiniTable_Create(ent)
                 Controller.Patient_FormVariables['slike'][txt] = sliketable
                 ent = None
             if ent:
-                ent.grid(row=i+n, column=2, columnspan=2, padx=padding_3_12, pady=padding_3, sticky='nsw')
+                sticky = 'nsw' if data[2]!=verylarge_width else NSEW
+                ent.grid(row=i+n, column=1, padx=padding_3, pady=padding_3, sticky=sticky)
 
     @staticmethod
     def FormPatient_Buttons(parent: Frame , split:list , form_id:str):
-        Frame(parent).grid(row=16, columnspan=4, pady=padding_6)
         for i,(description,cmd) in enumerate(FormPanel.form_buttons.items()):
             if i == 3 and form_id == 'Default':
                 break
-            btext,btype = description
-            if i in split or i==0:
+            elif i in split or i==0:
                 Buttons_Frame = Frame(parent)
-                Buttons_Frame.grid(row=18+i, columnspan=4)
+                Buttons_Frame.grid(row=18+i, columnspan=2)
                 Buttons_Frame.bind('<Enter>', lambda event,form=form_id: ManageDB.Validation_Method(event,form))
 
-            butt = ctk.CTkButton(Buttons_Frame, text=btext, width=buttonX,height=buttonY, corner_radius=12, font=font_medium(),
-                                 fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+            btext,btype = description
+            butt = ctk.CTkButton(Buttons_Frame, text=btext, width=buttonX,height=buttonY, corner_radius=12, font=font_medium('bold'),
+                                 text_color=ThemeColors['bg'], text_color_disabled=ThemeColors['secondary'],
                                  command=cmd)
             butt.grid(row=0, column=i, padx=padding_6, pady=padding_6)
             Controller.Buttons[btext] = butt
             if btype:
-                butt.configure(fg_color=ThemeColors[btype])
-        Frame(parent).grid(row=24, columnspan=4, pady=padding_6) 
+                butt_color = ThemeColors[btype]
+                butt.configure(fg_color=butt_color, hover_color=Media.darken_color(butt_color))
+            else:
+                butt_color = ThemeColors['primary']
+                butt.configure(fg_color=butt_color, hover_color=Media.darken_color(butt_color))
 
     @staticmethod
     def remove_form_frame(event):
         FormPanel.Form_Frame.grid_forget()
         FormPanel.form_visible.set(False)
-    
+
     @staticmethod
     def swap_forms(event):
         if FormPanel.DefaultForm.winfo_ismapped():
@@ -294,6 +318,3 @@ class FormPanel:
         elif FormPanel.AlternativeForm.winfo_ismapped():
             FormPanel.DefaultForm.grid()
             FormPanel.AlternativeForm.grid_remove()
-
-if __name__=='__main__':
-    pass

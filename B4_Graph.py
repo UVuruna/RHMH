@@ -1,5 +1,7 @@
 from A1_Variables import *
 from B2_SQLite import RHMH
+from B3_Media import Media
+from C1_Controller import Controller
 
 class Graph:
     Settings = {}
@@ -35,8 +37,8 @@ class Graph:
         'Mesec' :           '' ,
         'Dan u Sedmici' :   '' ,
         'Dan' :             '' ,
-        'Trauma' : [ ['Trauma','Ostalo'], ['`MKB - šifra` LIKE "S%"' , '`MKB - šifra` NOT LIKE "S%"'] ] ,
-        'Pol' :    [ ['Muško','Žensko'],  ['Pol = "Muško"' , 'Pol = "Žensko"'] ] ,
+        'Trauma' : [ ['Trauma','Ostalo'], ['`MKB - šifra` LIKE "S%"', '`MKB - šifra` NOT LIKE "S%"'] ] ,
+        'Pol' :    [ ['Muško','Žensko'],  ['Pol = "Muško"', 'Pol = "Žensko"'] ] ,
         'MKB Grupe' :       '' ,
         'MKB Pojedinačno' : '' ,
         'Starost' :         '' ,
@@ -105,16 +107,19 @@ class Graph:
 
     @staticmethod
     def save_and_open_graph_figure(event):
-        image_location = 'temporary/temp_image.png'
-        Graph.figure.savefig(image_location)
+
+        graph_image = os.path.join(directory,'temporary/temp_image.png')
+        Graph.figure.savefig(graph_image)
         
+        if not os.path.exists(graph_image):
+            return
         if os.name == 'nt':  # For Windows
-            os.startfile(os.path.abspath(image_location))
+            os.startfile(os.path.abspath(graph_image))
         elif os.name == 'posix':  # For macOS and Linux
             if os.uname().sysname == 'Darwin':  # macOS
-                subprocess.call(['open', os.path.abspath(image_location)])
+                subprocess.call(['open', os.path.abspath(graph_image)])
             else:  # Linux
-                subprocess.call(['xdg-open', os.path.abspath(image_location)])
+                subprocess.call(['xdg-open', os.path.abspath(graph_image)])
 
     @staticmethod
     def create_1D_bar( colors=0, values=0 ) -> None:
@@ -139,11 +144,12 @@ class Graph:
         Graph.create_figure_plot()
 
         colors = cm.viridis(np.linspace(0, 1, len(Graph.X)))
-
-        wedges, texts, autotexts = Graph.plot.pie(Graph.Y, labels=Graph.X, colors=colors, autopct='%1.1f%%', textprops={'color': ThemeColors[color_titletext]})
+        wedges, texts, autotexts = Graph.plot.pie(Graph.Y, labels=Graph.X, colors=colors, autopct='%1.1f%%')
         for text in texts:
-            text.set_fontsize(F_SIZE)
+            text.set_color(ThemeColors[color_labeltext])
+            text.set_fontsize(int(F_SIZE*1.1))
         for autotext in autotexts:
+            autotext.set_color('#ffffff')
             autotext.set_fontsize(F_SIZE)
 
     @staticmethod
@@ -197,7 +203,7 @@ class Graph:
             for i in range(num_bars_per_group):
                 bar_values = [Graph.Y[j][i] for j in range(num_groups)]
                 for j, val in enumerate(bar_values):
-                    Graph.plot.text(index[j], bottom[j] + val / 2, round(val, 2), ha='center', va='center', fontsize=F_SIZE, color=ThemeColors[color_titletext])
+                    Graph.plot.text(index[j], bottom[j] + val / 2, round(val, 2), ha='center', va='center', fontsize=F_SIZE, color='#ffffff')
                 bottom += bar_values
 
         Graph.plot.set_xticks(index)
@@ -335,22 +341,22 @@ class Graph:
         return QUERY
 
     @staticmethod
-    def Graph_SettingUp(parent:Frame):
+    def Graph_SettingUp(PARENT:tb.Window):
 
-        def create_meter(parent,STYLE,text,ROW,COL,MIN,MAX,AMOUNT,unit,jump):
+        def create_meter(parent,STYLE,text,ROW,COL,MIN,MAX,AMOUNT):
             meter = tb.Meter(
                 master=parent,
                 metersize=150,
                 bootstyle=STYLE,
                 subtextstyle=STYLE,
                 subtext=text,
-                textright=unit,
+                textright='%',
                 padding=padding_6,
                 amountused=AMOUNT,
                 amountmin=MIN,
                 amounttotal=MAX,
-                stepsize=jump,
-                stripethickness=math.ceil(270/((MAX-MIN)/jump)),
+                stepsize=1,
+                stripethickness=math.ceil(270/(MAX-MIN)),
                 metertype="semi",
                 interactive=True,
             )
@@ -363,7 +369,7 @@ class Graph:
                 Graph.Settings[text] = widget.amountusedvar.get()/100
 
             for col,check in Graph.Checkbuttons.items():
-                check:IntVar
+                check:BooleanVar
                 Graph.Settings[col] = check.get()
 
             result['action'] = 'Show'
@@ -375,75 +381,72 @@ class Graph:
                 SETTINGS['Graph'][text] = widget.amountusedvar.get()
 
             for col,check in Graph.Checkbuttons.items():
-                check:IntVar
+                check:BooleanVar
                 boolean = check.get()
                 Graph.Settings[col] = boolean
                 SETTINGS['Graph'][col] = boolean
 
-            json_data = json.dumps(SETTINGS, indent=4)
-            with open(os.path.join(directory,'Settings.json'), 'w') as file:
+            json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+            with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
                 file.write(json_data)
+            Messagebox.show_info(message='Saving Settings successful', title='Saving Settings',
+                                    position=App.get_window_center())
+            toplevel.lift()
+            toplevel.focus_force()
 
-            result['action'] = 'Save'
-            toplevel.destroy()
+        def restoredefault_command():
+            for widget,text in zip([left,right,top,bottom],['left','right','top','bottom']):
+                default_value = Controller.DEFAULT['Graph'][text]
+                Graph.Settings[text] = default_value/100
+                SETTINGS['Graph'][text] = default_value
+                widget.amountusedvar.set(default_value)
 
-        toplevel = Toplevel(parent)
+            for col in Graph.Checkbuttons.keys():
+                default_value = Controller.DEFAULT['Graph'][col]
+                Graph.Settings[col] = default_value
+                SETTINGS['Graph'][col] = default_value
+                Graph.Checkbuttons[col].set(default_value)
+
+            json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+            with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
+                file.write(json_data)
+            Messagebox.show_info(message='Restoring Default Settings successful', title='Restore Settings',
+                                    position=App.get_window_center())
+            toplevel.lift()
+            toplevel.focus_force()
+
+        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['Graph'], windowposition=App.get_window_center())
+        toplevel.withdraw()
+        toplevel.transient(App.ROOT)
+        
         toplevel.title('Graph - Configure')
         toplevel.grid_columnconfigure(0, weight=1)
         toplevel.grid_rowconfigure([0,1,2],weight=1)
         toplevel.resizable(False,False)
-        if os.name == 'nt':  # Windows
-            toplevel.attributes('-toolwindow', True)
-        else:  # macOS/Linux
-            toplevel.attributes('-type', 'dialog')
 
         meter_frame = Frame(toplevel)
         meter_frame.grid(row=0,column=0,sticky=NSEW)
         meter_frame.grid_columnconfigure([0,1],weight=1)
 
         left:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='primary',
-                            text='Left',
-                            ROW=0,
-                            COL=0,
-                            MIN=0,
-                            MAX=30,
-                            AMOUNT=int(Graph.Settings['left']*100),
-                            unit='%',
-                            jump=1)
+                            STYLE='primary', text='Left',
+                            ROW=0, COL=0, MIN=0, MAX=30,
+                            AMOUNT=int(Graph.Settings['left']*100)  )
         right:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='primary',
-                            text='Right',
-                            ROW=0,
-                            COL=1,
-                            MIN=70,
-                            MAX=100,
-                            AMOUNT=int(Graph.Settings['right']*100),
-                            unit='%',
-                            jump=1)
+                            STYLE='primary', text='Right',
+                            ROW=0, COL=1, MIN=70, MAX=100,
+                            AMOUNT=int(Graph.Settings['right']*100) )
         top:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='primary',
-                            text='Top',
-                            ROW=1,
-                            COL=0,
-                            MIN=70,
-                            MAX=100,
-                            AMOUNT=int(Graph.Settings['top']*100),
-                            unit='%',
-                            jump=1)
+                            STYLE='primary', text='Top',
+                            ROW=1, COL=0, MIN=70, MAX=100,
+                            AMOUNT=int(Graph.Settings['top']*100)   )
         bottom:tb.Meter = create_meter(parent=meter_frame,
-                            STYLE='primary',
-                            text='Bottom',
-                            ROW=1,
-                            COL=1,
-                            MIN=0,
-                            MAX=40,
-                            AMOUNT=int(Graph.Settings['bottom']*100),
-                            unit='%',
-                            jump=1)
+                            STYLE='primary', text='Bottom',
+                            ROW=1, COL=1, MIN=0, MAX=40,
+                            AMOUNT=int(Graph.Settings['bottom']*100))
 
         checkbutton_frame = Frame(toplevel)
-        checkbutton_frame.grid(row=1, column=0, padx=12, pady=padding_6, sticky=NSEW)
+        checkbutton_frame.grid(row=1, column=0, padx=padding_12, pady=padding_6, sticky=NSEW)
         checkbutton_frame.grid_columnconfigure([0,1],weight=1)
         ROW = 0
         for i,txt in enumerate(['tight','legend','x label', 'y label']):
@@ -451,27 +454,24 @@ class Graph:
             if i==2:
                 ROW = 1
             try:
-                Graph.Checkbuttons[txt].set(int(Graph.Settings[txt]))
+                Graph.Checkbuttons[txt].set(Graph.Settings[txt])
             except KeyError:
-                Graph.Checkbuttons[txt] = IntVar()
-                Graph.Checkbuttons[txt].set(int(Graph.Settings[txt]))
+                Graph.Checkbuttons[txt] = BooleanVar()
+                Graph.Checkbuttons[txt].set(Graph.Settings[txt])
             tb.Checkbutton(checkbutton_frame, text=txt.title(), bootstyle='primary, round-toggle',
                     variable=Graph.Checkbuttons[txt]).grid(row=ROW, column=i%2, padx=padding_6, pady=padding_6, sticky=NSEW)
         
         button_frame = Frame(toplevel)
-        button_frame.grid(row=2, column=0, padx=12, pady=(24, 6), sticky=E)
+        button_frame.grid(row=2, column=0, padx=padding_12, pady=padding_12, sticky=E)
+        Controller.toplevel_buttons(button_frame,[restoredefault_command,savedefault_command,run_command])
+        
+        toplevel.bind('<Return>', lambda event: run_command())
+        toplevel.bind('<Command-s>', lambda event: savedefault_command())
+        toplevel.bind('<Control-s>', lambda event: savedefault_command())
+        toplevel.bind('<Command-r>', lambda event: restoredefault_command())
+        toplevel.bind('<Control-r>', lambda event: restoredefault_command())
 
-        ctk.CTkButton(button_frame, text='SAVE\nDEFAULT', width=buttonX-2, height=buttonY, corner_radius=12, font=font_medium(),
-                    fg_color=ThemeColors['success'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                    command=savedefault_command).grid(row=0, column=0, padx=padding_6[0], pady=padding_6[1])
-        
-        ctk.CTkButton(button_frame, text='SHOW', width=buttonX-4, height=buttonY, corner_radius=12, font=font_medium(),
-                    fg_color=ThemeColors['primary'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
-                    command=run_command).grid(row=0, column=1, padx=padding_6[0], pady=padding_6[1])
-        
-        parent.wait_window(toplevel)
+        toplevel.place_window_center()
+        toplevel.deiconify()
+        PARENT.wait_window(toplevel)
         return result['action']
-
-
-if __name__=='__main__':
-    pass

@@ -1,13 +1,16 @@
 import time
 TIME_START = time.time_ns()
+
 from datetime import datetime, date
 
-from tkinter import *
+from tkinter import Widget,Menu,Frame,Label,StringVar,BooleanVar,IntVar
 from tkinter import simpledialog,messagebox
 from tkinter.font import nametofont
 from tkinter import filedialog
 import ttkbootstrap as tb
+from ttkbootstrap.constants import *
 from ttkbootstrap import widgets
+from ttkbootstrap.scrolled import ScrolledFrame,ScrolledText
 from ttkbootstrap.dialogs.dialogs import Messagebox
 from ttkbootstrap.style import Colors
 import customtkinter as ctk
@@ -17,6 +20,7 @@ import sqlparse
 
 import math
 import os
+import multiprocessing
 import threading
 import queue
 import shutil
@@ -31,11 +35,12 @@ import torch
 import psutil
 import GPUtil
 import cpuinfo
+import platform
 
-#import ffmpeg
 import webbrowser
 import httplib2
 import pickle
+from concurrent.futures import ThreadPoolExecutor
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -54,13 +59,33 @@ import matplotlib.cm as cm
 from PIL import Image, ImageTk
 import pillow_heif
 import cv2
-from moviepy.editor import VideoFileClip
+from pathlib import Path
+from itertools import cycle
+#from moviepy.editor import VideoFileClip
+
+class App:
+    ROOT:tb.Window = None
+
+    @staticmethod
+    def get_window_center():
+        x = (App.ROOT.winfo_width() // 2) + App.ROOT.winfo_rootx()
+        y = (App.ROOT.winfo_height() // 2) + App.ROOT.winfo_rooty()
+        return (x,y)
 
 directory = os.path.dirname(os.path.abspath(__file__))
 
 IMAGES = {
-    'icon' :    [os.path.join(directory,'Slike/RHMH.ico'),
-                     os.path.join(directory,'Slike/RHMH.png')] ,
+    'icon' :  {
+       'RHMH': {
+           'png': os.path.join(directory,'Slike/RHMH.png'),
+           'ico': os.path.join(directory,'Slike/RHMH.ico'),
+           'icns': os.path.join(directory,'Slike/RHMH.icns')
+              },
+       'GodMode': os.path.join(directory,'Slike/icon_GodMode.png'),
+       'Graph': os.path.join(directory,'Slike/icon_Graph.png'),
+       'AI': os.path.join(directory,'Slike/icon_AI.png'),
+       'Web': os.path.join(directory,'Slike/icon_Web.png')
+       },
     'Title': {
        'Creation':[
                os.path.join(directory,'Slike/GodHand.png') ,
@@ -114,6 +139,8 @@ IMAGES = {
            (os.path.join(directory,'Slike/sign_equal.png'),42,28),
            (os.path.join(directory,'Slike/sign_like.png'),42,28),
            (os.path.join(directory,'Slike/sign_notlike.png'),42,28),
+           (os.path.join(directory,'Slike/sign_less.png'),42,28),
+           (os.path.join(directory,'Slike/sign_greater.png'),42,28),
            (os.path.join(directory,'Slike/sign_between.png'),42,28)
        ],
        'Themes': [
@@ -128,7 +155,7 @@ IMAGES = {
 }
 
 
-with open(os.path.join(directory,'Settings.json'), 'r') as file:
+with open(os.path.join(directory,'Settings.json'), 'r', encoding='utf-8') as file:
     SETTINGS = json.load(file)
 
 Theme_Names = ['Moon','Fruit','Sea','Sunrise','Night','Flower','Sunset']
@@ -151,7 +178,7 @@ TITLE_IMAGE = TITLE_IMAGE if not isinstance(TITLE_IMAGE,tuple) else TITLE_IMAGE[
 
 
 
-UserSession = {'Email':'offline_admin@gmail.com','PC':{},'GUI':{},'GoogleDrive':{},'Database':{},
+UserSession = {'Email':SETTINGS['Email'],'PC':{},'GUI':{},'GoogleDrive':{},'Database':{},
                'AI':{},'Media':{},'Graph':{},'Controller':{},'ManageDB':{},'SelectDB':{}}
 app_name = 'Restruktivna Hirurgija Ortopedije'
 form_name = 'Pacijent'
@@ -159,7 +186,7 @@ ThemeColors = {}
 
 font_verybig = lambda weight='bold': (FONT, int(F_SIZE*3.7), weight)
 font_big = lambda weight='bold': (FONT, int(F_SIZE*1.8), weight)
-font_medium = lambda weight='bold': (FONT, int(F_SIZE*1.1), weight)
+font_medium = lambda weight='bold': (FONT, int(F_SIZE*1.2), weight)
 font_default = (FONT, F_SIZE)
 
 color_labeltext =   'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
@@ -178,7 +205,7 @@ padding_0_6 = (0,6)
 small_width = 7
 medium_width = 13
 large_width = 18
-verylarge_width = 22
+verylarge_width = 24
 
 buttonX = 80
 buttonY = 40
@@ -273,9 +300,7 @@ LogsTable = {
        'ID Time': { 'table':'\nID Time' , 'column_width':F_SIZE*16, 'column_anchor':W },
        'Email': { 'table':'\nEmail' , 'column_width':F_SIZE*16, 'column_anchor':W },
        'Query': { 'table':'\nQuery' , 'column_width':F_SIZE*16, 'column_anchor':W },
-       'Error': { 'table':'\nError' , 'column_width':F_SIZE*27, 'column_anchor':W },
-       'Full Query': { 'table':'Full Query' , 'column_width':0, 'column_anchor':W },
-       'Full Error': { 'table':'Full Error' , 'column_width':0, 'column_anchor':W }
+       'Error': { 'table':'\nError' , 'column_width':F_SIZE*27, 'column_anchor':W }
        }
 
 SessionTable = {
@@ -284,21 +309,10 @@ SessionTable = {
        'Email': { 'table':'\nEmail' , 'column_width':0, 'column_anchor':W} ,
        'Logged IN': { 'table':'\nLogged IN' , 'column_width':F_SIZE*16, 'column_anchor':W },
        'Logged OUT': { 'table':'\nLogged OUT' , 'column_width':F_SIZE*16, 'column_anchor':W },
-       'Session': { 'table':'\nSession' , 'column_width':F_SIZE*16, 'column_anchor':W },
-       'PC': { 'table':'PC' , 'column_width':0, 'column_anchor':W },
-       'GUI': { 'table':'GUI' , 'column_width':0, 'column_anchor':W },
-       'GoogleDrive': { 'table':'GoogleDrive' , 'column_width':0, 'column_anchor':W },
-       'Database': { 'table':'Database' , 'column_width':0, 'column_anchor':W },
-       'AI': { 'table':'AI' , 'column_width':0, 'column_anchor':W },
-       'Media': { 'table':'Media' , 'column_width':0, 'column_anchor':W },
-       'Graph': { 'table':'Graph' , 'column_width':0, 'column_anchor':W },
-       'Controller': { 'table':'Controller' , 'column_width':0, 'column_anchor':W },
-       'ManageDB': { 'table':'ManageDB' , 'column_width':0, 'column_anchor':W },
-       'SelectDB': { 'table':'SelectDB' , 'column_width':0, 'column_anchor':W },
-       
+       'Session': { 'table':'\nSession' , 'column_width':F_SIZE*16, 'column_anchor':W }
        }
 
-SIGNS = [ 'EQUAL', 'LIKE', 'NOT LIKE', 'BETWEEN' ]
+SIGNS = [ 'EQUAL', 'LIKE', 'NOT LIKE' , 'LESS', 'GREATER', 'BETWEEN' ]
 
 Image_buttons = [   ('ADD\nImage',None),
                     ('EDIT\nImage',None),
@@ -331,6 +345,7 @@ Slike_Editor = {
 
 GD_SLIKE = ['1e-KyYcDIt_V2Gn79blz0gESZLpeV4xVn']
 GD_MAIN = ['1ybEVItyB75BParYUN2-ab_oVe2tBj1NW']
+GD_LOGS = ['1tMrmDUycApCo85qNGd5lcKzWkzxc-GzZ']
 
 RHMH_dict = {
     'path':os.path.join(directory,'RHMH.db'),
@@ -338,12 +353,15 @@ RHMH_dict = {
     'mime':'application/x-sqlite3'}
 LOGS_dict = {
     'path':os.path.join(directory,'LOGS.db'),
+    'mime':'application/x-sqlite3'}
+GD_LOGS_dict = {
+    'path':os.path.join(directory,'GD_LOGS.db'),
     'id':'1uvz-BN2DI4_7xcs7-dwJmfz-Z7jrpMU2',
     'mime':'application/x-sqlite3'}
 
-SETTINGS_dict = {
+DEFAULT_dict = {
     'path':os.path.join(directory,'Default.json'),
-    'id':'1h5n_FSEKEQQoed2yjJOsXMSaQYefP0cx',
+    'id':'18TRd2iPKNeVU-8G09AT6kN_BsqoQ_fg_',
     'mime':'application/json'}
 
 MIME = {'PNG' : 'image/png',
@@ -354,4 +372,4 @@ MIME = {'PNG' : 'image/png',
         'MP4': 'video/mp4',
         'MOV': 'video/quicktime'}
 
-
+GIF_SIZE = 330

@@ -1,27 +1,28 @@
 {
-    "Version": "1.00",
+    "Email": "vurunayas@gmail.com",
+    "Version": "1.01",
     "Columns": {
-        "Starost": "1",
-        "Godi\u0161te": "1",
-        "Pol": "1",
-        "Datum Prijema": "1",
-        "Datum Operacije": "1",
-        "Datum Otpusta": "1",
-        "Uputna dijagnoza": "1",
-        "Osnovni Uzrok Hospitalizacije": "1",
-        "Glavna Operativna dijagnoza": "1",
-        "Sporedna Operativna dijagnoza": "1",
-        "Prate\u0107a dijagnoza": "1",
-        "Dg Latinski": "1",
-        "Operator": "1",
-        "Asistent": "1",
-        "Anesteziolog": "1",
-        "Anesteti\u010dar": "1",
-        "Gostuju\u0107i Specijalizant": "1",
-        "Instrumentarka": "1"
+        "Starost": true,
+        "Godište": true,
+        "Pol": true,
+        "Datum Prijema": true,
+        "Datum Operacije": true,
+        "Datum Otpusta": true,
+        "Uputna dijagnoza": true,
+        "Osnovni Uzrok Hospitalizacije": true,
+        "Glavna Operativna dijagnoza": true,
+        "Sporedna Operativna dijagnoza": true,
+        "Prateća dijagnoza": true,
+        "Dg Latinski": true,
+        "Operator": true,
+        "Asistent": true,
+        "Anesteziolog": true,
+        "Anestetičar": true,
+        "Gostujući Specijalizant": true,
+        "Instrumentarka": true
     },
     "Theme": "Moon",
-    "Title": "Creation",
+    "Title": "Egypt",
     "System": {
         "Language": "English",
         "Font": "Arial",
@@ -30,21 +31,33 @@
         "Thread cooldown": 10,
         "Width": 1720,
         "Height": 930,
-        "Title Height": 20
+        "Title Height": 18
     },
     "Reader": {
-        "VRAM": 12288,
-        "Zoom": 114,
+        "Entry": {
+            "Datum Operacije": false,
+            "Dg Latinski": false,
+            "Glavna Operativna dijagnoza": false,
+            "Sporedna Operativna dijagnoza": false,
+            "Operator": true,
+            "Asistent": true,
+            "Anesteziolog": true,
+            "Anestetičar": true,
+            "Instrumentarka": true,
+            "Gostujući Specijalizant": true
+        },
+        "VRAM": 6200,
+        "Zoom": 115,
         "Type": "AI-Line Reader"
     },
     "Graph": {
-        "left": 7,
-        "right": 97,
-        "top": 92,
-        "bottom": 22,
-        "tight": 0,
-        "legend": 1,
-        "x label": 1,
-        "y label": 1
+        "left": 6,
+        "right": 96,
+        "top": 93,
+        "bottom": 13,
+        "tight": false,
+        "legend": true,
+        "x label": true,
+        "y label": true
     }
 }

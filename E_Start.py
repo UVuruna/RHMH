@@ -8,7 +8,7 @@ from A1_Variables import *
 from A2_Decorators import method_efficency,error_catcher
 from B1_GoogleDrive import GoogleDrive
 from B2_SQLite import Database
-from B3_Media import Media
+from B3_Media import Media,Loading_Splash
 from B4_Graph import Graph
 from B5_AI import AI
 from C1_Controller import Controller,GodMode
@@ -19,12 +19,11 @@ from D2_FormPanel import FormPanel
 from D3_MainPanel import MainPanel
 from D4_Window import GUI
 
-
 def start():
-    root = Tk()
-    style = tb.Style(theme=THEME)
+    root = tb.Window(size=(WIDTH,HEIGHT), hdpi=False, iconphoto=IMAGES['icon']['RHMH']['png'])
+    root.withdraw()
 
-    # CUVA u dicty BOJE iz TEME
+    style = tb.Style(theme=THEME)
     for color_label in Colors.label_iter():
         color = style.colors.get(color_label)
         ThemeColors[color_label] = color
@@ -36,9 +35,9 @@ def start():
                                         ('!selected', ThemeColors['fg'])])
     style.configure('Treeview', rowheight=int(F_SIZE*2.2))
     style.map('Treeview.Heading', background=[('active',ThemeColors['primary'])])
+    style.map('Treeview.Heading', foreground=[('active',ThemeColors['selectfg'])])
     style.configure('Treeview.Heading',font=font_medium('normal'), padding=(0 , 2 , 0 , int(2.2*F_SIZE)))
 
-    # Menja samo FONT SIZE za TABLE i DATAENTRY
     default_font = nametofont('TkDefaultFont')
     entry_font = nametofont('TkTextFont')
     default_font.configure(size=F_SIZE)
@@ -53,14 +52,15 @@ def start():
 
     Classes_Decorating([GoogleDrive,Database,Media,Graph,AI,Controller,GodMode,ManageDB,SelectDB,TopPanel,FormPanel,MainPanel,GUI])
 
-    GUI.initialize(root) # Load
-    
-    if os.name == 'nt':  # Windows
+    GUI.initialize(root)
+    if os.name == 'nt': 
         if getattr(sys,'frozen',False):
-            pyi_splash.close() # Finished Loading
+            pyi_splash.close()
     root.mainloop()
 
 if __name__=='__main__':
     import multiprocessing
     multiprocessing.freeze_support()
+    UserSession['GUI']['Loading Modules'] = (time.time_ns()-TIME_START)/10**9
     start()
+    

@@ -1,4 +1,5 @@
 from A1_Variables import *
+from google.oauth2 import service_account
 
 class GoogleDrive:
     SCOPES = [ 'https://www.googleapis.com/auth/drive',
@@ -13,6 +14,19 @@ class GoogleDrive:
     @staticmethod
     def setup_connection() -> None:
         GoogleDrive.creds = GoogleDrive.authenticate_google_drive()
+        GoogleDrive.connection = build('drive', 'v3', credentials=GoogleDrive.creds)
+
+    @staticmethod
+    def create_new_token() -> None:
+        creds = None
+        token_path = os.path.join(directory,'www_token.pickle')
+        creds_path = os.path.join(directory,'www_credentials.json')
+        flow = InstalledAppFlow.from_client_secrets_file(creds_path, GoogleDrive.SCOPES)
+        creds = flow.run_local_server(port=0)
+        
+        with open(token_path, 'wb') as token:
+            pickle.dump(creds, token)
+        GoogleDrive.creds = creds
         GoogleDrive.connection = build('drive', 'v3', credentials=GoogleDrive.creds)
 
     @staticmethod
@@ -72,24 +86,10 @@ class GoogleDrive:
             'mimeType': file['mimeType']
         }
     
-    '''
     @staticmethod
-    def get_video_dimensions(file_path):
-        ffmpeg_path = 'required_programs/ffprobe.exe'
-        os.environ['PATH'] += os.pathsep + os.path.dirname(ffmpeg_path)
-        probe = ffmpeg.probe(file_path)
-        video_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'video']
-        if video_streams:
-            width = video_streams[0]['width']
-            height = video_streams[0]['height']
-            return width, height
-        else:
-            return None, None
-    #'''
-
-    @staticmethod
-    def download_DB(file_id, destination:str):
-        temp_destination = destination.split('.')[0] + '_progress.db'
+    def download_File(file_id, destination:str):
+        file_name,extension = destination.split('.')
+        temp_destination = file_name + f'_progress.{extension}'
         request = GoogleDrive.connection.files().get_media(fileId=file_id)
         with open(temp_destination, 'wb') as f:
             downloader = MediaIoBaseDownload(f, request)
@@ -98,7 +98,7 @@ class GoogleDrive:
                 status, done = downloader.next_chunk()
         os.remove(destination)
         os.rename(temp_destination, destination)
-    
+
     @staticmethod
     def download_BLOB(file_id):
         try:
@@ -148,17 +148,43 @@ class GoogleDrive:
         return True
 
     @staticmethod
-    def list_folder(folder_id):
+    def delete_trash(file_id):
+        GoogleDrive.connection.files().update(
+            fileId=file_id,
+            body={'trashed': True}
+        ).execute()
+        return True
+
+    @staticmethod
+    def find_logs(folder_id):
         results = GoogleDrive.connection.files().list(
             q=f"'{folder_id}' in parents",
             spaces='drive',
             fields='nextPageToken, files(id, name)'
         ).execute()
 
-        items = results.get('files', [])
+        return_dict = {}
+        for file in results.get('files', []):
+            
+            name:str = file['name']
+            if name.startswith('LOG - '):
+                return_dict[name] = file['id']
+
+        return return_dict
+
+    @staticmethod
+    def add_permission_to_folder(folder_id, user_email):
+        permission = {
+            'type': 'user',
+            'role': 'writer',
+            'emailAddress': user_email
+        }
+        GoogleDrive.connection.permissions().create(
+            fileId=folder_id,
+            body=permission,
+            fields='id'
+        ).execute()
 
 if __name__ == '__main__':
     GoogleDrive.setup_connection()
-    #GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
-    #GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
-    GoogleDrive.upload_UpdateFile(LOGS_dict['id'],LOGS_dict['path'],LOGS_dict['mime'])
+    #GoogleDrive.upload_UpdateFile(DEFAULT_dict['id'],DEFAULT_dict['path'],DEFAULT_dict['mime'])

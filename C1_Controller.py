@@ -1,24 +1,213 @@
 from A1_Variables import *
 from B1_GoogleDrive import GoogleDrive
-from B3_Media import Media
-from B2_SQLite import RHMH,LOGS
+from B2_SQLite import RHMH,LOGS, Database
+from B3_Media import Media,Loading_Splash
 
-class GodMode(simpledialog.Dialog):
-    def __init__(self, parent, title):
-        self.password = None
-        self.eye_image = None
-        super().__init__(parent, title)
 
-    def body(self, master):
-        self.eye_image = Media.label_ImageLoad(IMAGES['Password'])
-        lbl = tb.Label(master, image=self.eye_image)
-        lbl.grid(row=0, column=0, padx=6, pady=6, sticky=NSEW)
-        self.password_entry = tb.Entry(master, show='*')
-        self.password_entry.grid(row=1, column=0, padx=13, pady=13)
-        return self.password_entry
+class GodMode:
+    password = None
+    TopLevel: tb.Toplevel = None
+    eye_image:Image.Image = None
 
-    def apply(self):
-        self.password = self.password_entry.get()
+    @staticmethod
+    def Admin_Unlocking(PARENT:tb.Window):
+        result = dict()
+        def ok_command():
+            result['Ok'] = password.get()
+            toplevel.destroy()
+        def hint_command():
+            if 'Hint' not in result:
+                report = 'There are 3 different valid passwords\n' +\
+                            'Two of those unlock Super-Admin mode - "GodMode"\n' +\
+                            'The easiest One unlocks Admin mode\n' +\
+                            'All of the passwords are hidden inside LOGO visible in About Page'
+                result['Hint'] = report
+            Messagebox.show_info(message=report, title='Password Hint',
+                                    position=App.get_window_center())
+            toplevel.lift()
+            toplevel.focus_force()
+
+        toplevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['GodMode'], windowposition=App.get_window_center())
+        toplevel.withdraw()
+        toplevel.transient(App.ROOT)
+        
+        toplevel.title('Privileges - unlocking')
+        toplevel.grid_columnconfigure(0, weight=1)
+        toplevel.resizable(False,False)
+        
+        if GodMode.eye_image == None:
+            GodMode.eye_image = Media.label_ImageLoad(IMAGES['Password'])
+        lbl = tb.Label(toplevel, image=GodMode.eye_image)
+        lbl.grid(row=0, column=0, columnspan=2, padx=padding_6, pady=padding_6, sticky=NSEW)
+
+        password = tb.Entry(toplevel, show='*')
+        password.grid(row=1, column=0, columnspan=2, padx=padding_12, pady=padding_12, sticky=EW)
+
+        butt_color = ThemeColors['info']
+        ctk.CTkButton(toplevel, text='Get\nHint', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=hint_command).grid(row=2, column=0, padx=padding_6, pady=padding_6)
+
+        butt_color = ThemeColors['primary']
+        ctk.CTkButton(toplevel, text='Activate', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=ok_command).grid(row=2, column=1, padx=padding_6, pady=padding_6)
+        
+        toplevel.bind('<Return>', lambda event: ok_command())
+
+        toplevel.place_window_center()
+        toplevel.deiconify()
+        password.focus_set()
+        PARENT.wait_window(toplevel)
+        return result
+
+    @staticmethod
+    def GodMode_Password(event):
+        response = GodMode.Admin_Unlocking(App.ROOT)
+        App.ROOT.revert_iconphoto()
+        if 'Ok' in response:
+            if response['Ok'] == '63636':
+                info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
+                        f'\n{GodMode.money()}'
+                title = 'Admin unlocked'
+            elif response['Ok'] in ['C12-Si28-C13-Si28-C12','C12-Li3-C13-Li3-C12']:
+                for frame in Controller.FreeQuery_Frame:
+                    frame:Frame
+                    frame.grid()
+                info = 'New tabs:\n\t-Logs\n\t-Session\n' +\
+                        'New button:\n\t-Free Query\n\t-Upload LOGS\n' +\
+                        f'\n{GodMode.money()}'
+                title = 'God Mode unlocked' 
+            else:
+                return
+            Messagebox.show_info(message=info, title=title,
+                                    position=App.get_window_center())
+            GodMode.JoiningLogs()
+            App.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
+            App.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
+
+    @staticmethod
+    def ProgressBar_JoiningLogs(count:int):
+        GodMode.TopLevel = tb.Toplevel(alpha=0.93, iconphoto=IMAGES['icon']['GodMode'], windowposition=App.get_window_center())
+        GodMode.TopLevel.withdraw()
+
+        GodMode.TopLevel.title(f'Joining Logs...')
+        GodMode.TopLevel.grid_columnconfigure(0, weight=1)
+        GodMode.TopLevel.resizable(False,False)
+        GodMode.TopLevel.attributes('-topmost', True)
+
+        label = tb.Label(GodMode.TopLevel, text=f'Importing Online Logs - {count} left', anchor=CENTER, justify=CENTER, font=font_medium())
+        label.grid(row=0, column=0, columnspan=2, pady=padding_12, sticky=NSEW)
+       
+        text_widget = tb.Text(GodMode.TopLevel, wrap=NONE, height=10, width=40, font=font_default)
+        text_widget.grid(row=1, column=0, sticky=NSEW)
+
+        scrollbar = tb.Scrollbar(GodMode.TopLevel, orient=VERTICAL, command=text_widget.yview)
+        scrollbar.grid(row=1, column=1, sticky=NS)
+        text_widget.configure(yscrollcommand=scrollbar.set)
+
+        bar = tb.Floodgauge(GodMode.TopLevel, mode='indeterminate', bootstyle='primary', mask='Downloading...', font=font_default)
+        bar.grid(row=2, column=0, columnspan=2, padx=padding_12, pady=padding_12, sticky=EW)
+
+        frame = Frame(GodMode.TopLevel)
+        frame.grid(row=3, column=0, columnspan=2, sticky=NSEW)
+        gif:Loading_Splash = Media.Gif['GodMode']
+        gif.create_splash(frame,1)
+
+        GodMode.TopLevel.place_window_center()
+        GodMode.TopLevel.deiconify()
+        return bar,text_widget,label,gif
+
+    @staticmethod
+    def JoiningLogs():
+        start = time.time()
+        gd_logs_ids = GoogleDrive.find_logs(GD_MAIN[0])
+        gd_logs_ids.update(GoogleDrive.find_logs(GD_LOGS[0]))
+        TOTAL = len(gd_logs_ids)
+        floodgauge,text_widget,label,gif = GodMode.ProgressBar_JoiningLogs(TOTAL)
+        text_widget.tag_configure('success', foreground=ThemeColors['success'])
+        text_widget.tag_configure('fail', foreground=ThemeColors['danger'])
+
+        def join_logs():
+            floodgauge.start()
+            GoogleDrive.download_File(GD_LOGS_dict['id'],GD_LOGS_dict['path'])
+            Controller.GD_LOGS = Database(GD_LOGS_dict['path'])
+
+            floodgauge['mask'] = 'Joining...'
+            if not os.path.exists(os.path.join(directory,'temporary')):
+                os.makedirs(os.path.join(directory,'temporary'))
+
+            for i,(name,log_id) in enumerate(gd_logs_ids.items()):
+                path = os.path.join(directory,'temporary/temp.db')
+                tempbase = Database(path)
+                tempbase.connect()
+                tempbase.close_connection()
+
+                GoogleDrive.download_File(log_id,path)
+                Database.execute_Insert_Many(tempbase,Controller.GD_LOGS,'logs',tempbase.show_columns('logs'))
+                Database.execute_Insert_Many(tempbase,Controller.GD_LOGS,'session',tempbase.show_columns('session'))
+
+                text_widget.insert(f'{i+1}.0', f'{i+1}. {name}\n')
+                try:
+                    GoogleDrive.delete_file(log_id)
+                    text_widget.tag_add('success', f'{i+1}.0', f'{i+1}.end')
+                except Exception:
+                    text_widget.tag_add('fail', f'{i+1}.0', f'{i+1}.end')
+                text_widget.update_idletasks()
+                label.configure(text=f'Importing Online Logs - {TOTAL-(i+1)} left')
+                label.update_idletasks()
+            else:
+                floodgauge['mask'] = 'Uploading...'
+                GoogleDrive.upload_UpdateFile(GD_LOGS_dict['id'],GD_LOGS_dict['path'],GD_LOGS_dict['mime'])
+                Database.email = [i[0] for i in Controller.GD_LOGS.execute_selectquery('SELECT Email FROM Logs UNION SELECT Email FROM Session')]
+                floodgauge.grid_forget()
+                gif.stop()
+                print(time.time()-start)
+                App.ROOT.revert_iconphoto()
+                
+        threading.Thread(target=join_logs).start()
+
+    @staticmethod
+    def upload_GD_LOGS():
+        confirm = Messagebox.yesno(title=f'Uploading...', message=f'Are you sure you want to Upload Google Drive LOGS?', alert=True,
+                                    position=App.get_window_center())
+        if confirm == 'Yes':
+            def message_success():
+                Messagebox.show_info(message='Uploading LOGS successful', title='Uploading LOGS',
+                                        position=App.get_window_center())
+            def message_fail():
+                Messagebox.show_info(message='Uploading LOGS failed', title='Uploading LOGS',
+                                        position=App.get_window_center())
+            def upload():
+                try:
+                    gif:Loading_Splash = Media.Gif['GodMode']
+                    gif.create_splash(App.ROOT,0.7)
+                    GoogleDrive.upload_UpdateFile(GD_LOGS_dict['id'],GD_LOGS_dict['path'],GD_LOGS_dict['mime'])
+                    gif.stop()
+                    App.ROOT.after(WAIT,message_success)
+                except Exception:
+                    gif.stop()
+                    App.ROOT.after(WAIT,message_fail)
+            threading.Thread(target=upload).start()
+
+    @staticmethod
+    def FreeQuery_Execute():
+        DB = Controller.QueryDatabase.get()
+        DATABASE = RHMH if DB == 'RHMH' else Controller.GD_LOGS if DB == 'LOGS' else None
+        query = Controller.FreeQuery.get()
+        if not query:
+            return
+        report = f'{DB}\n' +\
+                DATABASE.format_sql(query)
+        response = Messagebox.yesno(title='Free Query executing...', message=report,
+                                        position=App.get_window_center())
+        if response == 'Yes':
+            DATABASE.connect()
+            DATABASE.cursor.execute(query)
+            DATABASE.connection.commit()
+            DATABASE.close_connection()
 
     @staticmethod
     def money():
@@ -26,50 +215,28 @@ class GodMode(simpledialog.Dialog):
         message += f'{(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).total_seconds()//13*13:,.0f} $\n'
         message += f'{(datetime.now() - datetime(1990, 6, 20, 11, 45, 0)).days//13*13:,.0f} Million $'
         return message
-    
-    @staticmethod
-    def GodMode_Password(event):
-        def download_logs():
-            GoogleDrive.download_DB(LOGS_dict['id'],LOGS_dict['path'])
 
-        dialog = GodMode(Controller.SearchBar, 'Privileges Unlocking...')
-        if dialog.password=='63636':
-            Controller.Admin = True
-            info = 'New tabs:\n\t-Logs'
-            title = 'Admin unlocked'
-        elif dialog.password in ['C12-Si28-C13-Si28-C12','C12-Li3-C13-Li3-C12']:
-            Controller.Admin = True
-            Controller.GodMode = True
-            Controller.FreeQuery_Frame.grid()
-            info = 'New tabs:\n\t-Logs\n\t-Session\n'
-            info += 'New button:\n\t-Free Query'
-            info += f'\n\n{GodMode.money()}'
-            title = 'God Mode unlocked'
-            Controller.ROOT.after(WAIT, lambda: Controller.NoteBook.select(5))
-        else:
-            return
-        
-        threading.Thread(target=download_logs).start()
-        Controller.ROOT.after(WAIT*2, lambda: Controller.NoteBook.select(4))
-        Messagebox.show_info(parent=Controller.SearchBar, message=info, title=title)
 
 class Controller:
-    ROOT:Tk = None
+    
+    queue = queue.Queue()
+    GD_LOGS:Database = None
+    
     Connected:bool = False
     DEFAULT:dict = None
     Buttons = {'Filter Patient':[]}
     
         # ADMIN
-    Admin: bool             = False
-    GodMode: bool           = False
-    FreeQuery_Frame: Frame  = None
-    FreeQuery: StringVar    = None
+    SessionReport           = ''
+    SessionLabel:tb.Label   = None
+    QueryDatabase:StringVar = None
+    FreeQuery_Frame:list    = list()
+    FreeQuery:StringVar     = None
 
         # TOP - Title Frame
-    Top_Frame: Canvas = None
+    Top_Frame: tb.Canvas = None
     Reconnect_window = None
     Reconnect_Button: ctk.CTkButton = None
-    
 
         # NOTEBOOK
     NoteBook:          tb.Notebook      = None
@@ -109,7 +276,6 @@ class Controller:
 
     Table_Names = dict()
     
-    
         # SEARCH BAR
     max_SearchBars      = 7
     SearchBar_number    = 1
@@ -122,9 +288,8 @@ class Controller:
     
         # FORM
     PatientFocus_ID = None
-
-    FormTitle = None
-    PatientInfo = None
+    FormTitle:tb.Label = None
+    PatientInfo:tb.Label = None
     MainTable_IDS = list()
 
         # VALIDATION FORM
@@ -145,46 +310,67 @@ class Controller:
                     report += 'Offline mode can only View from Local Database\n'
                     report += 'Managing Database is forbidden in Offline mode\n'
                     report += f'Please Reconnect if you want to "{func.__name__}"\n'
-                    Messagebox.show_warning(parent=Controller.SearchBar,
-                        title=f'{func.__name__} failed!', message=report)
+                    Messagebox.show_warning(title=f'{func.__name__} failed!', message=report,
+                                position=App.get_window_center())
                 else:
                     func(*args, **kwargs)
             return wrapper
         return decorator
 
-    def message_download_fail():
-        Messagebox.show_error(parent=Controller.SearchBar,title='Downloading failed',message='Can`t connect to Google Drive')
+    @staticmethod
+    def toplevel_buttons(frame,commands:list):
+        butt_color = ThemeColors['info']
+        ctk.CTkButton(frame, text='RESTORE\nDefault', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=commands[0]).grid(row=0, column=0, padx=padding_6, pady=padding_6)
+
+        butt_color = ThemeColors['primary']
+        ctk.CTkButton(frame, text='SAVE\nDefault', width=buttonX, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=commands[1]).grid(row=0, column=1, padx=padding_6, pady=padding_6)
+        
+        butt_color = ThemeColors['success']
+        ctk.CTkButton(frame, text='RUN', width=buttonX-4, height=buttonY, corner_radius=12, font=font_medium('bold'),
+                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
+                    command=commands[2]).grid(row=0, column=2, padx=padding_6, pady=padding_6)
 
     @staticmethod
-    def get_image_fromGD(GoogleID,queue=None):
+    def load_loading_GIF():
+        for gif in ['AI','Graph','GodMode','Web']:
+            folder = os.path.join(directory,f'Slike/gif_{gif}')
+            def load_gif(GIF,FOLDER):
+                Media.Gif[GIF] = Loading_Splash(folder=FOLDER, dimension=GIF_SIZE)
+            threading.Thread(target=lambda gif_key=gif, folder_path=folder: Controller.queue.put((App.ROOT.after, (WAIT, lambda: load_gif(gif_key, folder_path))))).start()
+            #Controller.queue.put((App.ROOT.after, (WAIT, lambda gif=gif,folder=folder: load_gif(gif,folder))))
+
+    @staticmethod
+    def process_queue():
         try:
-            Media.Downloading = True
-            Media.Blob_Data = GoogleDrive.download_BLOB(GoogleID)
-            if queue:
-                queue.put((Media.Blob_Data,None))
-        except Exception as e:
-            Media.Downloading = False
-            if Media.TopLevel:
-                Media.TopLevel.destroy()
-            Controller.ROOT.after(WAIT,Controller.message_download_fail)
-            if queue:
-                queue.put((None, e))
-            else:
-                raise
+            while True:
+                func, args = Controller.queue.get_nowait()
+                App.ROOT.after_idle(func, *args)
+                Controller.queue.task_done()
+        except queue.Empty:
+            App.ROOT.after(100, Controller.process_queue)
 
     @staticmethod
     def starting_application():
         def message_success():
-            report = 'Connection successfull\nOnline mode'
-            Messagebox.show_info(parent=Controller.SearchBar,title='Connect',message=report)
+            report = f'Connection successful\nOnline mode\nHello {UserSession['Email']}'
+            Messagebox.show_info(title='Connect',message=report,
+                                    position=App.get_window_center())
         def message_fail():
                 report = 'Connection failed\nOffline mode'
-                Messagebox.show_error(parent=Controller.SearchBar,title='Connect',message=report)
+                Messagebox.show_error(title='Connect',message=report,
+                                        position=App.get_window_center())
         def update_message():
             report = 'Please Download latest version from Google Drive\n' + \
                 'Unzip files and copy them into directory of RHMH app'
-            download = Messagebox.show_question(parent=Controller.SearchBar,
-                title='New Version', message=report, buttons=['Skip:warning','Download:success'])
+            download = Messagebox.show_question(title='New Version', message=report, buttons=['Skip:warning','Download:success'],
+                                                position=App.get_window_center())
             if download == 'Download':
                 Controller.open_link(link=r'https://drive.google.com/drive/folders/1yvDczxK01aBO3xdm-Vlkr38hP8DGD2g0')
 
@@ -192,35 +378,62 @@ class Controller:
             GoogleDrive.setup_connection()
             if Controller.Connected == False:
                 email = GoogleDrive.get_UserEmail()
-                GoogleDrive.download_DB(RHMH_dict['id'],RHMH_dict['path'])
-                GoogleDrive.download_DB(SETTINGS_dict['id'],SETTINGS_dict['path'])
-                with open(os.path.join(directory,'Default.json'), 'r') as file:
+                
+                if email and email != SETTINGS['Email']:
+                    UserSession['Email'] = email
+                    SETTINGS['Email'] = email
+                    json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+                    with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
+                        file.write(json_data)
+
+                GoogleDrive.download_File(RHMH_dict['id'],RHMH_dict['path'])
+                try:
+                    GoogleDrive.download_File(DEFAULT_dict['id'],DEFAULT_dict['path'])
+                except Exception:
+                    pass
+                with open(os.path.join(directory,'Default.json'), 'r', encoding='utf-8') as file:
                     Controller.DEFAULT = json.load(file)
 
-                if SETTINGS['Version'] != Controller.DEFAULT['Version']:
-                    Controller.ROOT.after(WAIT,update_message) # Message
-                    
                 Controller.Connected = True
                 if Controller.Reconnect_window:
                     Controller.Top_Frame.delete(Controller.Reconnect_window)
                     Controller.Reconnect_window = None
-                    Controller.ROOT.update()
-                if email:
-                    UserSession['Email'] = email
-                Controller.ROOT.after(WAIT*2,message_success) # Message
+                    App.ROOT.update()
+
+                if SETTINGS['Version'] != Controller.DEFAULT['Version']:
+                    App.ROOT.after(WAIT,update_message)
+                else:
+                    App.ROOT.after(WAIT,message_success)
         except Exception as e:
-            print(e)
-            print(traceback.format_exc())
-            Controller.ROOT.after(WAIT*2,message_fail) # Message
+            App.ROOT.after(WAIT,message_fail)
             width = Controller.Top_Frame.winfo_width()
             Controller.Top_Frame.create_window(width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
-
+        finally:
+            UserSession['Logged IN'] = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+            UserSession['GUI']['Start'] = (time.time_ns()-TIME_START)/10**9
+            print((time.time_ns()-TIME_START)/10**9)
+    
     @staticmethod
-    def open_link(event=None, link=None, time=None):
-        if time:
-            new_link = f'{link}&t{time}s' # Otvara video na 42. sekundi ovo &t=42s
-        # "https://www.https://www.youtube.com/@UV-Byzantine"  
-        webbrowser.open_new(link)
+    def create_new_user():
+        def message_success():
+            report = f'User changed\nHello {UserSession['Email']}'
+            Messagebox.show_info(title='Changing User',message=report,
+                                    position=App.get_window_center())
+        def message_fail():
+                report = f'User unchanged\nOld User: {UserSession['Email']}'
+                Messagebox.show_error(title='Changing User',message=report,
+                                        position=App.get_window_center())
+        try:
+            GoogleDrive.create_new_token()
+            email = GoogleDrive.get_UserEmail()
+            UserSession['Email'] = email
+            SETTINGS['Email'] = email
+            json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+            with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
+                file.write(json_data)
+            App.ROOT.after(WAIT,message_success)    
+        except Exception:
+            App.ROOT.after(WAIT,message_fail)    
 
     @staticmethod
     def update_settings():
@@ -234,18 +447,20 @@ class Controller:
                     except AttributeError:
                         v:tb.Meter
                         SETTINGS[col][c] = v.amountusedvar.get()
-        json_data = json.dumps(SETTINGS, indent=4)
-        with open(os.path.join(directory,'Settings.json'), 'w') as file:
+        json_data = json.dumps(SETTINGS, indent=4, ensure_ascii=False)
+        with open(os.path.join(directory,'Settings.json'), 'w', encoding='utf-8') as file:
             file.write(json_data)
+        Messagebox.show_info(message='Saving Settings successful', title='Saving Settings',
+                                position=App.get_window_center())
 
     @staticmethod
     def restore_default_settings() -> None:
         for k,v in Controller.DEFAULT.items():
-            if k=='Version':
+            if k in ['Version','Reader','Graph']:
                 continue
             SETTINGS[k] = v
         for col,val in SETTINGS.items():
-            if col=='Version':
+            if col in ['Email','Version','Version','Reader','Graph']:
                 continue
             if not isinstance(val,dict):
                 Controller.Settings_FormVariables[col].set(val)
@@ -255,36 +470,35 @@ class Controller:
                         Controller.Settings_FormVariables[col][column].set(value)
                     except AttributeError:
                         Controller.Settings_FormVariables[col][column].amountusedvar.set(value)
-                    except KeyError:
-                        continue
+        Messagebox.show_info(message='Restoring Default Settings successful', title='Restore Settings',
+                                position=App.get_window_center())
 
     @staticmethod
-    def uploading_to_GoogleDrive() -> None:
+    def Upload_RHMH() -> None:
         def message_success():
-            Messagebox.show_info(parent=Controller.SearchBar,title='Upload',message='Upload Database successfull')
+            Messagebox.show_info(title='Upload',message='Upload Database successful',
+                                    position=App.get_window_center())
         def message_fail():
-            Messagebox.show_error(parent=Controller.SearchBar,title='Upload',message='Upload Database failed')
+            Messagebox.show_error(title='Upload',message='Upload Database failed',
+                                    position=App.get_window_center())
 
         rhmh = GoogleDrive.upload_UpdateFile(RHMH_dict['id'],RHMH_dict['path'],RHMH_dict['mime'])
 
         if rhmh:
-            Controller.ROOT.after(WAIT,message_success)  # Message
+            App.ROOT.after(WAIT,message_success)  # Message
             return True
         else:
-            Controller.ROOT.after(WAIT,message_fail)  # Message
+            App.ROOT.after(WAIT,message_fail)  # Message
             return False
 
     @staticmethod
-    def uploading_LOGS():
-        Messagebox.show_info(parent=Controller.SearchBar,title='Upload',message='Ne radi ti upload')
-        time.sleep(1)
-        return
+    def Upload_local_LOGS():
         email = UserSession['Email']
         logged_in = UserSession['Logged IN']
         logged_out = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
         dt1 = datetime.strptime(logged_in, "%Y-%m-%d %H:%M:%S")
         dt2 = datetime.strptime(logged_out, "%Y-%m-%d %H:%M:%S")
-        session = dt1 - dt2
+        session = dt2 - dt1
         gui:dict = UserSession['GUI']
         gui.update(UserSession['TopPanel'])
         gui.update(UserSession['FormPanel'])
@@ -296,7 +510,7 @@ class Controller:
                                          'ManageDB':pickle.dumps(UserSession['ManageDB']),'SelectDB':pickle.dumps(UserSession['SelectDB'])})
         if inserted:
             filename = f'LOG - {email} {logged_in}'
-            driveID = GoogleDrive.upload_NewFile_asFile(file_name=filename, GoogleDrive_folder=GD_MAIN,
+            driveID = GoogleDrive.upload_NewFile_asFile(file_name=filename, GoogleDrive_folder=GD_LOGS,
                                           file_path=LOGS_dict['path'], mime_type=LOGS_dict['mime'])
             if driveID:
                 LOGS.connect()
@@ -307,19 +521,12 @@ class Controller:
                 LOGS.Vaccum_DB()
 
     @staticmethod
-    def lose_focus(event):
-        event.widget.focus()
-        Controller.Table_Pacijenti.selection_set('')
-        Controller.Table_Slike.selection_set('')
-        Controller.Table_MKB.selection_set('')
-        Controller.Table_Zaposleni.selection_set('')
-        Controller.Table_Logs.selection_set('')
-        Controller.Table_Session.selection_set('')
-
-    @staticmethod
     def Clear_Form():
+        parent_name = Controller.FormTitle.winfo_parent()
+        parent:Frame = Controller.FormTitle.nametowidget(parent_name)
+
         Controller.PatientFocus_ID = None
-        Controller.FormTitle[0].configure(bootstyle=Controller.FormTitle[1])
+        Controller.FormTitle.configure(bootstyle=color_labeltext)
         Controller.PatientInfo.config(text='\n')
         for table_groups in Controller.Patient_FormVariables.values():
             for widget in table_groups.values():
@@ -334,21 +541,13 @@ class Controller:
             widget.delete(0,END)
         elif isinstance(widget, widgets.DateEntry):
             widget.entry.delete(0,END)
-        elif isinstance(widget, Text):
+        elif isinstance(widget, tb.Text) or isinstance(widget, ScrolledText):
             widget.delete('1.0', END)
         elif isinstance(widget,tb.Label) and widget.cget('text') not in SIGNS:
             widget.config(text='')
         elif isinstance(widget, tb.Treeview):
             for item in widget.get_children():
                 widget.delete(item)
-
-    @staticmethod
-    def is_DB_date(date_string): # Checks if it is RHMH Date Format
-        try:
-            datetime.strptime(str(date_string), '%Y-%m-%d')
-            return True
-        except ValueError:
-            return False
 
     @staticmethod
     def get_widget_value(widget):
@@ -360,7 +559,7 @@ class Controller:
             return widget.entry.get()
         elif isinstance(widget,tb.Label):
             return widget.cget('text')
-        elif isinstance(widget, Text):
+        elif isinstance(widget, tb.Text) or isinstance(widget, ScrolledText):
             return widget.get('1.0', END).strip()
         else:
             return None
@@ -374,7 +573,7 @@ class Controller:
             value = datetime.strptime(str(value),'%Y-%m-%d').strftime('%d-%b-%Y')
         if isinstance(widget, StringVar):
             widget.set(value)
-        elif isinstance(widget, Text):
+        elif isinstance(widget, tb.Text) or isinstance(widget, ScrolledText):
             widget.delete('1.0', END)
             widget.insert('1.0', value)
         elif isinstance(widget, widgets.DateEntry):
@@ -397,16 +596,63 @@ class Controller:
         Time = f'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.{datetime.now().strftime('%f')[:3]}'
         if loggingdata:
             def execute():
-                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
+                LOGS.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
                                                 'Query':query_type,'Full Query':loggingdata})
-            Controller.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
+            App.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
             return
         if result:
             def execute():
-                RHMH.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
+                LOGS.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
                                                 'Query':query_type,'Full Query':LOGS.LoggingQuery})
-            Controller.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
+            App.ROOT.after(WAIT, lambda: threading.Thread(target=execute).start())
         return result
+    
+    @staticmethod
+    def get_image_fromGD(GoogleID,queue=None):
+        def message_download_fail():
+            Messagebox.show_error(title='Downloading failed',message='Can`t connect to Google Drive',
+                                position=App.get_window_center())
+        try:
+            Media.Downloading = True
+            Media.Blob_Data = GoogleDrive.download_BLOB(GoogleID)
+            if queue:
+                queue.put((Media.Blob_Data,None))
+        except Exception as e:
+            Media.Downloading = False
+            if Media.TopLevel:
+                Media.TopLevel.destroy()
+            App.ROOT.after(WAIT,message_download_fail)
+            if queue:
+                queue.put((None, e))
+            else:
+                raise
 
-if __name__=='__main__':
-    pass
+    @staticmethod
+    def lose_focus(event):
+        App.ROOT.focus_set()
+        Controller.Table_Pacijenti.selection_set('')
+        Controller.Table_Slike.selection_set('')
+        Controller.Table_MKB.selection_set('')
+        Controller.Table_Zaposleni.selection_set('')
+        Controller.Table_Logs.selection_set('')
+        Controller.Table_Session.selection_set('')
+
+    @staticmethod
+    def is_DB_date(date_string): # Checks if it is RHMH Date Format
+        try:
+            datetime.strptime(str(date_string), '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
+        
+    @staticmethod
+    def open_link(event=None, link=None, time=None):
+        if time:
+            new_link = f'{link}&t{time}s' # Otvara video na 42. sekundi ovo &t=42s
+        # "https://www.https://www.youtube.com/@UV-Byzantine"  
+        webbrowser.open_new(link)
+
+    @staticmethod
+    def open_email(event, email):
+        webbrowser.open_new(f'mailto:{email}')
+    

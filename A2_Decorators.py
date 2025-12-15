@@ -1,7 +1,7 @@
 from A1_Variables import *
 from B2_SQLite import RHMH,LOGS
 
-def spam_stopper(button:ctk.CTkButton,root:Tk):
+def spam_stopper(button:ctk.CTkButton, root:tb.Window):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -32,16 +32,16 @@ def method_efficency():
             if not Class in UserSession:
                 UserSession[Class] = {}
             if Method in UserSession[Class]:
-                UserSession[Class][Method]['ProccessingTime']['count'] += 1
-                UserSession[Class][Method]['ProccessingTime']['time'] += process_time_elapsed
+                UserSession[Class][Method]['Processing Time']['count'] += 1
+                UserSession[Class][Method]['Processing Time']['time'] += process_time_elapsed
 
-                UserSession[Class][Method]['TotalTime']['count'] += 1
-                UserSession[Class][Method]['TotalTime']['time'] += perf_time_elapsed
+                UserSession[Class][Method]['Total Time']['count'] += 1
+                UserSession[Class][Method]['Total Time']['time'] += perf_time_elapsed
 
             else:
-                UserSession[Class][Method] = {'ProccessingTime': {}, 'TotalTime': {}}
-                UserSession[Class][Method]['ProccessingTime'] = {'count':1 , 'time': process_time_elapsed}
-                UserSession[Class][Method]['TotalTime'] = {'count':1 , 'time': perf_time_elapsed}
+                UserSession[Class][Method] = {'Processing Time': {}, 'Total Time': {}}
+                UserSession[Class][Method]['Processing Time'] = {'count':1 , 'time': process_time_elapsed}
+                UserSession[Class][Method]['Total Time'] = {'count':1 , 'time': perf_time_elapsed}
             return result
         return wrapper
     return decorator
@@ -54,6 +54,8 @@ def error_catcher():
                 return func(*args, **kwargs)
             except Exception as e:
                 print(e)
+                print(traceback.format_exc())
+
                 Time = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")}'
                 fullerror = traceback.format_exc()
                 LOGS.execute_Insert('logs',**{'ID Time':Time, 'Email':UserSession['Email'],
@@ -62,14 +64,6 @@ def error_catcher():
                 raise # Da bi radio try-except unutar metoda
         return wrapper
     return decorator
-
-def print_dict(d, indent=0):
-    for key, value in d.items():
-        print('\t' * indent + str(key))
-        if isinstance(value, dict):
-            print_dict(value, indent+1)
-        else:
-            print('\t' * (indent+1) + str(value))
 
 class PC:
     @staticmethod
@@ -128,6 +122,3 @@ class PC:
             'Total RAM': f'{svmem.total / (1024 ** 2):,.0f} MB'
             }
         return ram_info
-
-if __name__=='__main__':
-    a = time.time()

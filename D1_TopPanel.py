@@ -1,5 +1,5 @@
 from A1_Variables import *
-from B1_GoogleDrive import GoogleDrive
+from B3_Media import Media
 from C1_Controller import Controller
 
 class TopPanel:
@@ -12,7 +12,7 @@ class TopPanel:
     title_txt = None
 
     @staticmethod
-    def initialize(root:Tk) -> None:
+    def initializeTP(root:tb.Canvas) -> None:
         
         try:
             image, (TopPanel.title_txt, TopPanel.txt_X, TopPanel.txt_Y) = TITLE_IMAGE
@@ -27,8 +27,10 @@ class TopPanel:
         Controller.Top_Frame.bind('<Button-1>' , Controller.lose_focus)
         Controller.Top_Frame.bind('<Configure>' , TopPanel.adjust_title_window)
 
-        Controller.Reconnect_Button = ctk.CTkButton(root, text='Connect', width=buttonX, height=buttonY//2, corner_radius=12, font=font_medium(),
-                                    fg_color=ThemeColors['warning'], text_color=ThemeColors['dark'], text_color_disabled=ThemeColors['secondary'],
+        butt_color = ThemeColors['warning']
+        Controller.Reconnect_Button = ctk.CTkButton(root, text='Connect', width=buttonX, height=buttonY//2, corner_radius=12, font=font_medium('bold'),
+                                    fg_color=butt_color, text_color=ThemeColors['bg'],
+                                    text_color_disabled=ThemeColors['secondary'], hover_color=Media.darken_color(butt_color),
                                     command=Controller.starting_application)
 
     @staticmethod
@@ -51,6 +53,3 @@ class TopPanel:
         if Controller.Connected is False:
             Controller.Reconnect_window = Controller.Top_Frame.create_window(
                                                 new_width*0.93, 10, anchor=N, window=Controller.Reconnect_Button)
-
-if __name__=='__main__':
-    pass
