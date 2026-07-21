@@ -24,3 +24,6 @@ LOGS.db
 A0_Update.py
 install_pyinstaller.json
 
+# Owner inbox - local only (root Rule #18)
+UV/
+
