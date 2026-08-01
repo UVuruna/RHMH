@@ -1,4 +1,8 @@
-#TTKBOOTSTRAP Themes
+# ═══════════════════════════ CUSTOM TTKBOOTSTRAP THEMES ═══════════════════════════
+# TTKBOOTSTRAP Themes — patched into the installed ttkbootstrap package's own
+# ttkbootstrap/themes/user.py (see REWORK-BRIEF.md "Vendored & Patched
+# Third-Party Code"). Theme names here match Theme_Names in A1_Variables.py
+# and the Theme field in Settings.json / Default.json.
 
 USER_THEMES = {
     "Fruit": {

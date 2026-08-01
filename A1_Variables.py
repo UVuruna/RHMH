@@ -1,6 +1,8 @@
+# ═══════════════════════════ STARTUP TIMER ═══════════════════════════
 import time
 TIME_START = time.time_ns()
 
+# ═══════════════════════════ THIRD-PARTY IMPORTS ═══════════════════════════
 from datetime import datetime, date
 
 from tkinter import Widget,Menu,Frame,Label,StringVar,BooleanVar,IntVar
@@ -63,6 +65,7 @@ from pathlib import Path
 from itertools import cycle
 #from moviepy.editor import VideoFileClip
 
+# ═══════════════════════════ APP WINDOW REFERENCE ═══════════════════════════
 class App:
     ROOT:tb.Window = None
 
@@ -72,6 +75,7 @@ class App:
         y = (App.ROOT.winfo_height() // 2) + App.ROOT.winfo_rooty()
         return (x,y)
 
+# ═══════════════════════════ PROJECT PATHS & IMAGE ASSET TABLE ═══════════════════════════
 directory = os.path.dirname(os.path.abspath(__file__))
 
 IMAGES = {
@@ -100,7 +104,7 @@ IMAGES = {
        'RHMH':(
            os.path.join(directory,'Slike/God_Moon.png'),
            os.path.join(directory,'Slike/God_Fruit.png'),
-           os.path.join(directory,'Slike/God_Sea.png'),     
+           os.path.join(directory,'Slike/God_Sea.png'),
            os.path.join(directory,'Slike/God_Sunrise.png'),
            os.path.join(directory,'Slike/God_Night.png'),
            os.path.join(directory,'Slike/God_Flower.png'),
@@ -133,7 +137,7 @@ IMAGES = {
        ] ,
        'Play Video': os.path.join(directory,'Slike/play_button.png') ,
        'Loading':    os.path.join(directory,'Slike/loading_circle.png') ,
-       'Password':  [ (os.path.join(directory,'Slike/eye.png'),270,270) ] , 
+       'Password':  [ (os.path.join(directory,'Slike/eye.png'),270,270) ] ,
        'MUVS':      [ (os.path.join(directory,'Slike/muvs.png'),280,280) ],
        'Signs': [
            (os.path.join(directory,'Slike/sign_equal.png'),42,28),
@@ -155,9 +159,11 @@ IMAGES = {
 }
 
 
+# ═══════════════════════════ SETTINGS.JSON LOAD ═══════════════════════════
 with open(os.path.join(directory,'Settings.json'), 'r', encoding='utf-8') as file:
     SETTINGS = json.load(file)
 
+# ═══════════════════════════ DERIVED DISPLAY CONSTANTS ═══════════════════════════
 Theme_Names = ['Moon','Fruit','Sea','Sunrise','Night','Flower','Sunset']
 Title_Names = ['Creation','Eye','Evolution','Egypt','RHMH']
 
@@ -184,6 +190,7 @@ app_name = 'Restruktivna Hirurgija Ortopedije'
 form_name = 'Pacijent'
 ThemeColors = {}
 
+# ═══════════════════════════ FONTS, COLORS & SPACING ═══════════════════════════
 font_verybig = lambda weight='bold': (FONT, int(F_SIZE*3.7), weight)
 font_big = lambda weight='bold': (FONT, int(F_SIZE*1.8), weight)
 font_medium = lambda weight='bold': (FONT, int(F_SIZE*1.2), weight)
@@ -191,7 +198,7 @@ font_default = (FONT, F_SIZE)
 
 color_labeltext =   'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
 color_titletext = 'light' if THEME not in ['Sunrise','Fruit','Flower','Sea'] else 'primary'
-color_highlight = 'selectbg' if THEME not in ['Sunrise','Fruit','Flower'] else 'border' 
+color_highlight = 'selectbg' if THEME not in ['Sunrise','Fruit','Flower'] else 'border'
 
 style_scrollbar = 'primary'
 style_checkbutton = 'primary'
@@ -213,6 +220,7 @@ buttonY = 40
 search_bigX = 18
 search_smallX = 10
 
+# ═══════════════════════════ TABLE — PATIENTS (MainTablePacijenti) ═══════════════════════════
 MainTablePacijenti = {
        'ID': {'checkbutton':None , 'group':None,
               'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W},
@@ -249,7 +257,7 @@ MainTablePacijenti = {
               'table':' Prateća\nDijagnoza' , 'column_width':F_SIZE*18, 'column_anchor':W},
        'Dg Latinski': {'checkbutton':'Dijagnoza Latinski' , 'group':None,
               'table':'   Dg\nLatinski' , 'column_width':F_SIZE*27, 'column_anchor':W},
-    
+
        'Operator': {'checkbutton':'Operator' , 'group':False,
               'table': '\nOperator' , 'column_width':F_SIZE*20, 'column_anchor':W},
        'Asistent': {'checkbutton':'Asistent' , 'group':False,
@@ -264,6 +272,7 @@ MainTablePacijenti = {
               'table': '\nInstrumentarka' , 'column_width':F_SIZE*16, 'column_anchor':W},
        }
 
+# ═══════════════════════════ TABLE — IMAGES (SlikeTable) ═══════════════════════════
 SlikeTable = {
        'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
        'id_slike': { 'table':'id_slike' , 'column_width':0, 'column_anchor':W },
@@ -279,6 +288,7 @@ SlikeTable = {
        'image_data': { 'table':'image_data' , 'column_width':0, 'column_anchor':E}
        }
 
+# ═══════════════════════════ TABLE — MKB-10 CATALOG (MKBTable) ═══════════════════════════
 MKBTable = {
        'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
        'id_dijagnoza': { 'table':'id_dijagnoza' , 'column_width':0, 'column_anchor':W} ,
@@ -287,6 +297,7 @@ MKBTable = {
        'Opis Dijagnoze': { 'table':'\nOpis Dijagnoze' , 'column_width':F_SIZE*48, 'column_anchor':W },
        }
 
+# ═══════════════════════════ TABLE — STAFF (ZaposleniTable) ═══════════════════════════
 ZaposleniTable = {
        'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
        'id_zaposleni': { 'table':'id_zaposleni' , 'column_width':0, 'column_anchor':W} ,
@@ -294,6 +305,7 @@ ZaposleniTable = {
        'Zaposleni': { 'table':'\nZaposleni' , 'column_width':F_SIZE*27, 'column_anchor':W }
        }
 
+# ═══════════════════════════ TABLE — LOGS & SESSION (LogsTable, SessionTable) ═══════════════════════════
 LogsTable = {
        'ID': { 'table':'\nID' , 'column_width':F_SIZE*4, 'column_anchor':W },
 
@@ -312,6 +324,7 @@ SessionTable = {
        'Session': { 'table':'\nSession' , 'column_width':F_SIZE*16, 'column_anchor':W }
        }
 
+# ═══════════════════════════ SEARCH SIGNS & MISC UI TABLES ═══════════════════════════
 SIGNS = [ 'EQUAL', 'LIKE', 'NOT LIKE' , 'LESS', 'GREATER', 'BETWEEN' ]
 
 Image_buttons = [   ('ADD\nImage',None),
@@ -343,6 +356,7 @@ Slike_Editor = {
         'width': 10}
 }
 
+# ═══════════════════════════ GOOGLE DRIVE FILE IDS ═══════════════════════════
 GD_SLIKE = ['1e-KyYcDIt_V2Gn79blz0gESZLpeV4xVn']
 GD_MAIN = ['1ybEVItyB75BParYUN2-ab_oVe2tBj1NW']
 GD_LOGS = ['1tMrmDUycApCo85qNGd5lcKzWkzxc-GzZ']
@@ -364,6 +378,7 @@ DEFAULT_dict = {
     'id':'18TRd2iPKNeVU-8G09AT6kN_BsqoQ_fg_',
     'mime':'application/json'}
 
+# ═══════════════════════════ MIME TYPES & MISC ═══════════════════════════
 MIME = {'PNG' : 'image/png',
         'JPG' : 'image/jpeg',
         'JPEG' : 'image/jpeg',
