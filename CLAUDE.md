@@ -102,3 +102,13 @@ the project's only automated safety net today.
 and [fixing_modules (folder)](fixing_modules/___fixing_modules.md) → for
 the synthesized cross-cutting picture, go straight to
 [REWORK-BRIEF.md](REWORK-BRIEF.md) and [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md).
+
+## Layout Teeth — pending migration (2026-08-06)
+
+This project has a GUI and has NOT yet run the layout migration. Any GUI
+work here follows [MIGRATE-LAYOUT.md](../../MIGRATE-LAYOUT.md) +
+[GUI Rules](../../rules/GUI.md): the machine-wide layout guard already
+bites in every session; what this project still owes is the per-project
+audit — window registry, computed minimums fitting 1280x720, screenshots
+opened and graded >= 8/10. Reference implementations: Remote User
+(tests/test_layout_audit_qt.py) and DOMY Watch (tests/test_layout_audit.py).
