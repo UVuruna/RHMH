@@ -103,4 +103,4 @@ model-load cost and requires a working torch/easyocr install).
 - `DoctorsImage_dict`, the MKB-letter-fix table, and assorted magic
   thresholds are hardcoded domain knowledge about one physical form
   template — a form-layout change requires a code edit, not a config edit
-  (Rule #4 candidate for the rework).
+  (No Hardcoded Values (rules/CODE.md) candidate for the rework).

@@ -136,5 +136,5 @@ the two live database handles every other module imports.
 - **Duplicated JOIN SQL**: the `dijagnoza`/`mkb10`/`kategorija` and
   `operacija`/`funkcija`/`zaposleni` LEFT JOIN blocks are repeated verbatim
   in `execute_join_select`, `get_patient_data`, and a third time in
-  [B4 Graph](B4_Graph.md)'s `Graph_makeQuery` — a Rule #5 candidate for the
-  rework.
+  [B4 Graph](B4_Graph.md)'s `Graph_makeQuery` — a No Duplicate Code
+  (rules/CODE.md) candidate for the rework.

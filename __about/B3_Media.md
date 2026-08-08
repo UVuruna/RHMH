@@ -89,5 +89,6 @@ media-viewer instance app-wide).
   `error_catcher`/`method_efficency` at all. Combined with `load_image`
   running on a raw `threading.Thread` target (whose uncaught exceptions the
   `threading` module only prints to stderr), a missing `{i}.gif` frame fails
-  silently from the app's own logging perspective — a real Rule #1 gap,
-  flagged for the rework, not fixed here (zero-behavior-change scope).
+  silently from the app's own logging perspective — a real No Error Masking
+  (rules/CODE.md) gap, flagged for the rework, not fixed here
+  (zero-behavior-change scope).

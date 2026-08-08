@@ -112,3 +112,8 @@ bites in every session; what this project still owes is the per-project
 audit — window registry, computed minimums fitting 1280x720, screenshots
 opened and graded >= 8/10. Reference implementations: Remote User
 (tests/test_layout_audit_qt.py) and DOMY Watch (tests/test_layout_audit.py).
+
+GUI work here is also governed by the Zubi v2 Algorithmic Teeth & Grader v2
+in [GUI Rules](../../rules/GUI.md#zubi-v2) — status: **pending rollout**
+(no `layout_checks_qt.py` or equivalent installed teeth found in
+`tests/` for this project).

@@ -59,8 +59,8 @@ audit row (timestamp, user email, method qualname, the last SQL query
 string, error message, full traceback) into the `LOGS.logs` table via
 `LOGS.execute_Insert`, then **re-raises** — so the exception still
 propagates to any enclosing `try/except`, it is just guaranteed to be logged
-first (Rule #1's "errors MUST be visible" is satisfied here at the framework
-level, not per call site).
+first (No Error Masking (rules/CODE.md) — "errors MUST be visible" — is
+satisfied here at the framework level, not per call site).
 
 ## Classes
 

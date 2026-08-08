@@ -79,11 +79,12 @@ Static-only chart builder + query builder + settings dialog.
   LEFT JOIN blocks found (twice) in [B2 SQLite](B2_SQLite.md) — see
   REWORK-BRIEF.md.
 - **Three responsibilities in one class** (query building, matplotlib
-  rendering, settings-dialog GUI) — a Rule #20 cohesion smell; natural split
-  points: query builder / chart renderer / settings dialog.
+  rendering, settings-dialog GUI) — a THE STRUCTURE LAW (rules/CODE.md)
+  cohesion smell; natural split points: query builder / chart renderer /
+  settings dialog.
 - **Duplicated settings-persistence pattern**: `Graph_SettingUp`'s
   save/restore-to-`Settings.json` logic and its nested `create_meter`
   helper are near-duplicates of [B5 AI](B5_AI.md)'s
-  `ImageReader_SettingUp` — a Rule #5 candidate.
+  `ImageReader_SettingUp` — a No Duplicate Code (rules/CODE.md) candidate.
 - SQL in `Graph_makeQuery` is built via f-string interpolation, not
   parameterized — same structural caveat as [B2 SQLite](B2_SQLite.md).

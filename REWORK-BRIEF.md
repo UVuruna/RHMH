@@ -439,7 +439,7 @@ Two physical database files: `RHMH.db` (patient/clinical data — the first
 
 <a id="duplication"></a>
 
-## Cross-Cutting Duplication (Rule #5 candidates for the rework)
+## Cross-Cutting Duplication (No Duplicate Code (rules/CODE.md) candidates for the rework)
 
 - **The `dijagnoza/mkb10/kategorija` and `operacija/funkcija/zaposleni`
   LEFT JOIN blocks** appear, hand-written, in THREE places:

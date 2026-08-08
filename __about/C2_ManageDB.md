@@ -52,10 +52,11 @@ Architecture notes):
   across `pacijent`/`dijagnoza`/`operacija`; multi-value fields use a
   set-difference to compute per-value INSERT/DELETE; confirm dialog shows
   the diff; relies on catching `UnboundLocalError` as the "no changes made"
-  control-flow path — a Rule #7-adjacent smell, flagged not fixed),
-  `Edit_Image()` (description edit + filename patch), `Update_MKB()`,
-  `Update_Zaposleni()` (near-duplicate diff-and-confirm bodies,
-  parameterized only by table/column names — a Rule #5 candidate).
+  control-flow path — a No Error Masking (rules/CODE.md)-adjacent smell,
+  flagged not fixed), `Edit_Image()` (description edit + filename patch),
+  `Update_MKB()`, `Update_Zaposleni()` (near-duplicate diff-and-confirm
+  bodies, parameterized only by table/column names — a No Duplicate Code
+  (rules/CODE.md) candidate).
 - **Delete**: `Delete_Patient()` (fetch-for-logging then delete, cascades
   via FK), `Delete_Image()` (DB delete then Drive-trash delete — asymmetric
   failure: the DB row is gone even if the Drive delete fails),

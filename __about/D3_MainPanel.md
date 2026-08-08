@@ -76,7 +76,8 @@ secret key sequence bound in [D4 Window](D4_Window.md) — see
   class (`MainPanel`, all `@staticmethod`s).
 - Near-identical Treeview+scrollbar+bind boilerplate repeats across
   `PacijentiTab_Create`, `SlikeTab_Create`, `KatalogTab_Create`,
-  `LogsTab_Create`, `SessionTab_Create` (Rule #5 candidate).
+  `LogsTab_Create`, `SessionTab_Create` (No Duplicate Code (rules/CODE.md)
+  candidate).
 - Heavy reliance on `Controller` as shared global mutable state — nearly
   every builder writes into `Controller.Table_Names`, `Controller.Buttons`,
   `Controller.*_FormVariables`, etc. instead of returning structured
